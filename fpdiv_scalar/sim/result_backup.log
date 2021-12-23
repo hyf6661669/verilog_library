@@ -1,0 +1,90 @@
+[0]:
+recorded_opa 		=             B045
+recorded_opb 		=             CFBF
+recorded_fp_format 	=                0
+recorded_rm 			=                0
+recorded_dut_res 	=             1C00
+recorded_dut_fflags 	=                1
+recorded_ref_res 	=             1C69
+recorded_ref_fflags 	=                1
+[1]:
+recorded_opa 		=              800
+recorded_opb 		=             C001
+recorded_fp_format 	=                0
+recorded_rm 			=                2
+recorded_dut_res 	=             8400
+recorded_dut_fflags 	=                1
+recorded_ref_res 	=             8400
+recorded_ref_fflags 	=                3
+[2]:
+recorded_opa 		=              3FF
+recorded_opb 		=             3BFF
+recorded_fp_format 	=                0
+recorded_rm 			=                3
+recorded_dut_res 	=              400
+recorded_dut_fflags 	=                1
+recorded_ref_res 	=              400
+recorded_ref_fflags 	=                3
+[3]:
+recorded_opa 		=              3FF
+recorded_opb 		=             BBFF
+recorded_fp_format 	=                0
+recorded_rm 			=                2
+recorded_dut_res 	=             8400
+recorded_dut_fflags 	=                1
+recorded_ref_res 	=             8400
+recorded_ref_fflags 	=                3
+[4]:
+recorded_opa 		=              400
+recorded_opb 		=             3C01
+recorded_fp_format 	=                0
+recorded_rm 			=                3
+recorded_dut_res 	=              400
+recorded_dut_fflags 	=                1
+recorded_ref_res 	=              400
+recorded_ref_fflags 	=                3
+[5]:
+recorded_opa 		=              400
+recorded_opb 		=             BC01
+recorded_fp_format 	=                0
+recorded_rm 			=                2
+recorded_dut_res 	=             8400
+recorded_dut_fflags 	=                1
+recorded_ref_res 	=             8400
+recorded_ref_fflags 	=                3
+[6]:
+recorded_opa 		=              7FF
+recorded_opb 		=             4000
+recorded_fp_format 	=                0
+recorded_rm 			=                4
+recorded_dut_res 	=              400
+recorded_dut_fflags 	=                1
+recorded_ref_res 	=              400
+recorded_ref_fflags 	=                3
+[7]:
+recorded_opa 		=              7FF
+recorded_opb 		=             4000
+recorded_fp_format 	=                0
+recorded_rm 			=                3
+recorded_dut_res 	=              400
+recorded_dut_fflags 	=                1
+recorded_ref_res 	=              400
+recorded_ref_fflags 	=                3
+[8]:
+recorded_opa 		=              7FF
+recorded_opb 		=             4000
+recorded_fp_format 	=                0
+recorded_rm 			=                4
+recorded_dut_res 	=              400
+recorded_dut_fflags 	=                1
+recorded_ref_res 	=              400
+recorded_ref_fflags 	=                3
+[9]:
+recorded_opa 		=              7FF
+recorded_opb 		=             C000
+recorded_fp_format 	=                0
+recorded_rm 			=                4
+recorded_dut_res 	=             8400
+recorded_dut_fflags 	=                1
+recorded_ref_res 	=             8400
+recorded_ref_fflags 	=                3
