@@ -3,7 +3,7 @@
 // Author				: HYF
 // How to Contact		: hyf_sysu@qq.com
 // Created Time    		: 2021-12-29 16:42:39
-// Last Modified Time   : 2021-12-29 19:32:24
+// Last Modified Time   : 2022-01-02 11:17:35
 // ========================================================================================================
 // Description	:
 // TB for FPDIV_FRAC.
@@ -39,8 +39,8 @@
 // ========================================================================================================
 
 // include some definitions here
-`ifndef MAX_ERR_COUNT
-	`define MAX_ERR_COUNT 10
+`ifndef MAX_ERROR_COUNT
+	`define MAX_ERROR_COUNT 10
 `endif
 
 `define USE_ZERO_DELAY
@@ -73,9 +73,9 @@ module tb_top #(
 // ==================================================================================================================================================
 
 
-localparam FP64_RANDOM_NUM = 2 ** 5;
-localparam FP32_RANDOM_NUM = 2 ** 5;
-localparam FP16_RANDOM_NUM = 2 ** 5;
+localparam FP64_RANDOM_NUM = 2 ** 18;
+localparam FP32_RANDOM_NUM = 2 ** 18;
+localparam FP16_RANDOM_NUM = 2 ** 18;
 
 typedef bit [31:0][2] bit_to_array;
 
@@ -124,8 +124,11 @@ logic [31:0] dut_finish_valid_after_start_handshake_delay;
 logic [ 2-1:0] fp_format;
 logic [53-1:0] fpdiv_opa_frac;
 logic [53-1:0] fpdiv_opb_frac;
+logic [107-1:0] ref_opa_frac;
+logic [107-1:0] ref_opb_frac;
+logic [107-1:0] ref_fpdiv_frac_pre;
 
-logic [54-1:0] dut_fpdiv_frac_res;
+logic [55-1:0] dut_fpdiv_frac_res;
 logic [54-1:0] ref_fpdiv_frac_res;
 
 // ==================================================================================================================================================
@@ -189,35 +192,30 @@ initial begin
 		if(stim_end)
 			break;
 
-		cmodel_check_result(
-			.error_count(err_count),
-			.opa_hi(fpdiv_opa[63:32]),
-			.opa_lo(fpdiv_opa[31: 0]),
-			.opb_hi(fpdiv_opb[63:32]),
-			.opb_lo(fpdiv_opb[31: 0]),
-			.fp_format(fp_format),
-			.rm(fpdiv_rm),
-			.dut_res_hi(dut_fpdiv_res[63:32]),
-			.dut_res_lo(dut_fpdiv_res[31: 0]),
-			.dut_fflags(dut_fpdiv_fflags),
-			.compare_ok(compare_ok)
-		);
 		
 		if((compare_ok == 0) | (compare_ok == 1'bX)) begin
-			// $display("ERROR FOUND:");
+			$display("ERROR FOUND:");
+			
+			$display("[%d]:", acq_count);
+			$display("fpdiv_opa = %53b", fpdiv_opa_frac);
+			$display("fpdiv_opb = %53b", fpdiv_opb_frac);
+			$display("ref_fpdiv_frac_res = %54b", ref_fpdiv_frac_res[53:0]);
+			$display("dut_fpdiv_frac_res = %55b", dut_fpdiv_frac_res);
 
 			err_count++;
 		end
 
 		// $display("[%d]:", acq_count);
-		// $display("fpdiv_opa = %16H", fpdiv_opa);
-		// $display("fpdiv_opb = %16H", fpdiv_opb);
+		// $display("fpdiv_opa = %53b", fpdiv_opa_frac);
+		// $display("fpdiv_opb = %53b", fpdiv_opb_frac);
+		// $display("ref_fpdiv_frac_res = %54b", ref_fpdiv_frac_res[53:0]);
+		// $display("dut_fpdiv_frac_res = %55b", dut_fpdiv_frac_res);
+		
 
-		if(err_count == `MAX_ERR_COUNT) begin
+		if(err_count == `MAX_ERROR_COUNT) begin
 			$display("finished_test_num = %d, error_test_num = %d", acq_count, err_count);
 			$display("Too many ERRORs, stop simulation!!!");
 			$display("Printing error information...");
-			print_error(err_count);
 			$stop();
 		end
 
@@ -235,7 +233,6 @@ initial begin
 	$display("response acquisition finishes!");
 	$display("TB finishes!");
 	$display("Printing error information...");
-	print_error(err_count);
 	$stop();
 end
 
@@ -244,24 +241,65 @@ end
 // ================================================================================================================================================
 // calculate expected result
 
+always_comb begin
+	ref_opa_frac = 
+	(fp_format == 2'd0) ? {fpdiv_opa_frac[0 +: 11], {(106 - 11){1'b0}}} : 
+	(fp_format == 2'd1) ? {fpdiv_opa_frac[0 +: 24], {(106 - 24){1'b0}}} : 
+	{fpdiv_opa_frac[0 +: 53], {(106 - 53){1'b0}}};
+
+	ref_opb_frac = 
+	(fp_format == 2'd0) ? {54'b0, fpdiv_opb_frac[0 +: 11], {(53 - 11){1'b0}}} : 
+	(fp_format == 2'd1) ? {54'b0, fpdiv_opb_frac[0 +: 24], {(53 - 24){1'b0}}} : 
+	{54'b0, fpdiv_opb_frac[0 +: 53], {(53 - 53){1'b0}}};
+
+	// Mkae sure we get 12/25/54-bit frac
+	if((fp_format == 2'd0) & (fpdiv_opa_frac[0 +: 11] < fpdiv_opb_frac[0 +: 11]))
+		ref_opa_frac = ref_opa_frac << 1;
+	else if((fp_format == 2'd1) & (fpdiv_opa_frac[0 +: 24] < fpdiv_opb_frac[0 +: 24]))
+		ref_opa_frac = ref_opa_frac << 1;
+	else if(fpdiv_opa_frac[0 +: 53] < fpdiv_opb_frac[0 +: 53])
+		ref_opa_frac = ref_opa_frac << 1;
+
+	ref_fpdiv_frac_pre = ref_opa_frac / ref_opb_frac;
+	ref_fpdiv_frac_res = ref_fpdiv_frac_pre[54] ? ref_fpdiv_frac_pre[54:1] : ref_fpdiv_frac_pre[53:0];
+
+	// If we do initialization for the integer part of frac, after the srt iter is finished, the accurate frac width we could get is:
+	// fp64: 9 * 6 + 1 = 55
+	// fp32: 4 * 6 + 1 = 25
+	// fp16: 2 * 6 + 1 = 13
+	compare_ok = 
+	(fp_format == 2'd0) ? (ref_fpdiv_frac_res[53 -: 13] == dut_fpdiv_frac_res[0 +: 13]) : 
+	(fp_format == 2'd1) ? (ref_fpdiv_frac_res[53 -: 25] == dut_fpdiv_frac_res[0 +: 25]) : 
+	(ref_fpdiv_frac_res[53 -: 54] == dut_fpdiv_frac_res[1 +: 54]);
+
+	// If we don't do initialization for the integer part of frac, after the srt iter is finished, the accurate frac width we could get is:
+	// fp64: 9 * 6 - 1 = 53
+	// fp64: 4 * 6 - 1 = 23
+	// fp64: 2 * 6 - 1 = 11
+	// compare_ok = 
+	// (fp_format == 2'd0) ? (ref_fpdiv_frac_res[53 -: 11] == dut_fpdiv_frac_res[0 +: 11]) : 
+	// (fp_format == 2'd1) ? (ref_fpdiv_frac_res[53 -: 23] == dut_fpdiv_frac_res[0 +: 23]) : 
+	// (ref_fpdiv_frac_res[53 -: 53] == dut_fpdiv_frac_res[0 +: 53]);
+end
+
 
 // ================================================================================================================================================
 // Instantiate DUT here.
 
-fpdiv_frac
+// fpdiv_frac
+// fpdiv_frac_v2
+fpdiv_frac_v3
 u_dut (
 	.start_valid_i(dut_start_valid),
 	.start_ready_o(dut_start_ready),
 	.flush_i(1'b0),
 	.fp_format_i(fp_format),
-	.opa_i(fpdiv_opa),
-	.opb_i(fpdiv_opb),
-	.rm_i(fpdiv_rm),
+	.a_frac_i(fpdiv_opa_frac),
+	.b_frac_i(fpdiv_opb_frac),
 
 	.finish_valid_o(dut_finish_valid),
 	.finish_ready_i(dut_finish_ready),
-	.fpdiv_res_o(dut_fpdiv_res),
-	.fflags_o(dut_fpdiv_fflags),
+	.fpdiv_frac_o(dut_fpdiv_frac_res),
 
 	.clk(clk),
 	.rst_n(rst_n)

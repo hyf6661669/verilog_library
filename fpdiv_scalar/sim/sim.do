@@ -10,7 +10,7 @@ vlib ./lib/work
 
 vmap work ./lib/work
 
-set RAND_SEED 98
+set RAND_SEED 40
 set TEST_LEVEL 1
 set MAX_ERROR_COUNT 10
 
@@ -18,8 +18,8 @@ set MAX_ERROR_COUNT 10
 #+TEST_SPECIAL_POINT
 
 vlog -work work -incr \
-+define+RAND_SEED=$RAND_SEED+TEST_LEVEL=$TEST_LEVEL+MAX_ERROR_COUNT=$MAX_ERROR_COUNT \
--f ../tb/tb.lst +define+
++define+RAND_SEED=$RAND_SEED+TEST_LEVEL=$TEST_LEVEL+MAX_ERROR_COUNT=$MAX_ERROR_COUNT+FAST_INIT \
+-f ../tb/tb.lst
 
 vsim \
 -sv_lib ../cmodel/lib/softfloat -sv_lib ../cmodel/lib/testfloat_gencases -sv_lib ../cmodel/lib/cmodel \

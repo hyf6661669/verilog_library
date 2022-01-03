@@ -3,7 +3,7 @@
 // Author				: HYF
 // How to Contact		: hyf_sysu@qq.com
 // Created Time    		: 2021-12-29 16:42:39
-// Last Modified Time   : 2021-12-29 16:59:26
+// Last Modified Time   : 2022-01-02 11:16:34
 // ========================================================================================================
 // Description	:
 // 
@@ -50,12 +50,58 @@
 // ==================================================================================================================================================
 // Just random test...
 // ==================================================================================================================================================
+
 fp_format = 0;
 for(i = 0; i < FP16_RANDOM_NUM; i++) begin
 	std::randomize(fpdiv_opa_frac);
 	std::randomize(fpdiv_opb_frac);
+
+	// fpdiv_opb_frac[10:7] = 4'b1000;
+
 	fpdiv_opa_frac[10] = 1'b1;
 	fpdiv_opb_frac[10] = 1'b1;
+	
+	`SINGLE_STIM
+end
+
+fp_format = 1;
+for(i = 0; i < FP32_RANDOM_NUM; i++) begin
+	std::randomize(fpdiv_opa_frac);
+	std::randomize(fpdiv_opb_frac);
+
+	// fpdiv_opb_frac[23:20] = 4'b1000;
+
+	fpdiv_opa_frac[23] = 1'b1;
+	fpdiv_opb_frac[23] = 1'b1;
+	
+	`SINGLE_STIM
+end
+
+fp_format = 2;
+fpdiv_opa_frac[52:0] = 53'b11010000100000000000000000000000000000000000000000000;
+fpdiv_opb_frac[52:0] = 53'b10001111111000000000000000000000000000000000000000000;
+`SINGLE_STIM
+
+fp_format = 2;
+fpdiv_opa_frac[52:0] = 53'b10110111001110101111101110101101100100001011001010010;
+fpdiv_opb_frac[52:0] = 53'b10100000101010110111010101001000110011111110100011111;
+`SINGLE_STIM
+
+fp_format = 2;
+fpdiv_opa_frac[52:0] = 53'b10111000010101111001000000111010101100001000100000100;
+fpdiv_opb_frac[52:0] = 53'b11111100110010001000101000100010011100100111000000011;
+`SINGLE_STIM
+
+fp_format = 2;
+for(i = 0; i < FP64_RANDOM_NUM; i++) begin
+	std::randomize(fpdiv_opa_frac);
+	std::randomize(fpdiv_opb_frac);
+
+	// fpdiv_opb_frac[52:49] = 4'b1000;
+
+	fpdiv_opa_frac[52] = 1'b1;
+	fpdiv_opb_frac[52] = 1'b1;
+	
 	`SINGLE_STIM
 end
 

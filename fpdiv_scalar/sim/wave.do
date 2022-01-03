@@ -30,14 +30,17 @@ add wave -position insertpoint -expand -group MAIN_SIGNALS sim:/tb_top/u_dut/div
 add wave -position insertpoint -expand -group MAIN_SIGNALS sim:/tb_top/u_dut/div_csa_val[2]
 
 add wave -position insertpoint -expand -group QUO_REG sim:/tb_top/u_dut/quo_iter_init
+add wave -position insertpoint -expand -group QUO_REG sim:/tb_top/u_dut/quo_iter_d
 add wave -position insertpoint -expand -group QUO_REG sim:/tb_top/u_dut/quo_iter_q
 add wave -position insertpoint -expand -group QUO_REG sim:/tb_top/u_dut/quo_m1_iter_q
 
 add wave -position insertpoint -expand -group PRE sim:/tb_top/u_dut/early_finish
+add wave -position insertpoint -expand -group PRE sim:/tb_top/u_dut/need_2_cycle_init
 add wave -position insertpoint -expand -group PRE sim:/tb_top/u_dut/out_sign_q
 add wave -position insertpoint -expand -group PRE sim:/tb_top/u_dut/res_is_nan_q
 add wave -position insertpoint -expand -group PRE sim:/tb_top/u_dut/res_is_inf_q
 add wave -position insertpoint -expand -group PRE sim:/tb_top/u_dut/res_is_exact_zero_q
+add wave -position insertpoint -expand -group PRE sim:/tb_top/u_dut/opb_is_power_of_2
 add wave -position insertpoint -expand -group PRE sim:/tb_top/u_dut/opb_is_power_of_2_q
 add wave -position insertpoint -expand -group PRE sim:/tb_top/u_dut/op_invalid_div_q
 add wave -position insertpoint -expand -group PRE sim:/tb_top/u_dut/divided_by_zero_q
@@ -48,6 +51,16 @@ add wave -position insertpoint -expand -group PRE sim:/tb_top/u_dut/opa_exp_bias
 add wave -position insertpoint -expand -group PRE sim:/tb_top/u_dut/opb_exp_biased
 add wave -position insertpoint -expand -group PRE sim:/tb_top/u_dut/out_exp_diff_q
 
+# used when FAST_INIT = 1
+add wave -position insertpoint -expand -group PRE sim:/tb_top/u_dut/opa_frac_pre_shifted_fp32_fp16
+add wave -position insertpoint -expand -group PRE sim:/tb_top/u_dut/opb_frac_pre_shifted_fp32_fp16
+add wave -position insertpoint -expand -group PRE sim:/tb_top/u_dut/opa_l_shift_num_pre_fp32_fp16
+add wave -position insertpoint -expand -group PRE sim:/tb_top/u_dut/opb_l_shift_num_pre_fp32_fp16
+add wave -position insertpoint -expand -group PRE sim:/tb_top/u_dut/opa_frac_is_zero_fp32_fp16
+add wave -position insertpoint -expand -group PRE sim:/tb_top/u_dut/opb_frac_is_zero_fp32_fp16
+add wave -position insertpoint -expand -group PRE sim:/tb_top/u_dut/opa_frac_l_shifted_fp32_fp16
+add wave -position insertpoint -expand -group PRE sim:/tb_top/u_dut/opb_frac_l_shifted_fp32_fp16
+
 
 add wave -position insertpoint -expand -group PRE sim:/tb_top/u_dut/opa_frac_pre_shifted
 add wave -position insertpoint -expand -group PRE sim:/tb_top/u_dut/opb_frac_pre_shifted
@@ -57,7 +70,6 @@ add wave -position insertpoint -expand -group PRE sim:/tb_top/u_dut/opa_frac_is_
 add wave -position insertpoint -expand -group PRE sim:/tb_top/u_dut/opb_frac_is_zero
 add wave -position insertpoint -expand -group PRE sim:/tb_top/u_dut/opa_frac_l_shifted
 add wave -position insertpoint -expand -group PRE sim:/tb_top/u_dut/opb_frac_l_shifted
-
 
 
 add wave -position insertpoint -expand -group POST sim:/tb_top/u_dut/nr_frac_rem

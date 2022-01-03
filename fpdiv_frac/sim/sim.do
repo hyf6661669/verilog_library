@@ -10,19 +10,17 @@ vlib ./lib/work
 
 vmap work ./lib/work
 
-set RAND_SEED 98
-set TEST_LEVEL 1
-set MAX_ERROR_COUNT 10
+set RAND_SEED 55
+set MAX_ERROR_COUNT 50
 
 # Add this definition to chech error
 #+TEST_SPECIAL_POINT
 
 vlog -work work -incr \
-+define+RAND_SEED=$RAND_SEED+TEST_LEVEL=$TEST_LEVEL+MAX_ERROR_COUNT=$MAX_ERROR_COUNT \
++define+RAND_SEED=$RAND_SEED+MAX_ERROR_COUNT=$MAX_ERROR_COUNT \
 -f ../tb/tb.lst +define+
 
 vsim \
--sv_lib ../cmodel/lib/softfloat -sv_lib ../cmodel/lib/testfloat_gencases -sv_lib ../cmodel/lib/cmodel \
 -c -l ./log/tb_top.log -wlf ./wave/tb_top.wlf -voptargs=+acc -sv_seed $RAND_SEED work.tb_top
 
 
@@ -33,6 +31,7 @@ configure wave -timelineunits ns
 
 # Display waves ??
 #do wave.do
+#do wave_v3.do
 
 run -all
 

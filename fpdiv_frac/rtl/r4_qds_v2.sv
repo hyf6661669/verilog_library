@@ -1,12 +1,14 @@
 // ========================================================================================================
-// File Name			: r4_qds_v1.sv
+// File Name			: r4_qds_v2.sv
 // Author				: HYF
 // How to Contact		: hyf_sysu@qq.com
-// Created Time    		: 2021-12-29 20:40:04
-// Last Modified Time   : 2021-12-30 09:19:15
+// Created Time    		: 2021-12-30 21:03:03
+// Last Modified Time   : 2022-01-01 21:28:08
 // ========================================================================================================
 // Description	:
-// Table II (b) in the reference paper.
+// Modified based on the Table II (a) in the reference paper.
+// In the original implementation, there is a "+1" operation applied to the rem.
+// Here we coud just apply the "-1" operation to the parameters, and it should give better results.
 // ========================================================================================================
 // ========================================================================================================
 // Copyright (C) 2021, HYF. All Rights Reserved.
@@ -40,17 +42,33 @@
 
 // include some definitions here
 
-module r4_qds_v1 #(
+module r4_qds_v2 #(
 	// Put some parameters here, which can be changed by other modules.
+
+	// You should try which config could lead to best PPA.
+	// 0: Native expression
+	// 1: Comparator based
+	// 2: Adder based
+	parameter QDS_ARCH = 0
 )(
 	input  logic [6-1:0] rem_i,
-	input  logic carry_i,
 	output logic [5-1:0] quo_dig_o
 );
 
 // ================================================================================================================================================
 // (local) parameters begin
 
+localparam [6-1:0] M_POS_2 = 6'd12;
+localparam [6-1:0] M_POS_1 = 6'd3;
+// -4 = 11_1100
+// -13 = 11_0011
+localparam [6-1:0] M_NEG_0 = -(6'd4);
+localparam [6-1:0] M_NEG_1 = -(6'd13);
+
+localparam [6-1:0] M_POS_2_NEGATED = -(6'd12);
+localparam [6-1:0] M_POS_1_NEGATED = -(6'd3);
+localparam [6-1:0] M_NEG_0_NEGATED = 6'd4;
+localparam [6-1:0] M_NEG_1_NEGATED = 6'd13;
 
 // (local) parameters end
 // ================================================================================================================================================
@@ -58,33 +76,64 @@ module r4_qds_v1 #(
 // ================================================================================================================================================
 // signals begin
 
+logic [4-1:0] qds_sign;
+logic [5-1:0] unused_bit [4-1:0];
+logic rem_ge_m_pos_2;
+logic rem_ge_m_pos_1;
+logic rem_ge_m_neg_0;
+logic rem_ge_m_neg_1;
 
 // signals end
 // ================================================================================================================================================
 
-assign quo_dig_o[4] = 
-  (($signed(rem_i) == -13) & carry_i)
-| ($signed(rem_i) <= -14)
-| (($signed(rem_i) == 31) & ~carry_i);
+// The SEL logic is:
+// rem >= m[+2]			: quo = +2
+// m[+1] <= rem < m[+2]	: quo = +1
+// m[-0] <= rem < m[+1]	: quo = -0
+// m[-1] <= rem < m[-0]	: quo = -1
+// rem < m[-1]			: quo = -2
 
-assign quo_dig_o[3] = 
-  (($signed(rem_i) == -4) & carry_i)
-| (($signed(rem_i) <= -5) & ($signed(rem_i) >= -12))
-| (($signed(rem_i) == -13) & ~carry_i);
+generate
+if(QDS_ARCH == 0) begin
 
-assign quo_dig_o[2] = 
-  (($signed(rem_i) == 3) & carry_i)
-| (($signed(rem_i) <= 2) & ($signed(rem_i) >= -3))
-| (($signed(rem_i) == -4) & ~carry_i);
+	// Native implementation, if you believe the EDA could optimize them well...
+	assign quo_dig_o[4] = ($signed(rem_i) <= -14);
+	assign quo_dig_o[3] = ($signed(rem_i) >= -13) & ($signed(rem_i) <= -5);
+	assign quo_dig_o[2] = ($signed(rem_i) >=  -4) & ($signed(rem_i) <=  2);
+	assign quo_dig_o[1] = ($signed(rem_i) >=   3) & ($signed(rem_i) <= 11);
+	assign quo_dig_o[0] = ($signed(rem_i) >=  12);
 
-assign quo_dig_o[1] = 
-  (($signed(rem_i) == 12) & carry_i)
-| (($signed(rem_i) <= 11) & ($signed(rem_i) >= 4))
-| (($signed(rem_i) == 3) & ~carry_i);
+end else if(QDS_ARCH == 1) begin
 
-assign quo_dig_o[0] = 
-  (($signed(rem_i) == 31) & carry_i)
-| (($signed(rem_i) <= 30) & ($signed(rem_i) >= 13))
-| (($signed(rem_i) == 12) & ~carry_i);
+	assign rem_ge_m_pos_2 = ($signed(rem_i) >= $signed(M_POS_2));
+	assign rem_ge_m_pos_1 = ($signed(rem_i) >= $signed(M_POS_1));
+	assign rem_ge_m_neg_0 = ($signed(rem_i) >= $signed(M_NEG_0));
+	assign rem_ge_m_neg_1 = ($signed(rem_i) >= $signed(M_NEG_1));
+
+	assign quo_dig_o[4] = ~rem_ge_m_neg_1;
+	assign quo_dig_o[3] =  rem_ge_m_neg_1 & ~rem_ge_m_neg_0;
+	assign quo_dig_o[2] =  rem_ge_m_neg_0 & ~rem_ge_m_pos_1;
+	assign quo_dig_o[1] =  rem_ge_m_pos_1 & ~rem_ge_m_pos_2;
+	assign quo_dig_o[0] =  rem_ge_m_pos_2;
+
+end else begin
+
+	assign {qds_sign[3], unused_bit[3]} = rem_i + M_POS_2_NEGATED;
+	assign {qds_sign[2], unused_bit[2]} = rem_i + M_POS_1_NEGATED;
+	assign {qds_sign[1], unused_bit[1]} = rem_i + M_NEG_0_NEGATED;
+	assign {qds_sign[0], unused_bit[0]} = rem_i + M_NEG_1_NEGATED;
+
+	// assign quo_dig_o[4] = (qds_sign[0]   == 1'b1);
+	assign quo_dig_o[4] = (qds_sign[1:0] == 2'b11);
+	assign quo_dig_o[3] = (qds_sign[1:0] == 2'b10);
+	assign quo_dig_o[2] = (qds_sign[2:1] == 2'b10);
+	assign quo_dig_o[1] = (qds_sign[3:2] == 2'b10);
+	// assign quo_dig_o[0] = (qds_sign[3]   == 1'b0);
+	assign quo_dig_o[0] = (qds_sign[3:2] == 2'b00);
+	
+end
+endgenerate
+
+
 
 endmodule

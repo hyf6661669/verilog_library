@@ -1,12 +1,13 @@
 // ========================================================================================================
-// File Name			: fpdiv_frac.sv
+// File Name			: fpdiv_frac_v2.sv
 // Author				: HYF
 // How to Contact		: hyf_sysu@qq.com
-// Created Time    		: 2021-12-29 16:42:38
-// Last Modified Time   : 2021-12-30 20:23:54
+// Created Time    		: 2021-12-30 20:17:37
+// Last Modified Time   : 2021-12-30 21:26:44
 // ========================================================================================================
 // Description	:
 // Radix-64 SRT algorithm for the frac part of fpdiv.
+// Here we use a faster implementation with larger area.
 // ========================================================================================================
 // ========================================================================================================
 // Copyright (C) 2021, HYF. All Rights Reserved.
@@ -40,7 +41,7 @@
 
 // include some definitions here
 
-module fpdiv_frac #(
+module fpdiv_frac_v2 #(
 	// Put some parameters here, which can be changed by other modules
 )(
 	input  logic start_valid_i,
@@ -176,13 +177,15 @@ logic [5-1:0] quo_dig [3-1:0];
 logic [54-1:0] nxt_pos_quo [3-1:0];
 logic [54-1:0] nxt_neg_quo [3-1:0];
 
-logic [6-1:0] adder_6b;
-logic [9-1:0] adder_9b_sepc [5-1:0];
-logic [4-1:0] adder_9b_carry_sepc [5-1:0];
-logic [9-1:0] adder_9b;
-logic [9-1:0] adder_9b_carry;
-logic [7-1:0] adder_7b_spec [5-1:0];
-logic [7-1:0] adder_7b;
+logic [6-1:0] adder_6b_s0;
+logic [6-1:0] adder_6b_s1;
+logic [6-1:0] adder_6b_s1_spec [5-1:0];
+
+logic [7-1:0] adder_7b_s1;
+logic [7-1:0] adder_7b_s1_spec [5-1:0];
+
+logic [7-1:0] adder_7b_s2;
+logic [7-1:0] adder_7b_s2_spec [5-1:0];
 
 logic [REM_W-1:0] nr_frac_rem;
 logic [REM_W-1:0] nr_frac_rem_plus_d;
@@ -364,11 +367,12 @@ assign nxt_frac_rem_carry_spec_s0[0] = {
 };
 
 // QDS
-// assign adder_6b = frac_rem_sum_q[(REM_W-1-2) -: 6] + frac_rem_carry_q[(REM_W-1-2) -: 6];
-assign adder_6b = frac_rem_sum_q[(REM_W-1-2) -: 6] + frac_rem_carry_q[(REM_W-1-2) -: 6] + 6'd1;
-r4_qds_v0
+// assign adder_6b_s0 = frac_rem_sum_q[(REM_W-1-2) -: 6] + frac_rem_carry_q[(REM_W-1-2) -: 6] + 6'd1;
+assign adder_6b_s0 = frac_rem_sum_q[(REM_W-1-2) -: 6] + frac_rem_carry_q[(REM_W-1-2) -: 6];
+// r4_qds_v0
+r4_qds_v2
 u_r4_qds_s0 (
-	.rem_i(adder_6b),
+	.rem_i(adder_6b_s0),
 	.quo_dig_o(quo_dig[0])
 );
 assign nxt_pos_quo[0] = {pos_quo_iter_q[51:0], quo_dig[0][0], quo_dig[0][1]};
@@ -387,43 +391,45 @@ assign nxt_frac_rem_carry[0] =
 | ({(REM_W){quo_dig[0][1]}} & nxt_frac_rem_carry_spec_s0[1])
 | ({(REM_W){quo_dig[0][0]}} & nxt_frac_rem_carry_spec_s0[0]);
 
-// assign adder_9b_sepc[4] = nxt_frac_rem_sum_spec_s0[4][(REM_W-1-2) -: 9] + nxt_frac_rem_carry_spec_s0[4][(REM_W-1-2) -: 9];
-// assign adder_9b_sepc[3] = nxt_frac_rem_sum_spec_s0[3][(REM_W-1-2) -: 9] + nxt_frac_rem_carry_spec_s0[3][(REM_W-1-2) -: 9];
-// assign adder_9b_sepc[2] = nxt_frac_rem_sum_spec_s0[2][(REM_W-1-2) -: 9] + nxt_frac_rem_carry_spec_s0[2][(REM_W-1-2) -: 9];
-// assign adder_9b_sepc[1] = nxt_frac_rem_sum_spec_s0[1][(REM_W-1-2) -: 9] + nxt_frac_rem_carry_spec_s0[1][(REM_W-1-2) -: 9];
-// assign adder_9b_sepc[0] = nxt_frac_rem_sum_spec_s0[0][(REM_W-1-2) -: 9] + nxt_frac_rem_carry_spec_s0[0][(REM_W-1-2) -: 9];
 
-// assign adder_9b_carry_sepc[4] = {1'b0, nxt_frac_rem_sum_spec_s0[4][(REM_W-1-2-6) -: 3]} + {1'b0, nxt_frac_rem_carry_spec_s0[4][(REM_W-1-2-6) -: 3]};
-// assign adder_9b_carry_sepc[3] = {1'b0, nxt_frac_rem_sum_spec_s0[3][(REM_W-1-2-6) -: 3]} + {1'b0, nxt_frac_rem_carry_spec_s0[3][(REM_W-1-2-6) -: 3]};
-// assign adder_9b_carry_sepc[2] = {1'b0, nxt_frac_rem_sum_spec_s0[2][(REM_W-1-2-6) -: 3]} + {1'b0, nxt_frac_rem_carry_spec_s0[2][(REM_W-1-2-6) -: 3]};
-// assign adder_9b_carry_sepc[1] = {1'b0, nxt_frac_rem_sum_spec_s0[1][(REM_W-1-2-6) -: 3]} + {1'b0, nxt_frac_rem_carry_spec_s0[1][(REM_W-1-2-6) -: 3]};
-// assign adder_9b_carry_sepc[0] = {1'b0, nxt_frac_rem_sum_spec_s0[0][(REM_W-1-2-6) -: 3]} + {1'b0, nxt_frac_rem_carry_spec_s0[0][(REM_W-1-2-6) -: 3]};
+// assign adder_6b_s1_spec[4] = nxt_frac_rem_sum_spec_s0[4][(REM_W-1-2) -: 6] + nxt_frac_rem_carry_spec_s0[4][(REM_W-1-2) -: 6] + 6'd1;
+// assign adder_6b_s1_spec[3] = nxt_frac_rem_sum_spec_s0[3][(REM_W-1-2) -: 6] + nxt_frac_rem_carry_spec_s0[3][(REM_W-1-2) -: 6] + 6'd1;
+// assign adder_6b_s1_spec[2] = nxt_frac_rem_sum_spec_s0[2][(REM_W-1-2) -: 6] + nxt_frac_rem_carry_spec_s0[2][(REM_W-1-2) -: 6] + 6'd1;
+// assign adder_6b_s1_spec[1] = nxt_frac_rem_sum_spec_s0[1][(REM_W-1-2) -: 6] + nxt_frac_rem_carry_spec_s0[1][(REM_W-1-2) -: 6] + 6'd1;
+// assign adder_6b_s1_spec[0] = nxt_frac_rem_sum_spec_s0[0][(REM_W-1-2) -: 6] + nxt_frac_rem_carry_spec_s0[0][(REM_W-1-2) -: 6] + 6'd1;
 
-assign adder_9b_sepc[4] = nxt_frac_rem_sum_spec_s0[4][(REM_W-1-2) -: 9] + nxt_frac_rem_carry_spec_s0[4][(REM_W-1-2) -: 9] + 9'd1;
-assign adder_9b_sepc[3] = nxt_frac_rem_sum_spec_s0[3][(REM_W-1-2) -: 9] + nxt_frac_rem_carry_spec_s0[3][(REM_W-1-2) -: 9] + 9'd1;
-assign adder_9b_sepc[2] = nxt_frac_rem_sum_spec_s0[2][(REM_W-1-2) -: 9] + nxt_frac_rem_carry_spec_s0[2][(REM_W-1-2) -: 9] + 9'd1;
-assign adder_9b_sepc[1] = nxt_frac_rem_sum_spec_s0[1][(REM_W-1-2) -: 9] + nxt_frac_rem_carry_spec_s0[1][(REM_W-1-2) -: 9] + 9'd1;
-assign adder_9b_sepc[0] = nxt_frac_rem_sum_spec_s0[0][(REM_W-1-2) -: 9] + nxt_frac_rem_carry_spec_s0[0][(REM_W-1-2) -: 9] + 9'd1;
+assign adder_6b_s1_spec[4] = nxt_frac_rem_sum_spec_s0[4][(REM_W-1-2) -: 6] + nxt_frac_rem_carry_spec_s0[4][(REM_W-1-2) -: 6];
+assign adder_6b_s1_spec[3] = nxt_frac_rem_sum_spec_s0[3][(REM_W-1-2) -: 6] + nxt_frac_rem_carry_spec_s0[3][(REM_W-1-2) -: 6];
+assign adder_6b_s1_spec[2] = nxt_frac_rem_sum_spec_s0[2][(REM_W-1-2) -: 6] + nxt_frac_rem_carry_spec_s0[2][(REM_W-1-2) -: 6];
+assign adder_6b_s1_spec[1] = nxt_frac_rem_sum_spec_s0[1][(REM_W-1-2) -: 6] + nxt_frac_rem_carry_spec_s0[1][(REM_W-1-2) -: 6];
+assign adder_6b_s1_spec[0] = nxt_frac_rem_sum_spec_s0[0][(REM_W-1-2) -: 6] + nxt_frac_rem_carry_spec_s0[0][(REM_W-1-2) -: 6];
 
-assign adder_9b_carry_sepc[4] = {1'b0, nxt_frac_rem_sum_spec_s0[4][(REM_W-1-2-6) -: 3]} + {1'b0, nxt_frac_rem_carry_spec_s0[4][(REM_W-1-2-6) -: 3]} + 4'd1;
-assign adder_9b_carry_sepc[3] = {1'b0, nxt_frac_rem_sum_spec_s0[3][(REM_W-1-2-6) -: 3]} + {1'b0, nxt_frac_rem_carry_spec_s0[3][(REM_W-1-2-6) -: 3]} + 4'd1;
-assign adder_9b_carry_sepc[2] = {1'b0, nxt_frac_rem_sum_spec_s0[2][(REM_W-1-2-6) -: 3]} + {1'b0, nxt_frac_rem_carry_spec_s0[2][(REM_W-1-2-6) -: 3]} + 4'd1;
-assign adder_9b_carry_sepc[1] = {1'b0, nxt_frac_rem_sum_spec_s0[1][(REM_W-1-2-6) -: 3]} + {1'b0, nxt_frac_rem_carry_spec_s0[1][(REM_W-1-2-6) -: 3]} + 4'd1;
-assign adder_9b_carry_sepc[0] = {1'b0, nxt_frac_rem_sum_spec_s0[0][(REM_W-1-2-6) -: 3]} + {1'b0, nxt_frac_rem_carry_spec_s0[0][(REM_W-1-2-6) -: 3]} + 4'd1;
+assign adder_6b_s1 = 
+  ({(6){quo_dig[0][4]}} & adder_6b_s1_spec[4])
+| ({(6){quo_dig[0][3]}} & adder_6b_s1_spec[3])
+| ({(6){quo_dig[0][2]}} & adder_6b_s1_spec[2])
+| ({(6){quo_dig[0][1]}} & adder_6b_s1_spec[1])
+| ({(6){quo_dig[0][0]}} & adder_6b_s1_spec[0]);
 
-assign adder_9b = 
-  ({(9){quo_dig[0][4]}} & adder_9b_sepc[4])
-| ({(9){quo_dig[0][3]}} & adder_9b_sepc[3])
-| ({(9){quo_dig[0][2]}} & adder_9b_sepc[2])
-| ({(9){quo_dig[0][1]}} & adder_9b_sepc[1])
-| ({(9){quo_dig[0][0]}} & adder_9b_sepc[0]);
-assign adder_9b_carry = 
-  ({(1){quo_dig[0][4]}} & adder_9b_carry_sepc[4][3])
-| ({(1){quo_dig[0][3]}} & adder_9b_carry_sepc[3][3])
-| ({(1){quo_dig[0][2]}} & adder_9b_carry_sepc[2][3])
-| ({(1){quo_dig[0][1]}} & adder_9b_carry_sepc[1][3])
-| ({(1){quo_dig[0][0]}} & adder_9b_carry_sepc[0][3]);
 
+// assign adder_7b_s1_spec[4] = nxt_frac_rem_sum_spec_s0[4][(REM_W-1-4) -: 7] + nxt_frac_rem_carry_spec_s0[4][(REM_W-1-4) -: 7] + 7'd1;
+// assign adder_7b_s1_spec[3] = nxt_frac_rem_sum_spec_s0[3][(REM_W-1-4) -: 7] + nxt_frac_rem_carry_spec_s0[3][(REM_W-1-4) -: 7] + 7'd1;
+// assign adder_7b_s1_spec[2] = nxt_frac_rem_sum_spec_s0[2][(REM_W-1-4) -: 7] + nxt_frac_rem_carry_spec_s0[2][(REM_W-1-4) -: 7] + 7'd1;
+// assign adder_7b_s1_spec[1] = nxt_frac_rem_sum_spec_s0[1][(REM_W-1-4) -: 7] + nxt_frac_rem_carry_spec_s0[1][(REM_W-1-4) -: 7] + 7'd1;
+// assign adder_7b_s1_spec[0] = nxt_frac_rem_sum_spec_s0[0][(REM_W-1-4) -: 7] + nxt_frac_rem_carry_spec_s0[0][(REM_W-1-4) -: 7] + 7'd1;
+
+assign adder_7b_s1_spec[4] = nxt_frac_rem_sum_spec_s0[4][(REM_W-1-4) -: 7] + nxt_frac_rem_carry_spec_s0[4][(REM_W-1-4) -: 7];
+assign adder_7b_s1_spec[3] = nxt_frac_rem_sum_spec_s0[3][(REM_W-1-4) -: 7] + nxt_frac_rem_carry_spec_s0[3][(REM_W-1-4) -: 7];
+assign adder_7b_s1_spec[2] = nxt_frac_rem_sum_spec_s0[2][(REM_W-1-4) -: 7] + nxt_frac_rem_carry_spec_s0[2][(REM_W-1-4) -: 7];
+assign adder_7b_s1_spec[1] = nxt_frac_rem_sum_spec_s0[1][(REM_W-1-4) -: 7] + nxt_frac_rem_carry_spec_s0[1][(REM_W-1-4) -: 7];
+assign adder_7b_s1_spec[0] = nxt_frac_rem_sum_spec_s0[0][(REM_W-1-4) -: 7] + nxt_frac_rem_carry_spec_s0[0][(REM_W-1-4) -: 7];
+
+assign adder_7b_s1 = 
+  ({(7){quo_dig[0][4]}} & adder_7b_s1_spec[4])
+| ({(7){quo_dig[0][3]}} & adder_7b_s1_spec[3])
+| ({(7){quo_dig[0][2]}} & adder_7b_s1_spec[2])
+| ({(7){quo_dig[0][1]}} & adder_7b_s1_spec[1])
+| ({(7){quo_dig[0][0]}} & adder_7b_s1_spec[0]);
 
 // stage[1]
 assign nxt_frac_rem_sum_spec_s1[4] = 
@@ -474,10 +480,10 @@ assign nxt_frac_rem_carry_spec_s1[0] = {
 };
 
 // QDS
-r4_qds_v1
+// r4_qds_v0
+r4_qds_v2
 u_r4_qds_s1 (
-	.rem_i(adder_9b[8:3]),
-	.carry_i(adder_9b_carry),
+	.rem_i(adder_6b_s1),
 	.quo_dig_o(quo_dig[1])
 );
 assign nxt_pos_quo[1] = {nxt_pos_quo[0][51:0], quo_dig[1][0], quo_dig[1][1]};
@@ -496,24 +502,24 @@ assign nxt_frac_rem_carry[1] =
 | ({(REM_W){quo_dig[1][1]}} & nxt_frac_rem_carry_spec_s1[1])
 | ({(REM_W){quo_dig[1][0]}} & nxt_frac_rem_carry_spec_s1[0]);
 
-// assign adder_7b_spec[4] = adder_9b[6:0] + divisor_mul_pos_2[(REM_W-1-2) -: 7];
-// assign adder_7b_spec[3] = adder_9b[6:0] + divisor_mul_pos_1[(REM_W-1-2) -: 7];
-// assign adder_7b_spec[2] = adder_9b[6:0];
-// assign adder_7b_spec[1] = adder_9b[6:0] + divisor_mul_neg_1[(REM_W-1-2) -: 7];
-// assign adder_7b_spec[0] = adder_9b[6:0] + divisor_mul_neg_2[(REM_W-1-2) -: 7];
+// assign adder_7b_s2_spec[4] = adder_7b_s1[6:0] + divisor_mul_pos_2[(REM_W-1-2) -: 7] + 7'd1;
+// assign adder_7b_s2_spec[3] = adder_7b_s1[6:0] + divisor_mul_pos_1[(REM_W-1-2) -: 7] + 7'd1;
+// assign adder_7b_s2_spec[2] = adder_7b_s1[6:0] + 7'd1;
+// assign adder_7b_s2_spec[1] = adder_7b_s1[6:0] + divisor_mul_neg_1[(REM_W-1-2) -: 7] + 7'd1;
+// assign adder_7b_s2_spec[0] = adder_7b_s1[6:0] + divisor_mul_neg_2[(REM_W-1-2) -: 7] + 7'd1;
 
-assign adder_7b_spec[4] = adder_9b[6:0] + divisor_mul_pos_2[(REM_W-1-2) -: 7] + 7'd1;
-assign adder_7b_spec[3] = adder_9b[6:0] + divisor_mul_pos_1[(REM_W-1-2) -: 7] + 7'd1;
-assign adder_7b_spec[2] = adder_9b[6:0] + 7'd1;
-assign adder_7b_spec[1] = adder_9b[6:0] + divisor_mul_neg_1[(REM_W-1-2) -: 7] + 7'd1;
-assign adder_7b_spec[0] = adder_9b[6:0] + divisor_mul_neg_2[(REM_W-1-2) -: 7] + 7'd1;
+assign adder_7b_s2_spec[4] = adder_7b_s1[6:0] + divisor_mul_pos_2[(REM_W-1-2) -: 7];
+assign adder_7b_s2_spec[3] = adder_7b_s1[6:0] + divisor_mul_pos_1[(REM_W-1-2) -: 7];
+assign adder_7b_s2_spec[2] = adder_7b_s1[6:0];
+assign adder_7b_s2_spec[1] = adder_7b_s1[6:0] + divisor_mul_neg_1[(REM_W-1-2) -: 7];
+assign adder_7b_s2_spec[0] = adder_7b_s1[6:0] + divisor_mul_neg_2[(REM_W-1-2) -: 7];
 
-assign adder_7b = 
-  ({(7){quo_dig[1][4]}} & adder_7b_spec[4])
-| ({(7){quo_dig[1][3]}} & adder_7b_spec[3])
-| ({(7){quo_dig[1][2]}} & adder_7b_spec[2])
-| ({(7){quo_dig[1][1]}} & adder_7b_spec[1])
-| ({(7){quo_dig[1][0]}} & adder_7b_spec[0]);
+assign adder_7b_s2 = 
+  ({(7){quo_dig[1][4]}} & adder_7b_s2_spec[4])
+| ({(7){quo_dig[1][3]}} & adder_7b_s2_spec[3])
+| ({(7){quo_dig[1][2]}} & adder_7b_s2_spec[2])
+| ({(7){quo_dig[1][1]}} & adder_7b_s2_spec[1])
+| ({(7){quo_dig[1][0]}} & adder_7b_s2_spec[0]);
 
 
 // stage[2]
@@ -565,9 +571,10 @@ assign nxt_frac_rem_carry_spec_s2[0] = {
 };
 
 // QDS
-r4_qds_v0
+// r4_qds_v0
+r4_qds_v2
 u_r4_qds_s2 (
-	.rem_i(adder_7b[6:1]),
+	.rem_i(adder_7b_s2[6:1]),
 	.quo_dig_o(quo_dig[2])
 );
 assign nxt_pos_quo[2] = {nxt_pos_quo[1][51:0], quo_dig[2][0], quo_dig[2][1]};

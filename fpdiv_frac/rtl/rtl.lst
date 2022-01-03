@@ -1,6 +1,10 @@
 +incdir+../rtl
 
-../rtl/fpdiv_scalar.sv
+../rtl/fpdiv_frac.sv
+../rtl/fpdiv_frac_v2.sv
+../rtl/fpdiv_frac_v3.sv
 ../rtl/r4_qds_v0.sv
 ../rtl/r4_qds_v1.sv
+../rtl/r4_qds_v2.sv
+../rtl/r4_qds_v2_with_speculation.sv
 ../rtl/lzc.sv

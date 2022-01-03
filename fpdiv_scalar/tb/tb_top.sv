@@ -3,7 +3,7 @@
 // Author				: HYF
 // How to Contact		: hyf_sysu@qq.com
 // Created Time    		: 2021-07-23 10:08:49
-// Last Modified Time   : 2021-12-23 17:13:58
+// Last Modified Time   : 2022-01-03 09:23:04
 // ========================================================================================================
 // Description	:
 // TB for FPDIV.
@@ -73,9 +73,9 @@ module tb_top #(
 // ==================================================================================================================================================
 
 
-localparam FP64_RANDOM_NUM = 2 ** 0;
-localparam FP32_RANDOM_NUM = 2 ** 0;
-localparam FP16_RANDOM_NUM = 2 ** 23;
+localparam FP64_RANDOM_NUM = 2 ** 18;
+localparam FP32_RANDOM_NUM = 2 ** 18;
+localparam FP16_RANDOM_NUM = 2 ** 18;
 
 typedef bit [31:0][2] bit_to_array;
 
@@ -273,6 +273,8 @@ end
 // ================================================================================================================================================
 // Instantiate DUT here.
 
+`ifndef FAST_INIT
+
 fpdiv_scalar
 u_dut (
 	.start_valid_i(dut_start_valid),
@@ -291,6 +293,30 @@ u_dut (
 	.clk(clk),
 	.rst_n(rst_n)
 );
+
+`else
+
+fpdiv_scalar_fast_init # (
+	.FAST_INIT(1)
+) u_dut (
+	.start_valid_i(dut_start_valid),
+	.start_ready_o(dut_start_ready),
+	.flush_i(1'b0),
+	.fp_format_i(fp_format),
+	.opa_i(fpdiv_opa),
+	.opb_i(fpdiv_opb),
+	.rm_i(fpdiv_rm),
+
+	.finish_valid_o(dut_finish_valid),
+	.finish_ready_i(dut_finish_ready),
+	.fpdiv_res_o(dut_fpdiv_res),
+	.fflags_o(dut_fpdiv_fflags),
+
+	.clk(clk),
+	.rst_n(rst_n)
+);
+
+`endif
 
 // ================================================================================================================================================
 // Simulate valid-ready signals of dut
