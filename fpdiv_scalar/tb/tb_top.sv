@@ -3,7 +3,7 @@
 // Author				: HYF
 // How to Contact		: hyf_sysu@qq.com
 // Created Time    		: 2021-07-23 10:08:49
-// Last Modified Time   : 2022-01-03 09:23:04
+// Last Modified Time   : 2022-01-06 07:50:28
 // ========================================================================================================
 // Description	:
 // TB for FPDIV.
@@ -72,10 +72,19 @@ module tb_top #(
 // (local) params
 // ==================================================================================================================================================
 
+`ifndef FP64_TEST_NUM
+	`define FP64_TEST_NUM 2 ** 15
+`endif
+`ifndef FP32_TEST_NUM
+	`define FP32_TEST_NUM 2 ** 15
+`endif
+`ifndef FP16_TEST_NUM
+	`define FP16_TEST_NUM 2 ** 15
+`endif
 
-localparam FP64_RANDOM_NUM = 2 ** 18;
-localparam FP32_RANDOM_NUM = 2 ** 18;
-localparam FP16_RANDOM_NUM = 2 ** 18;
+localparam FP64_RANDOM_NUM = `FP64_TEST_NUM;
+localparam FP32_RANDOM_NUM = `FP32_TEST_NUM;
+localparam FP16_RANDOM_NUM = `FP16_TEST_NUM;
 
 typedef bit [31:0][2] bit_to_array;
 
@@ -91,7 +100,8 @@ localparam RM_RMM = 3'b100;
 // ==================================================================================================================================================
 
 import "DPI-C" function void cmodel_check_result(
-	input  bit [31:0] error_count,
+	input  bit [31:0] acq_count,
+	input  bit [31:0] err_count,
 	input  bit [31:0] opa_hi,
 	input  bit [31:0] opa_lo,
 	input  bit [31:0] opb_hi,
@@ -103,7 +113,7 @@ import "DPI-C" function void cmodel_check_result(
 	input  bit [31:0] dut_fflags,
 	output bit [31:0] compare_ok
 );
-import "DPI-C" function void print_error(input bit [31:0] error_count);
+import "DPI-C" function void print_error(input bit [31:0] err_count);
 import "DPI-C" function void gencases_init(input bit [31:0] seed, input bit [31:0] level);
 import "DPI-C" function void gencases_for_f16(output bit [15:0] fp16_opa, output bit [15:0] fp16_opb);
 import "DPI-C" function void gencases_for_f32(output bit [31:0] fp32_opa, output bit [31:0] fp32_opb);
@@ -215,7 +225,8 @@ initial begin
 			break;
 
 		cmodel_check_result(
-			.error_count(err_count),
+			.acq_count(acq_count),
+			.err_count(err_count),
 			.opa_hi(fpdiv_opa[63:32]),
 			.opa_lo(fpdiv_opa[31: 0]),
 			.opb_hi(fpdiv_opb[63:32]),
@@ -227,6 +238,8 @@ initial begin
 			.dut_fflags(dut_fpdiv_fflags),
 			.compare_ok(compare_ok)
 		);
+
+		acq_count++;
 		
 		if((compare_ok == 0) | (compare_ok == 1'bX)) begin
 			// $display("ERROR FOUND:");
@@ -246,7 +259,7 @@ initial begin
 			$stop();
 		end
 
-		acq_count++;
+		
 		`RESP_WAIT_SIG(clk, dut_finish_ready, stim_end)
 		dut_finish_ready = 0;
 

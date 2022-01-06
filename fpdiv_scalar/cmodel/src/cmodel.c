@@ -8,6 +8,7 @@
 
 #define MAX_ERR_COUNT 10
 
+uint32_t recorded_stim_idx[MAX_ERR_COUNT];
 uint64_t recorded_opa[MAX_ERR_COUNT];
 uint64_t recorded_opb[MAX_ERR_COUNT];
 uint32_t recorded_fp_format[MAX_ERR_COUNT];
@@ -36,7 +37,8 @@ const uint64_t fp64_min_neg_normal = 0x8010000000000000;
 // Function Declarations
 // ================================================================================================================================================
 void cmodel_check_result(
-	const svBitVecVal *error_count,
+	const svBitVecVal *acq_count,
+	const svBitVecVal *err_count,
 	const svBitVecVal *opa_hi,
 	const svBitVecVal *opa_lo,
 	const svBitVecVal *opb_hi,
@@ -52,7 +54,7 @@ void gencases_init(const svBitVecVal *seed, const svBitVecVal *level);
 void gencases_for_f16(svBitVecVal *opa, svBitVecVal *opb);
 void gencases_for_f32(svBitVecVal *opa, svBitVecVal *opb);
 void gencases_for_f64(svBitVecVal *opa_hi, svBitVecVal *opa_lo, svBitVecVal *opb_hi, svBitVecVal *opb_lo);
-void print_error(const svBitVecVal *error_count);
+void print_error(const svBitVecVal *err_count);
 uint32_t fp16_is_nan(const uint16_t x);
 uint32_t fp32_is_nan(const uint32_t x);
 uint32_t fp64_is_nan(const uint64_t x);
@@ -62,7 +64,8 @@ uint32_t fp64_is_nan(const uint64_t x);
 // Function Implementations
 // ================================================================================================================================================
 void cmodel_check_result(
-	const svBitVecVal *error_count,
+	const svBitVecVal *acq_count,
+	const svBitVecVal *err_count,
 	const svBitVecVal *opa_hi,
 	const svBitVecVal *opa_lo,
 	const svBitVecVal *opb_hi,
@@ -161,14 +164,15 @@ void cmodel_check_result(
 
 	*compare_ok = data_ok & fflags_ok;
 	if(*compare_ok == 0) {
-		recorded_opa[*error_count] = (*fp_format == 0) ? f16_opa.v : (*fp_format == 1) ? f32_opa.v : f64_opa.v;
-		recorded_opb[*error_count] = (*fp_format == 0) ? f16_opb.v : (*fp_format == 1) ? f32_opb.v : f64_opb.v;
-		recorded_fp_format[*error_count] = *fp_format;
-		recorded_rm[*error_count] = *rm;
-		recorded_dut_res[*error_count] = (*fp_format == 0) ? (*dut_res_lo & 0xFFFF) : (*fp_format == 1) ? *dut_res_lo : (((uint64_t)(*dut_res_hi) << 32) | *dut_res_lo);
-		recorded_dut_fflags[*error_count] = *dut_fflags;
-		recorded_ref_res[*error_count] = (*fp_format == 0) ? f16_div_res.v : (*fp_format == 1) ? f32_div_res.v : f64_div_res.v;
-		recorded_ref_fflags[*error_count] = softfloat_exceptionFlags;
+		recorded_stim_idx[*err_count] = *acq_count;
+		recorded_opa[*err_count] = (*fp_format == 0) ? f16_opa.v : (*fp_format == 1) ? f32_opa.v : f64_opa.v;
+		recorded_opb[*err_count] = (*fp_format == 0) ? f16_opb.v : (*fp_format == 1) ? f32_opb.v : f64_opb.v;
+		recorded_fp_format[*err_count] = *fp_format;
+		recorded_rm[*err_count] = *rm;
+		recorded_dut_res[*err_count] = (*fp_format == 0) ? (*dut_res_lo & 0xFFFF) : (*fp_format == 1) ? *dut_res_lo : (((uint64_t)(*dut_res_hi) << 32) | *dut_res_lo);
+		recorded_dut_fflags[*err_count] = *dut_fflags;
+		recorded_ref_res[*err_count] = (*fp_format == 0) ? f16_div_res.v : (*fp_format == 1) ? f32_div_res.v : f64_div_res.v;
+		recorded_ref_fflags[*err_count] = softfloat_exceptionFlags;
 	}
 }
 
@@ -204,18 +208,19 @@ void gencases_for_f64(svBitVecVal *opa_hi, svBitVecVal *opa_lo, svBitVecVal *opb
 	// printf("generated_opb = %16lX\n", genCases_f64_b.v);
 }
 
-void print_error(const svBitVecVal *error_count) {
+void print_error(const svBitVecVal *err_count) {
 	FILE *fptr;
 	fptr = fopen("result.log", "w+");
-	for(uint32_t i = 0; i < *error_count; i++) {
+	for(uint32_t i = 0; i < *err_count; i++) {
 		fprintf(fptr, "[%d]:\n", i);
-		fprintf(fptr, "recorded_opa 		= %16X\n", recorded_opa[i]);
-		fprintf(fptr, "recorded_opb 		= %16X\n", recorded_opb[i]);
+		fprintf(fptr, "recorded_stim_idx	= %d\n", recorded_stim_idx[i]);
+		fprintf(fptr, "recorded_opa 		= %016llX\n", recorded_opa[i]);
+		fprintf(fptr, "recorded_opb 		= %016llX\n", recorded_opb[i]);
 		fprintf(fptr, "recorded_fp_format 	= %16X\n", recorded_fp_format[i]);
 		fprintf(fptr, "recorded_rm 			= %16X\n", recorded_rm[i]);
-		fprintf(fptr, "recorded_dut_res 	= %16X\n", recorded_dut_res[i]);
+		fprintf(fptr, "recorded_dut_res 	= %016llX\n", recorded_dut_res[i]);
 		fprintf(fptr, "recorded_dut_fflags 	= %16X\n", recorded_dut_fflags[i]);
-		fprintf(fptr, "recorded_ref_res 	= %16X\n", recorded_ref_res[i]);
+		fprintf(fptr, "recorded_ref_res 	= %016llX\n", recorded_ref_res[i]);
 		fprintf(fptr, "recorded_ref_fflags 	= %16X\n", recorded_ref_fflags[i]);
 	}
 	fclose(fptr);
