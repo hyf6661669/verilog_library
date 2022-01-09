@@ -3,7 +3,7 @@
 // Author				: HYF
 // How to Contact		: hyf_sysu@qq.com
 // Created Time    		: 2021-07-23 10:08:49
-// Last Modified Time   : 2021-12-21 21:40:11
+// Last Modified Time   : 2022-01-09 14:44:09
 // ========================================================================================================
 // Description	:
 // 
@@ -70,6 +70,10 @@ fp_format = 0;
 for(i = 0; i < FP16_RANDOM_NUM; i++) begin
 	gencases_for_f16(fpdiv_opa[15:0], fpdiv_opb[15:0]);
 	
+`ifdef RANDOM_RM
+	fpdiv_rm = $urandom % 5;
+	`SINGLE_STIM
+`else
 	fpdiv_rm = RM_RNE;
 	`SINGLE_STIM
 	fpdiv_rm = RM_RTZ;
@@ -80,12 +84,18 @@ for(i = 0; i < FP16_RANDOM_NUM; i++) begin
 	`SINGLE_STIM
 	fpdiv_rm = RM_RMM;
 	`SINGLE_STIM
+`endif
+	
 end
 
 fp_format = 1;
 for(i = 0; i < FP32_RANDOM_NUM; i++) begin
 	gencases_for_f32(fpdiv_opa[31:0], fpdiv_opb[31:0]);
 
+`ifdef RANDOM_RM
+	fpdiv_rm = $urandom % 5;
+	`SINGLE_STIM
+`else
 	fpdiv_rm = RM_RNE;
 	`SINGLE_STIM
 	fpdiv_rm = RM_RTZ;
@@ -96,13 +106,18 @@ for(i = 0; i < FP32_RANDOM_NUM; i++) begin
 	`SINGLE_STIM
 	fpdiv_rm = RM_RMM;
 	`SINGLE_STIM
+`endif
 end
 
 fp_format = 2;
 for(i = 0; i < FP64_RANDOM_NUM; i++) begin
 	gencases_for_f64(fpdiv_opa[63:32], fpdiv_opa[31:0], fpdiv_opb[63:32], fpdiv_opb[31:0]);
 
-	fpdiv_rm = RM_RNE;	
+`ifdef RANDOM_RM
+	fpdiv_rm = $urandom % 5;
+	`SINGLE_STIM
+`else
+	fpdiv_rm = RM_RNE;
 	`SINGLE_STIM
 	fpdiv_rm = RM_RTZ;
 	`SINGLE_STIM
@@ -112,6 +127,7 @@ for(i = 0; i < FP64_RANDOM_NUM; i++) begin
 	`SINGLE_STIM
 	fpdiv_rm = RM_RMM;
 	`SINGLE_STIM
+`endif
 end
 
 `endif

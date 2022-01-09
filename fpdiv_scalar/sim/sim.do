@@ -10,12 +10,12 @@ vlib ./lib/work
 
 vmap work ./lib/work
 
-set RAND_SEED 110
+set RAND_SEED 900
 set TEST_LEVEL 2
 set MAX_ERROR_COUNT 10
-set FP64_TEST_NUM [expr {int(pow(2, 20))}]
-set FP32_TEST_NUM [expr {int(pow(2, 20))}]
-set FP16_TEST_NUM [expr {int(pow(2, 20))}]
+set FP64_TEST_NUM [expr {int(pow(2, 22))}]
+set FP32_TEST_NUM [expr {int(pow(2, 22))}]
+set FP16_TEST_NUM [expr {int(pow(2, 22))}]
 
 # Add this definition to chech error
 #+TEST_SPECIAL_POINT
@@ -23,6 +23,7 @@ set FP16_TEST_NUM [expr {int(pow(2, 20))}]
 vlog -work work -incr \
 +define+RAND_SEED=$RAND_SEED+TEST_LEVEL=$TEST_LEVEL+MAX_ERROR_COUNT=$MAX_ERROR_COUNT+FAST_INIT \
 +define+FP64_TEST_NUM=$FP64_TEST_NUM+FP32_TEST_NUM=$FP32_TEST_NUM+FP16_TEST_NUM=$FP16_TEST_NUM \
++define+RANDOM_RM \
 -f ../tb/tb.lst
 
 vsim \
