@@ -1,0 +1,8 @@
++incdir+../rtl
+
+../rtl/fpsqrt_frac.sv
+../rtl/fpsqrt_frac_v2.sv
+../rtl/r4_qds.sv
+../rtl/r4_qds_constants_generator.sv
+
+

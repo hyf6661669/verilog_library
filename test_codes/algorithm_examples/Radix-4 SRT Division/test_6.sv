@@ -1,18 +1,3 @@
-------------------------------------------------------------------------------------
-ERROR FOUND:
-dividend = 079aad02, divisor = 0000067f
-opcode = 0
-exp_quotient = 00012bab, exp_remainder = 0000012d, act_quotient = 00012baa, act_remainder = 000007ac
-exp_divisor_is_zero = 0, dut_divisor_is_zero = 0
-finished_test_num =   47847232, error_test_num =          1
-
-------------------------------------------------------------------------------------
-ERROR FOUND:
-dividend = 3b92b337, divisor = 0000067f
-opcode = 0
-exp_quotient = 00092bac, exp_remainder = 000000e3, act_quotient = 00092ba9, act_remainder = 00000460
-exp_divisor_is_zero = 0, dut_divisor_is_zero = 0
-
 // ---------------------------------------------------------------------------------------------------------------------------------------
 X[WIDTH-1:0] = 00111011100100101011001100110111 = 999469879
 D[WIDTH-1:0] = 00000000000000000000011001111111 = 1663

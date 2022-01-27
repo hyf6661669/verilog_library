@@ -1,0 +1,7 @@
+{
+	"files.associations": {
+		"\"*.svh\"": "System Verilog",
+		"softfloat.h": "c",
+		"softfloat_types.h": "c"
+	}
+}
