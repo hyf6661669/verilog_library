@@ -3,7 +3,7 @@
 // Author				: HYF
 // How to Contact		: hyf_sysu@qq.com
 // Created Time    		: 2021-07-23 10:08:49
-// Last Modified Time   : 2022-01-26 09:38:12
+// Last Modified Time   : 2022-01-30 09:00:21
 // ========================================================================================================
 // Description	:
 // Stim for unsigned op.
@@ -41,70 +41,54 @@
 
 opcode = OPCODE_UNSIGNED;
 
-
-dividend_64 = 32'h558eb32d;
+dividend_64 = 32'h79aacb27;
 divisor_64 = 32'h0000067f;
 dividend_32 = dividend_64[32-1:0];
 divisor_32 = divisor_64[32-1:0];
-dividend_16 = dividend_64[16-1:0];
-divisor_16 = divisor_64[16-1:0];
 `SINGLE_STIM
 
 dividend_64 = 32'h79aae74b;
 divisor_64 = 32'h0000067f;
 dividend_32 = dividend_64[32-1:0];
 divisor_32 = divisor_64[32-1:0];
-dividend_16 = dividend_64[16-1:0];
-divisor_16 = divisor_64[16-1:0];
 `SINGLE_STIM
 
 dividend_64 = 32'hBFFFFFFD;
 divisor_64 = 32'h00000003;
 dividend_32 = dividend_64[32-1:0];
 divisor_32 = divisor_64[32-1:0];
-dividend_16 = dividend_64[16-1:0];
-divisor_16 = divisor_64[16-1:0];
 `SINGLE_STIM
 
 dividend_64 = 32'hBFFFFFFE;
 divisor_64 = 32'h00000003;
 dividend_32 = dividend_64[32-1:0];
 divisor_32 = divisor_64[32-1:0];
-dividend_16 = dividend_64[16-1:0];
-divisor_16 = divisor_64[16-1:0];
 `SINGLE_STIM
 
 dividend_64 = U64_POS_MAX;
 divisor_64 = 10;
 dividend_32 = U32_POS_MAX;
 divisor_32 = 9090;
-dividend_16 = U16_POS_MAX;
-divisor_16 = 60012;
 `SINGLE_STIM
 
 dividend_64 = 100;
 divisor_64 = 0;
 dividend_32 = dividend_64[32-1:0];
 divisor_32 = divisor_64[32-1:0];
-dividend_16 = dividend_64[16-1:0];
-divisor_16 = divisor_64[16-1:0];
 `SINGLE_STIM
 
 dividend_64 = 1;
 divisor_64 = U64_POS_MAX;
 dividend_32 = 1;
 divisor_32 = U32_POS_MAX;
-dividend_16 = 1;
-divisor_16 = U16_POS_MAX;
 `SINGLE_STIM
 
 dividend_64 = 0;
 divisor_64 = 0;
 dividend_32 = 0;
 divisor_32 = 0;
-dividend_16 = 0;
-divisor_16 = 0;
 `SINGLE_STIM
+
 
 for(i = 0; i < UDIV_TEST_NUM; i++) begin
 	// Make sure divisor_lzc >= dividend_lzc, so "ITER" is always needed.
@@ -120,7 +104,7 @@ for(i = 0; i < UDIV_TEST_NUM; i++) begin
 	divisor_64[63] = 1'b1;
 	divisor_64 = divisor_64 >> divisor_64_lzc;
 
-`elsif DUT_WIDTH_32
+`else
 
 	dividend_32_lzc = $urandom() % 32;
 	divisor_32_lzc = ($urandom() % (32 - dividend_32_lzc)) + dividend_32_lzc;
@@ -130,17 +114,6 @@ for(i = 0; i < UDIV_TEST_NUM; i++) begin
 	std::randomize(divisor_32);
 	divisor_32[31] = 1'b1;
 	divisor_32 = divisor_32 >> divisor_32_lzc;
-
-`else
-
-	dividend_16_lzc = $urandom() % 16;
-	divisor_16_lzc = ($urandom() % (16 - dividend_16_lzc)) + dividend_16_lzc;
-	std::randomize(dividend_16);
-	dividend_16[15] = 1'b1;
-	dividend_16 = dividend_16 >> dividend_16_lzc;
-	std::randomize(divisor_16);
-	divisor_16[15] = 1'b1;
-	divisor_16 = divisor_16 >> divisor_16_lzc;
 
 `endif
 

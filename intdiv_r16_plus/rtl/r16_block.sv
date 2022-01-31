@@ -2,13 +2,12 @@
 // File Name			: r16_block.sv
 // Author				: Yifei He
 // How to Contact		: hyf_sysu@qq.com
-// Created Time    		: 2021-10-06 17:14:49
-// Last Modified Time 	: 2022-01-24 21:58:23
+// Created Time    		: 2022-01-24 21:57:45
+// Last Modified Time 	: 2022-01-30 09:14:13
 // ========================================================================================================
 // Description	:
 // Overlap 2 R4 blocks to form the R16 block.
 // ========================================================================================================
-
 // ========================================================================================================
 // Copyright (C) 2022, Yifei He. All Rights Reserved.
 // This file is licensed under BSD 3-Clause License.
@@ -42,527 +41,234 @@
 
 module r16_block #(
 	// Put some parameters here, which can be changed by other modules.
-	parameter WIDTH = 32,
-	// ITN = InTerNal
-	parameter ITN_W = 1 + WIDTH + 2 + 3,
-	parameter QUO_ONEHOT_WIDTH = 5
+	parameter D_W = 32,
+	parameter REM_W = 1 + D_W + 2 + 3,
+	parameter QUO_DIG_W = 5
 )(
-	input  logic [ITN_W-1:0] rem_sum_i,
-	input  logic [ITN_W-1:0] rem_carry_i,
-	output logic [ITN_W-1:0] rem_sum_o,
-	output logic [ITN_W-1:0] rem_carry_o,
-	input  logic [WIDTH-1:0] divisor_i,
-	input  logic [5-1:0] qds_para_neg_1_i,
-	input  logic [3-1:0] qds_para_neg_0_i,
-	input  logic [2-1:0] qds_para_pos_1_i,
-	input  logic [5-1:0] qds_para_pos_2_i,
-	input  logic special_divisor_i,
-	input  logic [WIDTH-1:0] quo_iter_i,
-	input  logic [WIDTH-1:0] quo_m1_iter_i,
-	output logic [WIDTH-1:0] quo_iter_o,
-	output logic [WIDTH-1:0] quo_m1_iter_o,
-	input  logic [QUO_ONEHOT_WIDTH-1:0] prev_quo_digit_i,
-	output logic [QUO_ONEHOT_WIDTH-1:0] quo_digit_o
+	input  logic [REM_W-1:0] rem_s_i,
+	input  logic [REM_W-1:0] rem_c_i,
+	input  logic [D_W-2:0] D_i,
+	input  logic [5-1:0] m_neg_1_i,
+	input  logic [3-1:0] m_neg_0_i,
+	input  logic [2-1:0] m_pos_1_i,
+	input  logic [5-1:0] m_pos_2_i,
+	input  logic m_neg_0_pos_1_lsb_i,
+	input  logic [D_W-1:0] quo_iter_i,
+	input  logic [D_W-1:0] quo_m1_iter_i,
+	input  logic [QUO_DIG_W-1:0] prev_quo_dig_i,
+	output logic [REM_W-1:0] nxt_rem_s_o [2-1:0],
+	output logic [REM_W-1:0] nxt_rem_c_o [2-1:0],
+	output logic [D_W-1:0] nxt_quo_iter_o [2-1:0],
+	output logic [D_W-1:0] nxt_quo_m1_iter_o [2-1:0],
+	output logic [QUO_DIG_W-1:0] nxt_quo_dig_o [2-1:0]
 );
 
 // ==================================================================================================================================================
 // (local) params
 // ==================================================================================================================================================
 
-localparam QUO_NEG_2 = 0;
-localparam QUO_NEG_1 = 1;
-localparam QUO_ZERO  = 2;
-localparam QUO_POS_1 = 3;
-localparam QUO_POS_2 = 4;
-
-// ==================================================================================================================================================
-// functions
-// ==================================================================================================================================================
-
-
-
 // ==================================================================================================================================================
 // signals
 // ==================================================================================================================================================
 
-// sd = sign_detector
-logic [(ITN_W + 4)-1:0] rem_sum_mul_16 [2-1:0];
-logic [(ITN_W + 4)-1:0] rem_carry_mul_16 [2-1:0];
-logic [7-1:0] rem_sum_mul_16_trunc_2_5 [2-1:0];
-logic [7-1:0] rem_carry_mul_16_trunc_2_5 [2-1:0];
-logic [7-1:0] rem_sum_mul_16_trunc_3_4 [2-1:0];
-logic [7-1:0] rem_carry_mul_16_trunc_3_4 [2-1:0];
+logic [(REM_W+4)-1:0] rem_s_mul_16 [2-1:0];
+logic [(REM_W+4)-1:0] rem_c_mul_16 [2-1:0];
+logic [REM_W-1:0] nxt_rem_s [2-1:0];
+logic [REM_W-1:0] nxt_rem_c [2-1:0];
+logic [REM_W-1:0] nxt_rem_s_spec_s1 [5-1:0];
+logic [REM_W-1:0] nxt_rem_c_spec_s1 [5-1:0];
 
-logic [ITN_W-1:0] csa_x1 [2-1:0];
-logic [ITN_W-1:0] csa_x2 [2-1:0];
-logic [ITN_W-1:0] csa_x3 [2-1:0];
-logic [2-1:0] csa_carry_unused;
-logic [ITN_W-1:0] rem_sum [2-1:0];
-logic [ITN_W-1:0] rem_carry [2-1:0];
+logic [7-1:0] m_neg_1;
+logic [7-1:0] m_neg_0;
+logic [7-1:0] m_pos_1;
+logic [7-1:0] m_pos_2;
 
-// Since we need to do "16 * rem_sum + 16 * rem_carry - m[i] - 4 * q * D" (i = -1, 0, +1, +2) to select the next quo, so we choose to remember the 
-// inversed value of parameters described in the paper.
-logic [7-1:0] para_m_neg_1;
-logic [7-1:0] para_m_neg_0;
-logic [7-1:0] para_m_pos_1;
-logic [7-1:0] para_m_pos_2;
-logic [7-1:0] para_m_neg_1_q_s0_neg_2;
-logic [7-1:0] para_m_neg_0_q_s0_neg_2;
-logic [7-1:0] para_m_pos_1_q_s0_neg_2;
-logic [7-1:0] para_m_pos_2_q_s0_neg_2;
-logic [7-1:0] para_m_neg_1_q_s0_neg_1;
-logic [7-1:0] para_m_neg_0_q_s0_neg_1;
-logic [7-1:0] para_m_pos_1_q_s0_neg_1;
-logic [7-1:0] para_m_pos_2_q_s0_neg_1;
-logic [7-1:0] para_m_neg_1_q_s0_pos_0;
-logic [7-1:0] para_m_neg_0_q_s0_pos_0;
-logic [7-1:0] para_m_pos_1_q_s0_pos_0;
-logic [7-1:0] para_m_pos_2_q_s0_pos_0;
-logic [7-1:0] para_m_neg_1_q_s0_pos_1;
-logic [7-1:0] para_m_neg_0_q_s0_pos_1;
-logic [7-1:0] para_m_pos_1_q_s0_pos_1;
-logic [7-1:0] para_m_pos_2_q_s0_pos_1;
-logic [7-1:0] para_m_neg_1_q_s0_pos_2;
-logic [7-1:0] para_m_neg_0_q_s0_pos_2;
-logic [7-1:0] para_m_pos_1_q_s0_pos_2;
-logic [7-1:0] para_m_pos_2_q_s0_pos_2;
+logic [QUO_DIG_W-1:0] nxt_quo_dig [2-1:0];
+logic [D_W-1:0] nxt_quo_iter [2-1:0];
+logic [D_W-1:0] nxt_quo_m1_iter [2-1:0];
 
-logic [QUO_ONEHOT_WIDTH-1:0] quo_digit_s0;
-logic [QUO_ONEHOT_WIDTH-1:0] quo_digit_s1;
-logic [WIDTH-1:0] quo_iter_s0;
-logic [WIDTH-1:0] quo_iter_s1;
-logic [WIDTH-1:0] quo_m1_iter_s0;
-logic [WIDTH-1:0] quo_m1_iter_s1;
+logic [REM_W-1:0] D_ext;
+logic [(REM_W+2)-1:0] D_mul_4;
+logic [(REM_W+2)-1:0] D_mul_8;
+logic [(REM_W+2)-1:0] D_mul_neg_4;
+logic [(REM_W+2)-1:0] D_mul_neg_8;
+logic [8-1:0] D_trunc_3_5_for_s0_qds;
+logic [7-1:0] D_mul_4_trunc_2_5;
+logic [7-1:0] D_mul_4_trunc_3_4;
+logic [7-1:0] D_mul_8_trunc_2_5;
+logic [7-1:0] D_mul_8_trunc_3_4;
+logic [7-1:0] D_mul_neg_4_trunc_2_5;
+logic [7-1:0] D_mul_neg_4_trunc_3_4;
+logic [7-1:0] D_mul_neg_8_trunc_2_5;
+logic [7-1:0] D_mul_neg_8_trunc_3_4;
+logic [REM_W-1:0] D_to_csa [2-1:0];
 
-logic [ITN_W-1:0] divisor;
-logic [(ITN_W + 2)-1:0] divisor_mul_4;
-logic [(ITN_W + 2)-1:0] divisor_mul_8;
-logic [(ITN_W + 2)-1:0] divisor_mul_neg_4;
-logic [(ITN_W + 2)-1:0] divisor_mul_neg_8;
-logic [7-1:0] divisor_mul_4_trunc_2_5;
-logic [7-1:0] divisor_mul_4_trunc_3_4;
-logic [7-1:0] divisor_mul_8_trunc_2_5;
-logic [7-1:0] divisor_mul_8_trunc_3_4;
-logic [7-1:0] divisor_mul_neg_4_trunc_2_5;
-logic [7-1:0] divisor_mul_neg_4_trunc_3_4;
-logic [7-1:0] divisor_mul_neg_8_trunc_2_5;
-logic [7-1:0] divisor_mul_neg_8_trunc_3_4;
-logic [7-1:0] divisorfor_sd_trunc_2_5;
-logic [7-1:0] divisorfor_sd_trunc_3_4;
-
-logic sd_m_neg_1_sign_s0;
-logic sd_m_neg_0_sign_s0;
-logic sd_m_pos_1_sign_s0;
-logic sd_m_pos_2_sign_s0;
-logic sd_m_neg_1_sign_s1;
-logic sd_m_neg_0_sign_s1;
-logic sd_m_pos_1_sign_s1;
-logic sd_m_pos_2_sign_s1;
-logic sd_m_neg_1_q_s0_neg_2_sign;
-logic sd_m_neg_0_q_s0_neg_2_sign;
-logic sd_m_pos_1_q_s0_neg_2_sign;
-logic sd_m_pos_2_q_s0_neg_2_sign;
-logic sd_m_neg_1_q_s0_neg_1_sign;
-logic sd_m_neg_0_q_s0_neg_1_sign;
-logic sd_m_pos_1_q_s0_neg_1_sign;
-logic sd_m_pos_2_q_s0_neg_1_sign;
-logic sd_m_neg_1_q_s0_pos_0_sign;
-logic sd_m_neg_0_q_s0_pos_0_sign;
-logic sd_m_pos_1_q_s0_pos_0_sign;
-logic sd_m_pos_2_q_s0_pos_0_sign;
-logic sd_m_neg_1_q_s0_pos_1_sign;
-logic sd_m_neg_0_q_s0_pos_1_sign;
-logic sd_m_pos_1_q_s0_pos_1_sign;
-logic sd_m_pos_2_q_s0_pos_1_sign;
-logic sd_m_neg_1_q_s0_pos_2_sign;
-logic sd_m_neg_0_q_s0_pos_2_sign;
-logic sd_m_pos_1_q_s0_pos_2_sign;
-logic sd_m_pos_2_q_s0_pos_2_sign;
 
 // ==================================================================================================================================================
 // main codes
 // ==================================================================================================================================================
 
-// After "* 16" operation, the decimal point is still between "[ITN_W-1]" and "[ITN_W-2]".
-assign rem_sum_mul_16[0] = {rem_sum_i, 4'b0};
-assign rem_carry_mul_16[0] = {rem_carry_i, 4'b0};
-// We need "2 integer bits, 5 fraction bits"/"3 integer bits, 4 fraction bits" for SD.
-assign rem_sum_mul_16_trunc_2_5[0] = rem_sum_mul_16[0][(ITN_W    ) -: 7];
-assign rem_sum_mul_16_trunc_3_4[0] = rem_sum_mul_16[0][(ITN_W + 1) -: 7];
-assign rem_carry_mul_16_trunc_2_5[0] = rem_carry_mul_16[0][(ITN_W    ) -: 7];
-assign rem_carry_mul_16_trunc_3_4[0] = rem_carry_mul_16[0][(ITN_W + 1) -: 7];
+// The decimal point is between [REM_W-1] and [REM_W-2]
+assign rem_s_mul_16[0] = {rem_s_i, 4'b0};
+assign rem_c_mul_16[0] = {rem_c_i, 4'b0};
 
 // ================================================================================================================================================
-// Get the parameters for CMP.
+// Get the QDS constants
 // ================================================================================================================================================
-assign para_m_neg_1 = {1'b0, qds_para_neg_1_i, 1'b0};
+assign m_neg_1 = {1'b0, m_neg_1_i, 1'b0};
+assign m_neg_0 = {3'b0, m_neg_0_i, m_neg_0_pos_1_lsb_i};
+assign m_pos_1 = {4'b1111, m_pos_1_i, m_neg_0_pos_1_lsb_i};
+assign m_pos_2 = {1'b1, m_pos_2_i, 1'b0};
+// ================================================================================================================================================
+// Calculate "-4 * q * D" for QDS
+// ================================================================================================================================================
+assign D_ext = {1'b0, 1'b1, D_i, 5'b0};
+assign D_mul_4 = {D_ext, 2'b0};
+assign D_mul_8 = {D_ext[REM_W-2:0], 3'b0};
+assign D_mul_neg_4 = ~D_mul_4;
+assign D_mul_neg_8 = ~D_mul_8;
 
-assign para_m_neg_0 = {3'b0, qds_para_neg_0_i, special_divisor_i};
+assign D_mul_4_trunc_2_5 = D_mul_4[REM_W+0 -: 7];
+assign D_mul_4_trunc_3_4 = D_mul_4[REM_W+1 -: 7];
+assign D_mul_8_trunc_2_5 = D_mul_8[REM_W+0 -: 7];
+assign D_mul_8_trunc_3_4 = D_mul_8[REM_W+1 -: 7];
+assign D_mul_neg_4_trunc_2_5 = D_mul_neg_4[REM_W+0 -: 7];
+assign D_mul_neg_4_trunc_3_4 = D_mul_neg_4[REM_W+1 -: 7];
+assign D_mul_neg_8_trunc_2_5 = D_mul_neg_8[REM_W+0 -: 7];
+assign D_mul_neg_8_trunc_3_4 = D_mul_neg_8[REM_W+1 -: 7];
+// ================================================================================================================================================
+// stage[0].qds + stage[0].csa
+// ================================================================================================================================================
+assign D_to_csa[0] = 
+  ({(REM_W){prev_quo_dig_i[4]}} & {D_ext[(REM_W-1)-1:0], 1'b0})
+| ({(REM_W){prev_quo_dig_i[3]}} & D_ext)
+| ({(REM_W){prev_quo_dig_i[1]}} & ~D_ext)
+| ({(REM_W){prev_quo_dig_i[0]}} & ~{D_ext[(REM_W-1)-1:0], 1'b0});
 
-assign para_m_pos_1 = {4'b1111, qds_para_pos_1_i, special_divisor_i};
+assign nxt_rem_s[0] = 
+  {rem_s_i[(REM_W-1)-2:0], 2'b0}
+^ {rem_c_i[(REM_W-1)-2:0], 2'b0}
+^ D_to_csa[0];
+assign nxt_rem_c[0] = {
+	  ({rem_s_i[(REM_W-1)-3:0], 2'b0} & {rem_c_i[(REM_W-1)-3:0], 2'b0})
+	| ({rem_s_i[(REM_W-1)-3:0], 2'b0} & D_to_csa[0][(REM_W-1)-1:0])
+	| ({rem_c_i[(REM_W-1)-3:0], 2'b0} & D_to_csa[0][(REM_W-1)-1:0]),
+	prev_quo_dig_i[1] | prev_quo_dig_i[0]
+};
 
-assign para_m_pos_2 = {1'b1, qds_para_pos_2_i, 1'b0};
-// ================================================================================================================================================
-// Calculate "-4 * q * D" for CMP.
-// ================================================================================================================================================
-assign divisor = {1'b0, divisor_i, 5'b0};
-assign divisor_mul_4 = {divisor, 2'b0};
-assign divisor_mul_8 = {divisor[ITN_W-2:0], 3'b0};
-// Using "~" is enough here.
-assign divisor_mul_neg_4 = ~divisor_mul_4;
-assign divisor_mul_neg_8 = ~divisor_mul_8;
-assign divisor_mul_4_trunc_2_5 = divisor_mul_4[(ITN_W	 ) -: 7];
-assign divisor_mul_4_trunc_3_4 = divisor_mul_4[(ITN_W + 1) -: 7];
-assign divisor_mul_8_trunc_2_5 = divisor_mul_8[(ITN_W	 ) -: 7];
-assign divisor_mul_8_trunc_3_4 = divisor_mul_8[(ITN_W + 1) -: 7];
-assign divisor_mul_neg_4_trunc_2_5 = divisor_mul_neg_4[(ITN_W	 ) -: 7];
-assign divisor_mul_neg_4_trunc_3_4 = divisor_mul_neg_4[(ITN_W + 1) -: 7];
-assign divisor_mul_neg_8_trunc_2_5 = divisor_mul_neg_8[(ITN_W	 ) -: 7];
-assign divisor_mul_neg_8_trunc_3_4 = divisor_mul_neg_8[(ITN_W + 1) -: 7];
+assign D_trunc_3_5_for_s0_qds = 
+  ({(8){prev_quo_dig_i[4]}} & D_mul_8[REM_W+1 -: 8])
+| ({(8){prev_quo_dig_i[3]}} & D_mul_4[REM_W+1 -: 8])
+| ({(8){prev_quo_dig_i[1]}} & D_mul_neg_4[REM_W+1 -: 8])
+| ({(8){prev_quo_dig_i[0]}} & D_mul_neg_8[REM_W+1 -: 8]);
 
-assign divisorfor_sd_trunc_2_5 = 
-  ({(7){prev_quo_digit_i[QUO_NEG_2]}} & divisor_mul_8_trunc_2_5)
-| ({(7){prev_quo_digit_i[QUO_NEG_1]}} & divisor_mul_4_trunc_2_5)
-| ({(7){prev_quo_digit_i[QUO_POS_1]}} & divisor_mul_neg_4_trunc_2_5)
-| ({(7){prev_quo_digit_i[QUO_POS_2]}} & divisor_mul_neg_8_trunc_2_5);
-assign divisorfor_sd_trunc_3_4 = 
-  ({(7){prev_quo_digit_i[QUO_NEG_2]}} & divisor_mul_8_trunc_3_4)
-| ({(7){prev_quo_digit_i[QUO_NEG_1]}} & divisor_mul_4_trunc_3_4)
-| ({(7){prev_quo_digit_i[QUO_POS_1]}} & divisor_mul_neg_4_trunc_3_4)
-| ({(7){prev_quo_digit_i[QUO_POS_2]}} & divisor_mul_neg_8_trunc_3_4);
-// ================================================================================================================================================
-// Calculate sign and code the res.
-// ================================================================================================================================================
-radix_4_sign_detector
-u_sd_m_neg_1 (
-	.rem_sum_msb_i(rem_sum_mul_16_trunc_2_5[0]),
-	.rem_carry_msb_i(rem_carry_mul_16_trunc_2_5[0]),
-	.parameter_i(para_m_neg_1),
-	.divisor_i(divisorfor_sd_trunc_2_5),
-	.sign_o(sd_m_neg_1_sign_s0)
+r4_qds #(
+	.SPEC(0)
+) u_r4_qds_s0 (
+	.rem_s_trunc_3_5_i(rem_s_mul_16[0][REM_W+1 -: 8]),
+	.rem_c_trunc_3_5_i(rem_c_mul_16[0][REM_W+1 -: 8]),
+	.m_neg_1_i(m_neg_1),
+	.m_neg_0_i(m_neg_0),
+	.m_pos_1_i(m_pos_1),
+	.m_pos_2_i(m_pos_2),
+	.D_trunc_3_5_i(D_trunc_3_5_for_s0_qds),
+	// Not used
+	.D_mul_4_trunc_2_5_i('0),
+	.D_mul_4_trunc_3_4_i('0),
+	.D_mul_8_trunc_2_5_i('0),
+	.D_mul_8_trunc_3_4_i('0),
+	.D_mul_neg_4_trunc_2_5_i('0),
+	.D_mul_neg_4_trunc_3_4_i('0),
+	.D_mul_neg_8_trunc_2_5_i('0),
+	.D_mul_neg_8_trunc_3_4_i('0),
+	.prev_quo_dig_i('0),
+	.quo_dig_o(nxt_quo_dig[0])
 );
-radix_4_sign_detector
-u_sd_m_neg_0 (
-	.rem_sum_msb_i(rem_sum_mul_16_trunc_3_4[0]),
-	.rem_carry_msb_i(rem_carry_mul_16_trunc_3_4[0]),
-	.parameter_i(para_m_neg_0),
-	.divisor_i(divisorfor_sd_trunc_3_4),
-	.sign_o(sd_m_neg_0_sign_s0)
-);
-radix_4_sign_detector
-u_sd_m_pos_1 (
-	.rem_sum_msb_i(rem_sum_mul_16_trunc_3_4[0]),
-	.rem_carry_msb_i(rem_carry_mul_16_trunc_3_4[0]),
-	.parameter_i(para_m_pos_1),
-	.divisor_i(divisorfor_sd_trunc_3_4),
-	.sign_o(sd_m_pos_1_sign_s0)
-);
-radix_4_sign_detector
-u_sd_m_pos_2 (
-	.rem_sum_msb_i(rem_sum_mul_16_trunc_2_5[0]),
-	.rem_carry_msb_i(rem_carry_mul_16_trunc_2_5[0]),
-	.parameter_i(para_m_pos_2),
-	.divisor_i(divisorfor_sd_trunc_2_5),
-	.sign_o(sd_m_pos_2_sign_s0)
-);
-radix_4_sign_coder
-u_coder_s0 (
-	.sd_m_neg_1_sign_i(sd_m_neg_1_sign_s0),
-	.sd_m_neg_0_sign_i(sd_m_neg_0_sign_s0),
-	.sd_m_pos_1_sign_i(sd_m_pos_1_sign_s0),
-	.sd_m_pos_2_sign_i(sd_m_pos_2_sign_s0),
-	.quo_o(quo_digit_s0)
-);
-// ================================================================================================================================================
-// On the Fly Conversion (OFC/OTFC).
-// ================================================================================================================================================
-assign quo_iter_s0 = 
-  ({(WIDTH){prev_quo_digit_i[QUO_POS_2]}} & {quo_iter_i		[WIDTH-3:0], 2'b10})
-| ({(WIDTH){prev_quo_digit_i[QUO_POS_1]}} & {quo_iter_i		[WIDTH-3:0], 2'b01})
-| ({(WIDTH){prev_quo_digit_i[QUO_ZERO ]}} & {quo_iter_i		[WIDTH-3:0], 2'b00})
-| ({(WIDTH){prev_quo_digit_i[QUO_NEG_1]}} & {quo_m1_iter_i	[WIDTH-3:0], 2'b11})
-| ({(WIDTH){prev_quo_digit_i[QUO_NEG_2]}} & {quo_m1_iter_i	[WIDTH-3:0], 2'b10});
-assign quo_m1_iter_s0 = 
-  ({(WIDTH){prev_quo_digit_i[QUO_POS_2]}} & {quo_iter_i		[WIDTH-3:0], 2'b01})
-| ({(WIDTH){prev_quo_digit_i[QUO_POS_1]}} & {quo_iter_i		[WIDTH-3:0], 2'b00})
-| ({(WIDTH){prev_quo_digit_i[QUO_ZERO ]}} & {quo_m1_iter_i	[WIDTH-3:0], 2'b11})
-| ({(WIDTH){prev_quo_digit_i[QUO_NEG_1]}} & {quo_m1_iter_i	[WIDTH-3:0], 2'b10})
-| ({(WIDTH){prev_quo_digit_i[QUO_NEG_2]}} & {quo_m1_iter_i	[WIDTH-3:0], 2'b01});
-// In the Retiming Architecture, OFC should not be the critical path.
-assign quo_iter_s1 = 
-  ({(WIDTH){quo_digit_s0[QUO_POS_2]}} & {quo_iter_s0		[WIDTH-3:0], 2'b10})
-| ({(WIDTH){quo_digit_s0[QUO_POS_1]}} & {quo_iter_s0		[WIDTH-3:0], 2'b01})
-| ({(WIDTH){quo_digit_s0[QUO_ZERO ]}} & {quo_iter_s0		[WIDTH-3:0], 2'b00})
-| ({(WIDTH){quo_digit_s0[QUO_NEG_1]}} & {quo_m1_iter_s0		[WIDTH-3:0], 2'b11})
-| ({(WIDTH){quo_digit_s0[QUO_NEG_2]}} & {quo_m1_iter_s0		[WIDTH-3:0], 2'b10});
-assign quo_m1_iter_s1 = 
-  ({(WIDTH){quo_digit_s0[QUO_POS_2]}} & {quo_iter_s0		[WIDTH-3:0], 2'b01})
-| ({(WIDTH){quo_digit_s0[QUO_POS_1]}} & {quo_iter_s0		[WIDTH-3:0], 2'b00})
-| ({(WIDTH){quo_digit_s0[QUO_ZERO ]}} & {quo_m1_iter_s0		[WIDTH-3:0], 2'b11})
-| ({(WIDTH){quo_digit_s0[QUO_NEG_1]}} & {quo_m1_iter_s0		[WIDTH-3:0], 2'b10})
-| ({(WIDTH){quo_digit_s0[QUO_NEG_2]}} & {quo_m1_iter_s0		[WIDTH-3:0], 2'b01});
-
-assign csa_x1[0] = {rem_sum_i  [0 +: (ITN_W - 2)], 2'b0};
-assign csa_x2[0] = {rem_carry_i[0 +: (ITN_W - 2)], 2'b0};
-assign csa_x3[0] = 
-  ({(ITN_W){prev_quo_digit_i[QUO_NEG_2]}} & {divisor_i, 6'b0})
-| ({(ITN_W){prev_quo_digit_i[QUO_NEG_1]}} & {1'b0, divisor_i, 5'b0})
-| ({(ITN_W){prev_quo_digit_i[QUO_POS_1]}} & ~{1'b0, divisor_i, 5'b0})
-| ({(ITN_W){prev_quo_digit_i[QUO_POS_2]}} & ~{divisor_i, 6'b0});
-compressor_3_2 #(
-	.WIDTH(ITN_W)
-) u_csa_s0 (
-	.x1(csa_x1[0]),
-	.x2(csa_x2[0]),
-	.x3(csa_x3[0]),
-	.sum_o(rem_sum[0]),
-	.carry_o({rem_carry[0][1 +: (ITN_W - 1)], csa_carry_unused[0]})
-);
-assign rem_carry[0][0] = prev_quo_digit_i[QUO_POS_1] | prev_quo_digit_i[QUO_POS_2];
-// ================================================================================================================================================
-// Similiar operations for stage[1].
-// ================================================================================================================================================
-assign rem_sum_mul_16[1] = {rem_sum[0], 4'b0};
-assign rem_carry_mul_16[1] = {rem_carry[0], 4'b0};
-assign rem_sum_mul_16_trunc_2_5[1] = rem_sum_mul_16[1][(ITN_W    ) -: 7];
-assign rem_sum_mul_16_trunc_3_4[1] = rem_sum_mul_16[1][(ITN_W + 1) -: 7];
-assign rem_carry_mul_16_trunc_2_5[1] = rem_carry_mul_16[1][(ITN_W    ) -: 7];
-assign rem_carry_mul_16_trunc_3_4[1] = rem_carry_mul_16[1][(ITN_W + 1) -: 7];
 
 // ================================================================================================================================================
-// Here we assume "quo_digit_s0 = -2". Then calculate "quo_digit_s1" speculativly.
+// stage[0].OFC
 // ================================================================================================================================================
-radix_4_sign_detector
-u_sd_m_neg_1_q_s0_neg_2 (
-	.rem_sum_msb_i(rem_sum_mul_16_trunc_2_5[1]),
-	.rem_carry_msb_i(rem_carry_mul_16_trunc_2_5[1]),
-	.parameter_i(para_m_neg_1),
-	.divisor_i(divisor_mul_8_trunc_2_5),
-	.sign_o(sd_m_neg_1_q_s0_neg_2_sign)
-);
-radix_4_sign_detector
-u_sd_m_neg_0_q_s0_neg_2 (
-	.rem_sum_msb_i(rem_sum_mul_16_trunc_3_4[1]),
-	.rem_carry_msb_i(rem_carry_mul_16_trunc_3_4[1]),
-	.parameter_i(para_m_neg_0),
-	.divisor_i(divisor_mul_8_trunc_3_4),
-	.sign_o(sd_m_neg_0_q_s0_neg_2_sign)
-);
-radix_4_sign_detector
-u_sd_m_pos_1_q_s0_neg_2 (
-	.rem_sum_msb_i(rem_sum_mul_16_trunc_3_4[1]),
-	.rem_carry_msb_i(rem_carry_mul_16_trunc_3_4[1]),
-	.parameter_i(para_m_pos_1),
-	.divisor_i(divisor_mul_8_trunc_3_4),
-	.sign_o(sd_m_pos_1_q_s0_neg_2_sign)
-);
-radix_4_sign_detector
-u_sd_m_pos_2_q_s0_neg_2 (
-	.rem_sum_msb_i(rem_sum_mul_16_trunc_2_5[1]),
-	.rem_carry_msb_i(rem_carry_mul_16_trunc_2_5[1]),
-	.parameter_i(para_m_pos_2),
-	.divisor_i(divisor_mul_8_trunc_2_5),
-	.sign_o(sd_m_pos_2_q_s0_neg_2_sign)
-);
+assign nxt_quo_iter[0] = 
+  ({(D_W){prev_quo_dig_i[0]}} & {quo_iter_i   [(D_W-1)-2:0], 2'b10})
+| ({(D_W){prev_quo_dig_i[1]}} & {quo_iter_i   [(D_W-1)-2:0], 2'b01})
+| ({(D_W){prev_quo_dig_i[2]}} & {quo_iter_i   [(D_W-1)-2:0], 2'b00})
+| ({(D_W){prev_quo_dig_i[3]}} & {quo_m1_iter_i[(D_W-1)-2:0], 2'b11})
+| ({(D_W){prev_quo_dig_i[4]}} & {quo_m1_iter_i[(D_W-1)-2:0], 2'b10});
+assign nxt_quo_m1_iter[0] = 
+  ({(D_W){prev_quo_dig_i[0]}} & {quo_iter_i   [(D_W-1)-2:0], 2'b01})
+| ({(D_W){prev_quo_dig_i[1]}} & {quo_iter_i   [(D_W-1)-2:0], 2'b00})
+| ({(D_W){prev_quo_dig_i[2]}} & {quo_m1_iter_i[(D_W-1)-2:0], 2'b11})
+| ({(D_W){prev_quo_dig_i[3]}} & {quo_m1_iter_i[(D_W-1)-2:0], 2'b10})
+| ({(D_W){prev_quo_dig_i[4]}} & {quo_m1_iter_i[(D_W-1)-2:0], 2'b01});
+
 // ================================================================================================================================================
-// Here we assume "quo_digit_s0 = -1". Then calculate "quo_digit_s1" speculativly.
+// stage[1].qds + stage[1].csa
 // ================================================================================================================================================
-radix_4_sign_detector
-u_sd_m_neg_1_q_s0_neg_1 (
-	.rem_sum_msb_i(rem_sum_mul_16_trunc_2_5[1]),
-	.rem_carry_msb_i(rem_carry_mul_16_trunc_2_5[1]),
-	.parameter_i(para_m_neg_1),
-	.divisor_i(divisor_mul_4_trunc_2_5),
-	.sign_o(sd_m_neg_1_q_s0_neg_1_sign)
-);
-radix_4_sign_detector
-u_sd_m_neg_0_q_s0_neg_1 (
-	.rem_sum_msb_i(rem_sum_mul_16_trunc_3_4[1]),
-	.rem_carry_msb_i(rem_carry_mul_16_trunc_3_4[1]),
-	.parameter_i(para_m_neg_0),
-	.divisor_i(divisor_mul_4_trunc_3_4),
-	.sign_o(sd_m_neg_0_q_s0_neg_1_sign)
-);
-radix_4_sign_detector
-u_sd_m_pos_1_q_s0_neg_1 (
-	.rem_sum_msb_i(rem_sum_mul_16_trunc_3_4[1]),
-	.rem_carry_msb_i(rem_carry_mul_16_trunc_3_4[1]),
-	.parameter_i(para_m_pos_1),
-	.divisor_i(divisor_mul_4_trunc_3_4),
-	.sign_o(sd_m_pos_1_q_s0_neg_1_sign)
-);
-radix_4_sign_detector
-u_sd_m_pos_2_q_s0_neg_1 (
-	.rem_sum_msb_i(rem_sum_mul_16_trunc_2_5[1]),
-	.rem_carry_msb_i(rem_carry_mul_16_trunc_2_5[1]),
-	.parameter_i(para_m_pos_2),
-	.divisor_i(divisor_mul_4_trunc_2_5),
-	.sign_o(sd_m_pos_2_q_s0_neg_1_sign)
-);
-// ================================================================================================================================================
-// Here we assume "quo_digit_s0 = 0". Then calculate "quo_digit_s1" speculativly.
-// ================================================================================================================================================
-radix_4_sign_detector
-u_sd_m_neg_1_q_s0_pos_0 (
-	.rem_sum_msb_i(rem_sum_mul_16_trunc_2_5[1]),
-	.rem_carry_msb_i(rem_carry_mul_16_trunc_2_5[1]),
-	.parameter_i(para_m_neg_1),
-	.divisor_i(7'b0),
-	.sign_o(sd_m_neg_1_q_s0_pos_0_sign)
-);
-radix_4_sign_detector
-u_sd_m_neg_0_q_s0_pos_0 (
-	.rem_sum_msb_i(rem_sum_mul_16_trunc_3_4[1]),
-	.rem_carry_msb_i(rem_carry_mul_16_trunc_3_4[1]),
-	.parameter_i(para_m_neg_0),
-	.divisor_i(7'b0),
-	.sign_o(sd_m_neg_0_q_s0_pos_0_sign)
-);
-radix_4_sign_detector
-u_sd_m_pos_1_q_s0_pos_0 (
-	.rem_sum_msb_i(rem_sum_mul_16_trunc_3_4[1]),
-	.rem_carry_msb_i(rem_carry_mul_16_trunc_3_4[1]),
-	.parameter_i(para_m_pos_1),
-	.divisor_i(7'b0),
-	.sign_o(sd_m_pos_1_q_s0_pos_0_sign)
-);
-radix_4_sign_detector
-u_sd_m_pos_2_q_s0_pos_0 (
-	.rem_sum_msb_i(rem_sum_mul_16_trunc_2_5[1]),
-	.rem_carry_msb_i(rem_carry_mul_16_trunc_2_5[1]),
-	.parameter_i(para_m_pos_2),
-	.divisor_i(7'b0),
-	.sign_o(sd_m_pos_2_q_s0_pos_0_sign)
-);
-// ================================================================================================================================================
-// Here we assume "quo_digit_s0 = +1". Then calculate "quo_digit_s1" speculativly.
-// ================================================================================================================================================
-radix_4_sign_detector
-u_sd_m_neg_1_q_s0_pos_1 (
-	.rem_sum_msb_i(rem_sum_mul_16_trunc_2_5[1]),
-	.rem_carry_msb_i(rem_carry_mul_16_trunc_2_5[1]),
-	.parameter_i(para_m_neg_1),
-	.divisor_i(divisor_mul_neg_4_trunc_2_5),
-	.sign_o(sd_m_neg_1_q_s0_pos_1_sign)
-);
-radix_4_sign_detector
-u_sd_m_neg_0_q_s0_pos_1 (
-	.rem_sum_msb_i(rem_sum_mul_16_trunc_3_4[1]),
-	.rem_carry_msb_i(rem_carry_mul_16_trunc_3_4[1]),
-	.parameter_i(para_m_neg_0),
-	.divisor_i(divisor_mul_neg_4_trunc_3_4),
-	.sign_o(sd_m_neg_0_q_s0_pos_1_sign)
-);
-radix_4_sign_detector
-u_sd_m_pos_1_q_s0_pos_1 (
-	.rem_sum_msb_i(rem_sum_mul_16_trunc_3_4[1]),
-	.rem_carry_msb_i(rem_carry_mul_16_trunc_3_4[1]),
-	.parameter_i(para_m_pos_1),
-	.divisor_i(divisor_mul_neg_4_trunc_3_4),
-	.sign_o(sd_m_pos_1_q_s0_pos_1_sign)
-);
-radix_4_sign_detector
-u_sd_m_pos_2_q_s0_pos_1 (
-	.rem_sum_msb_i(rem_sum_mul_16_trunc_2_5[1]),
-	.rem_carry_msb_i(rem_carry_mul_16_trunc_2_5[1]),
-	.parameter_i(para_m_pos_2),
-	.divisor_i(divisor_mul_neg_4_trunc_2_5),
-	.sign_o(sd_m_pos_2_q_s0_pos_1_sign)
-);
-// ================================================================================================================================================
-// Here we assume "quo_digit_s0 = +2". Then calculate "quo_digit_s1" speculativly.
-// ================================================================================================================================================
-radix_4_sign_detector
-u_sd_m_neg_1_q_s0_pos_2 (
-	.rem_sum_msb_i(rem_sum_mul_16_trunc_2_5[1]),
-	.rem_carry_msb_i(rem_carry_mul_16_trunc_2_5[1]),
-	.parameter_i(para_m_neg_1),
-	.divisor_i(divisor_mul_neg_8_trunc_2_5),
-	.sign_o(sd_m_neg_1_q_s0_pos_2_sign)
-);
-radix_4_sign_detector
-u_sd_m_neg_0_q_s0_pos_2 (
-	.rem_sum_msb_i(rem_sum_mul_16_trunc_3_4[1]),
-	.rem_carry_msb_i(rem_carry_mul_16_trunc_3_4[1]),
-	.parameter_i(para_m_neg_0),
-	.divisor_i(divisor_mul_neg_8_trunc_3_4),
-	.sign_o(sd_m_neg_0_q_s0_pos_2_sign)
-);
-radix_4_sign_detector
-u_sd_m_pos_1_q_s0_pos_2 (
-	.rem_sum_msb_i(rem_sum_mul_16_trunc_3_4[1]),
-	.rem_carry_msb_i(rem_carry_mul_16_trunc_3_4[1]),
-	.parameter_i(para_m_pos_1),
-	.divisor_i(divisor_mul_neg_8_trunc_3_4),
-	.sign_o(sd_m_pos_1_q_s0_pos_2_sign)
-);
-radix_4_sign_detector
-u_sd_m_pos_2_q_s0_pos_2 (
-	.rem_sum_msb_i(rem_sum_mul_16_trunc_2_5[1]),
-	.rem_carry_msb_i(rem_carry_mul_16_trunc_2_5[1]),
-	.parameter_i(para_m_pos_2),
-	.divisor_i(divisor_mul_neg_8_trunc_2_5),
-	.sign_o(sd_m_pos_2_q_s0_pos_2_sign)
+
+// The decimal point is between [REM_W-1] and [REM_W-2]
+assign rem_s_mul_16[1] = {nxt_rem_s[0], 4'b0};
+assign rem_c_mul_16[1] = {nxt_rem_c[0], 4'b0};
+
+r4_qds #(
+	.SPEC(1)
+) u_r4_qds_s1 (
+	.rem_s_trunc_3_5_i(rem_s_mul_16[1][REM_W+1 -: 8]),
+	.rem_c_trunc_3_5_i(rem_c_mul_16[1][REM_W+1 -: 8]),
+	.m_neg_1_i(m_neg_1),
+	.m_neg_0_i(m_neg_0),
+	.m_pos_1_i(m_pos_1),
+	.m_pos_2_i(m_pos_2),
+	// Not used
+	.D_trunc_3_5_i('0),
+	.D_mul_4_trunc_2_5_i(D_mul_4_trunc_2_5),
+	.D_mul_4_trunc_3_4_i(D_mul_4_trunc_3_4),
+	.D_mul_8_trunc_2_5_i(D_mul_8_trunc_2_5),
+	.D_mul_8_trunc_3_4_i(D_mul_8_trunc_3_4),
+	.D_mul_neg_4_trunc_2_5_i(D_mul_neg_4_trunc_2_5),
+	.D_mul_neg_4_trunc_3_4_i(D_mul_neg_4_trunc_3_4),
+	.D_mul_neg_8_trunc_2_5_i(D_mul_neg_8_trunc_2_5),
+	.D_mul_neg_8_trunc_3_4_i(D_mul_neg_8_trunc_3_4),
+	.prev_quo_dig_i(nxt_quo_dig[0]),
+	.quo_dig_o(nxt_quo_dig[1])
 );
 
-assign sd_m_neg_1_sign_s1 = 
-  ({(1){quo_digit_s0[QUO_NEG_2]}} & sd_m_neg_1_q_s0_neg_2_sign)
-| ({(1){quo_digit_s0[QUO_NEG_1]}} & sd_m_neg_1_q_s0_neg_1_sign)
-| ({(1){quo_digit_s0[QUO_ZERO ]}} & sd_m_neg_1_q_s0_pos_0_sign)
-| ({(1){quo_digit_s0[QUO_POS_1]}} & sd_m_neg_1_q_s0_pos_1_sign)
-| ({(1){quo_digit_s0[QUO_POS_2]}} & sd_m_neg_1_q_s0_pos_2_sign);
-assign sd_m_neg_0_sign_s1 = 
-  ({(1){quo_digit_s0[QUO_NEG_2]}} & sd_m_neg_0_q_s0_neg_2_sign)
-| ({(1){quo_digit_s0[QUO_NEG_1]}} & sd_m_neg_0_q_s0_neg_1_sign)
-| ({(1){quo_digit_s0[QUO_ZERO ]}} & sd_m_neg_0_q_s0_pos_0_sign)
-| ({(1){quo_digit_s0[QUO_POS_1]}} & sd_m_neg_0_q_s0_pos_1_sign)
-| ({(1){quo_digit_s0[QUO_POS_2]}} & sd_m_neg_0_q_s0_pos_2_sign);
-assign sd_m_pos_1_sign_s1 = 
-  ({(1){quo_digit_s0[QUO_NEG_2]}} & sd_m_pos_1_q_s0_neg_2_sign)
-| ({(1){quo_digit_s0[QUO_NEG_1]}} & sd_m_pos_1_q_s0_neg_1_sign)
-| ({(1){quo_digit_s0[QUO_ZERO ]}} & sd_m_pos_1_q_s0_pos_0_sign)
-| ({(1){quo_digit_s0[QUO_POS_1]}} & sd_m_pos_1_q_s0_pos_1_sign)
-| ({(1){quo_digit_s0[QUO_POS_2]}} & sd_m_pos_1_q_s0_pos_2_sign);
-assign sd_m_pos_2_sign_s1 = 
-  ({(1){quo_digit_s0[QUO_NEG_2]}} & sd_m_pos_2_q_s0_neg_2_sign)
-| ({(1){quo_digit_s0[QUO_NEG_1]}} & sd_m_pos_2_q_s0_neg_1_sign)
-| ({(1){quo_digit_s0[QUO_ZERO ]}} & sd_m_pos_2_q_s0_pos_0_sign)
-| ({(1){quo_digit_s0[QUO_POS_1]}} & sd_m_pos_2_q_s0_pos_1_sign)
-| ({(1){quo_digit_s0[QUO_POS_2]}} & sd_m_pos_2_q_s0_pos_2_sign);
+assign D_to_csa[1] = 
+  ({(REM_W){nxt_quo_dig[0][4]}} & {D_ext[(REM_W-1)-1:0], 1'b0})
+| ({(REM_W){nxt_quo_dig[0][3]}} & D_ext)
+| ({(REM_W){nxt_quo_dig[0][1]}} & ~D_ext)
+| ({(REM_W){nxt_quo_dig[0][0]}} & ~{D_ext[(REM_W-1)-1:0], 1'b0});
 
-// Before sign_coder_stage[1] begins, we are supposed to get "quo_digit_s0" (think of its delay) -> Only 1 coder is needed for stage[1].
-radix_4_sign_coder
-u_coder_s1 (
-	.sd_m_neg_1_sign_i(sd_m_neg_1_sign_s1),
-	.sd_m_neg_0_sign_i(sd_m_neg_0_sign_s1),
-	.sd_m_pos_1_sign_i(sd_m_pos_1_sign_s1),
-	.sd_m_pos_2_sign_i(sd_m_pos_2_sign_s1),
-	.quo_o(quo_digit_s1)
-);
+assign nxt_rem_s[1] = 
+  {nxt_rem_s[0][(REM_W-1)-2:0], 2'b0}
+^ {nxt_rem_c[0][(REM_W-1)-2:0], 2'b0}
+^ D_to_csa[1];
+assign nxt_rem_c[1] = {
+	  ({nxt_rem_s[0][(REM_W-1)-3:0], 2'b0} & {nxt_rem_c[0][(REM_W-1)-3:0], 2'b0})
+	| ({nxt_rem_s[0][(REM_W-1)-3:0], 2'b0} & D_to_csa[1][(REM_W-1)-1:0])
+	| ({nxt_rem_c[0][(REM_W-1)-3:0], 2'b0} & D_to_csa[1][(REM_W-1)-1:0]),
+	nxt_quo_dig[0][1] | nxt_quo_dig[0][0]
+};
 
-assign csa_x1[1] = {rem_sum[0]  [0 +: (ITN_W - 2)], 2'b0};
-assign csa_x2[1] = {rem_carry[0][0 +: (ITN_W - 2)], 2'b0};
-assign csa_x3[1] = 
-  ({(ITN_W){quo_digit_s0[QUO_NEG_2]}} & {divisor_i, 6'b0})
-| ({(ITN_W){quo_digit_s0[QUO_NEG_1]}} & {1'b0, divisor_i, 5'b0})
-| ({(ITN_W){quo_digit_s0[QUO_POS_1]}} & ~{1'b0, divisor_i, 5'b0})
-| ({(ITN_W){quo_digit_s0[QUO_POS_2]}} & ~{divisor_i, 6'b0});
-compressor_3_2 #(
-	.WIDTH(ITN_W)
-) u_csa_s1 (
-	.x1(csa_x1[1]),
-	.x2(csa_x2[1]),
-	.x3(csa_x3[1]),
-	.sum_o(rem_sum[1]),
-	.carry_o({rem_carry[1][1 +: (ITN_W - 1)], csa_carry_unused[1]})
-);
-assign rem_carry[1][0] = quo_digit_s0[QUO_POS_1] | quo_digit_s0[QUO_POS_2];
+// ================================================================================================================================================
+// stage[1].OFC
+// ================================================================================================================================================
+assign nxt_quo_iter[1] = 
+  ({(D_W){nxt_quo_dig[0][0]}} & {nxt_quo_iter[0]   [(D_W-1)-2:0], 2'b10})
+| ({(D_W){nxt_quo_dig[0][1]}} & {nxt_quo_iter[0]   [(D_W-1)-2:0], 2'b01})
+| ({(D_W){nxt_quo_dig[0][2]}} & {nxt_quo_iter[0]   [(D_W-1)-2:0], 2'b00})
+| ({(D_W){nxt_quo_dig[0][3]}} & {nxt_quo_m1_iter[0][(D_W-1)-2:0], 2'b11})
+| ({(D_W){nxt_quo_dig[0][4]}} & {nxt_quo_m1_iter[0][(D_W-1)-2:0], 2'b10});
+assign nxt_quo_m1_iter[1] = 
+  ({(D_W){nxt_quo_dig[0][0]}} & {nxt_quo_iter[0]   [(D_W-1)-2:0], 2'b01})
+| ({(D_W){nxt_quo_dig[0][1]}} & {nxt_quo_iter[0]   [(D_W-1)-2:0], 2'b00})
+| ({(D_W){nxt_quo_dig[0][2]}} & {nxt_quo_m1_iter[0][(D_W-1)-2:0], 2'b11})
+| ({(D_W){nxt_quo_dig[0][3]}} & {nxt_quo_m1_iter[0][(D_W-1)-2:0], 2'b10})
+| ({(D_W){nxt_quo_dig[0][4]}} & {nxt_quo_m1_iter[0][(D_W-1)-2:0], 2'b01});
 
-assign rem_sum_o = rem_sum[1];
-assign rem_carry_o = rem_carry[1];
-assign quo_iter_o = quo_iter_s1;
-assign quo_m1_iter_o = quo_m1_iter_s1;
-assign quo_digit_o = quo_digit_s1;
-
+assign nxt_rem_s_o = nxt_rem_s;
+assign nxt_rem_c_o = nxt_rem_c;
+assign nxt_quo_iter_o = nxt_quo_iter;
+assign nxt_quo_m1_iter_o = nxt_quo_m1_iter;
+assign nxt_quo_dig_o = nxt_quo_dig;
 
 endmodule

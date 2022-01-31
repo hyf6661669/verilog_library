@@ -1,9 +1,8 @@
 +incdir+../tb
 
-# RTL
--f ../rtl/rtl.lst
-
-
 # TB file
 ../tb/tb_top.sv
+
+# RTL
+-f ../rtl/rtl.lst
 

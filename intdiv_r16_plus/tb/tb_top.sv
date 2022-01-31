@@ -3,7 +3,7 @@
 // Author				: HYF
 // How to Contact		: hyf_sysu@qq.com
 // Created Time    		: 2022-01-24 21:57:45
-// Last Modified Time   : 2022-01-26 09:27:56
+// Last Modified Time   : 2022-01-30 19:56:53
 // ========================================================================================================
 // Description	:
 // TB for intdiv.
@@ -81,8 +81,13 @@ localparam OPCODE_UNSIGNED = 1'b0;
 `ifndef UDIV_TEST_NUM
 	`define UDIV_TEST_NUM 2 ** 15
 `endif
+`ifndef NEG_POWER_OF_2_TEST_NUM
+	`define NEG_POWER_OF_2_TEST_NUM 2 ** 15
+`endif
+
 localparam SDIV_TEST_NUM = `SDIV_TEST_NUM;
 localparam UDIV_TEST_NUM = `UDIV_TEST_NUM;
+localparam NEG_POWER_OF_2_TEST_NUM = `NEG_POWER_OF_2_TEST_NUM;
 
 
 localparam U64_POS_MAX = {(64){1'b1}};
@@ -94,11 +99,6 @@ localparam U32_POS_MAX = {(32){1'b1}};
 localparam S32_POS_MAX  = {1'b0, {(31){1'b1}}};
 localparam S32_NEG_MIN  = {1'b1, {(31){1'b0}}};
 localparam S32_NEG_ONE  = {(32){1'b1}};
-
-localparam U16_POS_MAX = {(16){1'b1}};
-localparam S16_POS_MAX  = {1'b0, {(15){1'b1}}};
-localparam S16_NEG_MIN  = {1'b1, {(15){1'b0}}};
-localparam S16_NEG_ONE  = {(16){1'b1}};
 
 // ==================================================================================================================================================
 // functions
@@ -119,7 +119,6 @@ logic stim_end;
 logic acq_trig;
 logic [31:0] acq_count;
 logic [31:0] err_count;
-int fptr;
 
 bit compare_ok;
 bit dut_start_valid;
@@ -148,44 +147,29 @@ bit [32-1:0] dividend_abs_32;
 bit [32-1:0] divisor_32;
 bit [32-1:0] divisor_abs_32;
 
-bit [16-1:0] dividend_16;
-bit [16-1:0] dividend_abs_16;
-bit [16-1:0] divisor_16;
-bit [16-1:0] divisor_abs_16;
-
 bit [5:0] dividend_64_lzc;
 bit [4:0] dividend_32_lzc;
-bit [3:0] dividend_16_lzc;
 
 bit [5:0] divisor_64_lzc;
 bit [4:0] divisor_32_lzc;
-bit [3:0] divisor_16_lzc;
 
 bit neg_quotient_64;
 bit neg_remainder_64;
 bit neg_quotient_32;
 bit neg_remainder_32;
-bit neg_quotient_16;
-bit neg_remainder_16;
 bit [64-1:0] quotient_64;
 bit [64-1:0] remainder_64;
 bit [32-1:0] quotient_32;
 bit [32-1:0] remainder_32;
-bit [16-1:0] quotient_16;
-bit [16-1:0] remainder_16;
 bit divisor_is_zero_64;
 bit divisor_is_zero_32;
-bit divisor_is_zero_16;
 
 bit [64-1:0] dut_quotient_64;
 bit [64-1:0] dut_remainder_64;
 bit [32-1:0] dut_quotient_32;
 bit [32-1:0] dut_remainder_32;
-bit [16-1:0] dut_quotient_16;
-bit [16-1:0] dut_remainder_16;
 bit dut_divisor_is_zero_64;
 bit dut_divisor_is_zero_32;
-bit dut_divisor_is_zero_16;
 
 // ==================================================================================================================================================
 // main codes
@@ -229,7 +213,6 @@ end
 
 initial begin
 	dut_finish_ready = 0;
-	fptr = $fopen("result.log", "w+");
 	$display("TB: response acquisition starts!");
 
 	// wait for acquisition trigger
@@ -239,7 +222,6 @@ initial begin
 		begin
 			$display("response acquisition finishes!");
 			$display("TB finishes!");
-			$fclose(fptr);
 			$stop();
 		end
 	end while(acq_trig == 1'b0);
@@ -260,41 +242,33 @@ initial begin
 		if((compare_ok == 0) | (compare_ok == 1'bX)) begin
 			// $display("ERROR FOUND:");
 
-			$fdisplay(fptr, "[%d]:", acq_count);
+			$display("[stim_idx = %d]:", acq_count);
 
 `ifdef DUT_WIDTH_64
-			$fdisplay(fptr, "dividend = %08H%08H", dividend_64[63:32], dividend_64[31:0]);
-			$fdisplay(fptr, "divisor  = %08H%08H", divisor_64[63:32], divisor_64[31:0]);
-			$fdisplay(fptr, "opcode   = %b", opcode);
-			$fdisplay(fptr, "ref_quo  = %08H%08H", quotient_64[63:32], quotient_64[31:0]);
-			$fdisplay(fptr, "dut_quo  = %08H%08H", dut_quotient_64[63:32], dut_quotient_64[31:0]);
-			$fdisplay(fptr, "ref_rem  = %08H%08H", remainder_64[63:32], remainder_64[31:0]);
-			$fdisplay(fptr, "dut_rem  = %08H%08H", dut_remainder_64[63:32], dut_remainder_64[31:0]);
-`elsif DUT_WIDTH_32
-			$fdisplay(fptr, "dividend = %08H", dividend_32);
-			$fdisplay(fptr, "divisor  = %08H", divisor_32);
-			$fdisplay(fptr, "opcode   = %b", opcode);
-			$fdisplay(fptr, "ref_quo  = %08H", quotient_32);
-			$fdisplay(fptr, "dut_quo  = %08H", dut_quotient_32);
-			$fdisplay(fptr, "ref_rem  = %08H", remainder_32);
-			$fdisplay(fptr, "dut_rem  = %08H", dut_remainder_32);
+			$display("dividend = %08H%08H", dividend_64[63:32], dividend_64[31:0]);
+			$display("divisor  = %08H%08H", divisor_64[63:32], divisor_64[31:0]);
+			$display("opcode   = %b", opcode);
+			$display("ref_quo  = %08H%08H", quotient_64[63:32], quotient_64[31:0]);
+			$display("dut_quo  = %08H%08H", dut_quotient_64[63:32], dut_quotient_64[31:0]);
+			$display("ref_rem  = %08H%08H", remainder_64[63:32], remainder_64[31:0]);
+			$display("dut_rem  = %08H%08H", dut_remainder_64[63:32], dut_remainder_64[31:0]);
 `else
-			$fdisplay(fptr, "dividend = %04H", dividend_16);
-			$fdisplay(fptr, "divisor  = %04H", divisor_16);
-			$fdisplay(fptr, "opcode   = %b", opcode);
-			$fdisplay(fptr, "ref_quo  = %04H", quotient_16);
-			$fdisplay(fptr, "dut_quo  = %04H", dut_quotient_16);
-			$fdisplay(fptr, "ref_rem  = %04H", remainder_16);
-			$fdisplay(fptr, "dut_rem  = %04H", dut_remainder_16);
+			$display("dividend = %08H", dividend_32);
+			$display("divisor  = %08H", divisor_32);
+			$display("opcode   = %b", opcode);
+			$display("ref_quo  = %08H", quotient_32);
+			$display("dut_quo  = %08H", dut_quotient_32);
+			$display("ref_rem  = %08H", remainder_32);
+			$display("dut_rem  = %08H", dut_remainder_32);
 `endif
 
+			$display("");
 			err_count++;
 		end
 
 		if(err_count == `MAX_ERROR_COUNT) begin
-			$fdisplay(fptr, "finished_test_num = %d, error_test_num = %d", acq_count, err_count);
-			$fdisplay(fptr, "Too many ERRORs, stop simulation!!!");
-			$fclose(fptr);
+			$display("finished_test_num = %d, error_test_num = %d", acq_count, err_count);
+			$display("Too many ERRORs, stop simulation!!!");
 			$stop();
 		end
 
@@ -308,11 +282,10 @@ initial begin
 	end while(stim_end == 0);
 
 	`WAIT_CYC(clk, 5)
-	$fdisplay(fptr, "\n");
-	$fdisplay(fptr, "finished_test_num = %d, error_test_num = %d", acq_count, err_count);
+	$display("\n");
+	$display("finished_test_num = %d, error_test_num = %d", acq_count, err_count);
 	$display("response acquisition finishes!");
 	$display("TB finishes!");
-	$fclose(fptr);
 	$stop();
 end
 
@@ -326,26 +299,19 @@ always_comb begin
 	neg_remainder_64 = (opcode == OPCODE_SIGNED) & (dividend_64[63]);
 	neg_quotient_32 = (opcode == OPCODE_SIGNED) & (dividend_32[31] ^ divisor_32[31]);
 	neg_remainder_32 = (opcode == OPCODE_SIGNED) & (dividend_32[31]);
-	neg_quotient_16 = (opcode == OPCODE_SIGNED) & (dividend_16[15] ^ divisor_16[15]);
-	neg_remainder_16 = (opcode == OPCODE_SIGNED) & (dividend_16[15]);
 
 	dividend_abs_64 = (dividend_64[63] & (opcode == OPCODE_SIGNED)) ? -dividend_64 : dividend_64;
 	divisor_abs_64 = (divisor_64[63] & (opcode == OPCODE_SIGNED)) ? -divisor_64 : divisor_64;
 	dividend_abs_32 = (dividend_32[31] & (opcode == OPCODE_SIGNED)) ? -dividend_32 : dividend_32;
 	divisor_abs_32 = (divisor_32[31] & (opcode == OPCODE_SIGNED)) ? -divisor_32 : divisor_32;
-	dividend_abs_16 = (dividend_16[15] & (opcode == OPCODE_SIGNED)) ? -dividend_16 : dividend_16;
-	divisor_abs_16 = (divisor_16[15] & (opcode == OPCODE_SIGNED)) ? -divisor_16 : divisor_16;
 
 	quotient_64 = neg_quotient_64 ? -(dividend_abs_64 / divisor_abs_64) : (dividend_abs_64 / divisor_abs_64);
 	remainder_64 = neg_remainder_64 ? -(dividend_abs_64 % divisor_abs_64) : (dividend_abs_64 % divisor_abs_64);
 	quotient_32 = neg_quotient_32 ? -(dividend_abs_32 / divisor_abs_32) : (dividend_abs_32 / divisor_abs_32);
 	remainder_32 = neg_remainder_32 ? -(dividend_abs_32 % divisor_abs_32) : (dividend_abs_32 % divisor_abs_32);
-	quotient_16 = neg_quotient_16 ? -(dividend_abs_16 / divisor_abs_16) : (dividend_abs_16 / divisor_abs_16);
-	remainder_16 = neg_remainder_16 ? -(dividend_abs_16 % divisor_abs_16) : (dividend_abs_16 % divisor_abs_16);
 
 	divisor_is_zero_64 = (divisor_64 == 0);
 	divisor_is_zero_32 = (divisor_32 == 0);
-	divisor_is_zero_16 = (divisor_16 == 0);
 
 	if(opcode == OPCODE_SIGNED) begin
 		if(divisor_64 == 0) begin
@@ -366,14 +332,6 @@ always_comb begin
 			remainder_32 = 0;
 		end
 
-		if(divisor_16 == 0) begin
-			quotient_16 = U16_POS_MAX;
-			remainder_16 = dividend_16;
-		end
-		else if((dividend_16 == S16_NEG_MIN) & (divisor_16 == S16_NEG_ONE)) begin
-			quotient_16 = S16_NEG_MIN;
-			remainder_16 = 0;
-		end
 	end
 	else begin
 		if(divisor_64 == 0) begin
@@ -386,19 +344,13 @@ always_comb begin
 			remainder_32 = dividend_32;
 		end
 
-		if(divisor_16 == 0) begin
-			quotient_16 = U16_POS_MAX;
-			remainder_16 = dividend_16;
-		end
 	end
 
 
 `ifdef DUT_WIDTH_64
 		compare_ok = (quotient_64 == dut_quotient_64) & (remainder_64 == dut_remainder_64) & (divisor_is_zero_64 == dut_divisor_is_zero_64);
-`elsif DUT_WIDTH_32
-		compare_ok = (quotient_32 == dut_quotient_32) & (remainder_32 == dut_remainder_32) & (divisor_is_zero_32 == dut_divisor_is_zero_32);
 `else
-		compare_ok = (quotient_16 == dut_quotient_16) & (remainder_16 == dut_remainder_16) & (divisor_is_zero_16 == dut_divisor_is_zero_16);
+		compare_ok = (quotient_32 == dut_quotient_32) & (remainder_32 == dut_remainder_32) & (divisor_is_zero_32 == dut_divisor_is_zero_32);
 `endif
 
 end
@@ -407,17 +359,17 @@ end
 // Instantiate DUT here.
 
 `ifdef DUT_WIDTH_64
-int_div_radix_16_v4 #(
-	.WIDTH(64)
+intdiv_r16_plus #(
+	.D_W(64)
 ) u_dut (
 	.flush_i(1'b0),
-	.div_start_valid_i(dut_start_valid),
-	.div_start_ready_o(dut_start_ready),
+	.start_valid_i(dut_start_valid),
+	.start_ready_o(dut_start_ready),
 	.signed_op_i(opcode),
 	.dividend_i(dividend_64),
 	.divisor_i(divisor_64),
-	.div_finish_valid_o(dut_finish_valid),
-	.div_finish_ready_i(dut_finish_ready),
+	.finish_valid_o(dut_finish_valid),
+	.finish_ready_i(dut_finish_ready),
 	.quotient_o(dut_quotient_64),
 	.remainder_o(dut_remainder_64),
 	.divisor_is_zero_o(dut_divisor_is_zero_64),
@@ -425,40 +377,21 @@ int_div_radix_16_v4 #(
 	.clk(clk),
 	.rst_n(rst_n)
 );
-`elsif DUT_WIDTH_32
-int_div_radix_16_v4 #(
-	.WIDTH(32)
+`else
+intdiv_r16_plus #(
+	.D_W(32)
 ) u_dut (
 	.flush_i(1'b0),
-	.div_start_valid_i(dut_start_valid),
-	.div_start_ready_o(dut_start_ready),
+	.start_valid_i(dut_start_valid),
+	.start_ready_o(dut_start_ready),
 	.signed_op_i(opcode),
 	.dividend_i(dividend_32),
 	.divisor_i(divisor_32),
-	.div_finish_valid_o(dut_finish_valid),
-	.div_finish_ready_i(dut_finish_ready),
+	.finish_valid_o(dut_finish_valid),
+	.finish_ready_i(dut_finish_ready),
 	.quotient_o(dut_quotient_32),
 	.remainder_o(dut_remainder_32),
 	.divisor_is_zero_o(dut_divisor_is_zero_32),
-
-	.clk(clk),
-	.rst_n(rst_n)
-);
-`else
-int_div_radix_16_v4 #(
-	.WIDTH(16)
-) u_dut (
-	.flush_i(1'b0),
-	.div_start_valid_i(dut_start_valid),
-	.div_start_ready_o(dut_start_ready),
-	.signed_op_i(opcode),
-	.dividend_i(dividend_16),
-	.divisor_i(divisor_16),
-	.div_finish_valid_o(dut_finish_valid),
-	.div_finish_ready_i(dut_finish_ready),
-	.quotient_o(dut_quotient_16),
-	.remainder_o(dut_remainder_16),
-	.divisor_is_zero_o(dut_divisor_is_zero_16),
 
 	.clk(clk),
 	.rst_n(rst_n)
