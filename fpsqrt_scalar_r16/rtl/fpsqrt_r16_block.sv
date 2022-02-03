@@ -2,8 +2,8 @@
 // File Name			: fpsqrt_r16_block.sv
 // Author				: HYF
 // How to Contact		: hyf_sysu@qq.com
-// Created Time    		: 2022-01-18 12:06:23
-// Last Modified Time   : 2022-01-24 16:00:42
+// Created Time    		: 2022-02-01 18:39:18
+// Last Modified Time   : 2022-02-03 20:17:19
 // ========================================================================================================
 // Description	:
 // Radix-16 SRT algorithm for the frac part of fpsqrt.
@@ -43,7 +43,9 @@
 
 module fpsqrt_r16_block #(
 	// Put some parameters here, which can be changed by other modules
-	
+	parameter S0_CSA_SPECULATIVE = 0,
+	parameter S1_QDS_SPECULATIVE = 0,
+	parameter S1_CSA_SPECULATIVE = 1,
 	// Don't change the following value
 	parameter REM_W = 2 + 54,
 	parameter RT_DIG_W = 5
@@ -120,6 +122,8 @@ logic [REM_W-1:0] sqrt_csa_val_neg_2 [2-1:0];
 logic [REM_W-1:0] sqrt_csa_val_neg_1 [2-1:0];
 logic [REM_W-1:0] sqrt_csa_val_pos_1 [2-1:0];
 logic [REM_W-1:0] sqrt_csa_val_pos_2 [2-1:0];
+
+logic [REM_W-1:0] sqrt_csa_val [2-1:0];
 
 logic a0_spec_s0 [5-1:0];
 logic a2_spec_s0 [5-1:0];
@@ -245,57 +249,96 @@ assign sqrt_csa_val_neg_1[0] = ({1'b0, rt_m1} << 1) | mask_csa_neg_1[0];
 assign sqrt_csa_val_pos_1[0] = ~(({1'b0, rt} << 1) | mask_csa_pos_1[0]);
 assign sqrt_csa_val_pos_2[0] = ~(({1'b0, rt} << 2) | mask_csa_pos_2[0]); 
 
-// Here we assume nxt_rt_dig[0] = -2
-assign nxt_f_r_s_spec_s0[4] = 
-  {f_r_s_i[(REM_W-1)-2:0], 2'b0}
-^ {f_r_c_i[(REM_W-1)-2:0], 2'b0}
-^ sqrt_csa_val_neg_2[0];
-assign nxt_f_r_c_spec_s0[4] = {
-	  ({f_r_s_i[(REM_W-1)-3:0], 2'b0} & {f_r_c_i[(REM_W-1)-3:0], 2'b0})
-	| ({f_r_s_i[(REM_W-1)-3:0], 2'b0} & sqrt_csa_val_neg_2[0][(REM_W-1)-1:0])
-	| ({f_r_c_i[(REM_W-1)-3:0], 2'b0} & sqrt_csa_val_neg_2[0][(REM_W-1)-1:0]),
-	1'b0
-};
+generate
+if(S0_CSA_SPECULATIVE == 1) begin: g_s0_csa_spec
 
-// Here we assume nxt_rt_dig[0] = -1
-assign nxt_f_r_s_spec_s0[3] = 
-  {f_r_s_i[(REM_W-1)-2:0], 2'b0}
-^ {f_r_c_i[(REM_W-1)-2:0], 2'b0}
-^ sqrt_csa_val_neg_1[0];
-assign nxt_f_r_c_spec_s0[3] = {
-	  ({f_r_s_i[(REM_W-1)-3:0], 2'b0} & {f_r_c_i[(REM_W-1)-3:0], 2'b0})
-	| ({f_r_s_i[(REM_W-1)-3:0], 2'b0} & sqrt_csa_val_neg_1[0][(REM_W-1)-1:0])
-	| ({f_r_c_i[(REM_W-1)-3:0], 2'b0} & sqrt_csa_val_neg_1[0][(REM_W-1)-1:0]),
-	1'b0
-};
+	// Here we assume nxt_rt_dig[0] = -2
+	assign nxt_f_r_s_spec_s0[4] = 
+	  {f_r_s_i[(REM_W-1)-2:0], 2'b0}
+	^ {f_r_c_i[(REM_W-1)-2:0], 2'b0}
+	^ sqrt_csa_val_neg_2[0];
+	assign nxt_f_r_c_spec_s0[4] = {
+		  ({f_r_s_i[(REM_W-1)-3:0], 2'b0} & {f_r_c_i[(REM_W-1)-3:0], 2'b0})
+		| ({f_r_s_i[(REM_W-1)-3:0], 2'b0} & sqrt_csa_val_neg_2[0][(REM_W-1)-1:0])
+		| ({f_r_c_i[(REM_W-1)-3:0], 2'b0} & sqrt_csa_val_neg_2[0][(REM_W-1)-1:0]),
+		1'b0
+	};
 
-// Here we assume nxt_rt_dig[0] = 0
-assign nxt_f_r_s_spec_s0[2] = {f_r_s_i[(REM_W-1)-2:0], 2'b0};
-assign nxt_f_r_c_spec_s0[2] = {f_r_c_i[(REM_W-1)-2:0], 2'b0};
+	// Here we assume nxt_rt_dig[0] = -1
+	assign nxt_f_r_s_spec_s0[3] = 
+	  {f_r_s_i[(REM_W-1)-2:0], 2'b0}
+	^ {f_r_c_i[(REM_W-1)-2:0], 2'b0}
+	^ sqrt_csa_val_neg_1[0];
+	assign nxt_f_r_c_spec_s0[3] = {
+		  ({f_r_s_i[(REM_W-1)-3:0], 2'b0} & {f_r_c_i[(REM_W-1)-3:0], 2'b0})
+		| ({f_r_s_i[(REM_W-1)-3:0], 2'b0} & sqrt_csa_val_neg_1[0][(REM_W-1)-1:0])
+		| ({f_r_c_i[(REM_W-1)-3:0], 2'b0} & sqrt_csa_val_neg_1[0][(REM_W-1)-1:0]),
+		1'b0
+	};
 
-// Here we assume nxt_rt_dig[0] = +1
-assign nxt_f_r_s_spec_s0[1] = 
-  {f_r_s_i[(REM_W-1)-2:0], 2'b0}
-^ {f_r_c_i[(REM_W-1)-2:0], 2'b0}
-^ sqrt_csa_val_pos_1[0];
-assign nxt_f_r_c_spec_s0[1] = {
-	  ({f_r_s_i[(REM_W-1)-3:0], 2'b0} & {f_r_c_i[(REM_W-1)-3:0], 2'b0})
-	| ({f_r_s_i[(REM_W-1)-3:0], 2'b0} & sqrt_csa_val_pos_1[0][(REM_W-1)-1:0])
-	| ({f_r_c_i[(REM_W-1)-3:0], 2'b0} & sqrt_csa_val_pos_1[0][(REM_W-1)-1:0]),
-	1'b1
-};
+	// Here we assume nxt_rt_dig[0] = 0
+	assign nxt_f_r_s_spec_s0[2] = {f_r_s_i[(REM_W-1)-2:0], 2'b0};
+	assign nxt_f_r_c_spec_s0[2] = {f_r_c_i[(REM_W-1)-2:0], 2'b0};
 
-// Here we assume nxt_rt_dig[0] = +2
-assign nxt_f_r_s_spec_s0[0] = 
-  {f_r_s_i[(REM_W-1)-2:0], 2'b0}
-^ {f_r_c_i[(REM_W-1)-2:0], 2'b0}
-^ sqrt_csa_val_pos_2[0];
-assign nxt_f_r_c_spec_s0[0] = {
-	  ({f_r_s_i[(REM_W-1)-3:0], 2'b0} & {f_r_c_i[(REM_W-1)-3:0], 2'b0})
-	| ({f_r_s_i[(REM_W-1)-3:0], 2'b0} & sqrt_csa_val_pos_2[0][(REM_W-1)-1:0])
-	| ({f_r_c_i[(REM_W-1)-3:0], 2'b0} & sqrt_csa_val_pos_2[0][(REM_W-1)-1:0]),
-	1'b1
-};
+	// Here we assume nxt_rt_dig[0] = +1
+	assign nxt_f_r_s_spec_s0[1] = 
+	  {f_r_s_i[(REM_W-1)-2:0], 2'b0}
+	^ {f_r_c_i[(REM_W-1)-2:0], 2'b0}
+	^ sqrt_csa_val_pos_1[0];
+	assign nxt_f_r_c_spec_s0[1] = {
+		  ({f_r_s_i[(REM_W-1)-3:0], 2'b0} & {f_r_c_i[(REM_W-1)-3:0], 2'b0})
+		| ({f_r_s_i[(REM_W-1)-3:0], 2'b0} & sqrt_csa_val_pos_1[0][(REM_W-1)-1:0])
+		| ({f_r_c_i[(REM_W-1)-3:0], 2'b0} & sqrt_csa_val_pos_1[0][(REM_W-1)-1:0]),
+		1'b1
+	};
+
+	// Here we assume nxt_rt_dig[0] = +2
+	assign nxt_f_r_s_spec_s0[0] = 
+	  {f_r_s_i[(REM_W-1)-2:0], 2'b0}
+	^ {f_r_c_i[(REM_W-1)-2:0], 2'b0}
+	^ sqrt_csa_val_pos_2[0];
+	assign nxt_f_r_c_spec_s0[0] = {
+		  ({f_r_s_i[(REM_W-1)-3:0], 2'b0} & {f_r_c_i[(REM_W-1)-3:0], 2'b0})
+		| ({f_r_s_i[(REM_W-1)-3:0], 2'b0} & sqrt_csa_val_pos_2[0][(REM_W-1)-1:0])
+		| ({f_r_c_i[(REM_W-1)-3:0], 2'b0} & sqrt_csa_val_pos_2[0][(REM_W-1)-1:0]),
+		1'b1
+	};
+
+	assign nxt_f_r_s[0] = 
+	  ({(REM_W){nxt_rt_dig[0][4]}} & nxt_f_r_s_spec_s0[4])
+	| ({(REM_W){nxt_rt_dig[0][3]}} & nxt_f_r_s_spec_s0[3])
+	| ({(REM_W){nxt_rt_dig[0][2]}} & nxt_f_r_s_spec_s0[2])
+	| ({(REM_W){nxt_rt_dig[0][1]}} & nxt_f_r_s_spec_s0[1])
+	| ({(REM_W){nxt_rt_dig[0][0]}} & nxt_f_r_s_spec_s0[0]);
+	assign nxt_f_r_c[0] = 
+	  ({(REM_W){nxt_rt_dig[0][4]}} & nxt_f_r_c_spec_s0[4])
+	| ({(REM_W){nxt_rt_dig[0][3]}} & nxt_f_r_c_spec_s0[3])
+	| ({(REM_W){nxt_rt_dig[0][2]}} & nxt_f_r_c_spec_s0[2])
+	| ({(REM_W){nxt_rt_dig[0][1]}} & nxt_f_r_c_spec_s0[1])
+	| ({(REM_W){nxt_rt_dig[0][0]}} & nxt_f_r_c_spec_s0[0]);
+
+end else begin: g_s0_csa_no_spec
+
+	// If timing is good enough, let the CSA operation starts after "nxt_rt_dig[0]"" is available, so the area of the CSA is reduced.
+
+	assign sqrt_csa_val[0] = 
+	  ({(REM_W){nxt_rt_dig[0][4]}} & sqrt_csa_val_neg_2[0])
+	| ({(REM_W){nxt_rt_dig[0][3]}} & sqrt_csa_val_neg_1[0])
+	| ({(REM_W){nxt_rt_dig[0][1]}} & sqrt_csa_val_pos_1[0])
+	| ({(REM_W){nxt_rt_dig[0][0]}} & sqrt_csa_val_pos_2[0]);
+
+	assign nxt_f_r_s[0] = 
+	  {f_r_s_i[(REM_W-1)-2:0], 2'b0}
+	^ {f_r_c_i[(REM_W-1)-2:0], 2'b0}
+	^ sqrt_csa_val[0];
+	assign nxt_f_r_c[0] = {
+		  ({f_r_s_i[(REM_W-1)-3:0], 2'b0} & {f_r_c_i[(REM_W-1)-3:0], 2'b0})
+		| ({f_r_s_i[(REM_W-1)-3:0], 2'b0} & sqrt_csa_val[0][(REM_W-1)-1:0])
+		| ({f_r_c_i[(REM_W-1)-3:0], 2'b0} & sqrt_csa_val[0][(REM_W-1)-1:0]),
+		nxt_rt_dig[0][1] | nxt_rt_dig[0][0]
+	};
+end
+endgenerate
 
 // Get the non-redundant form, for stage[1].qds
 assign adder_9b_for_s1_qds_spec[4] = nr_f_r_9b_for_nxt_cycle_s1_qds_i + sqrt_csa_val_neg_2[0][(REM_W-1) -: 9];
@@ -309,7 +352,7 @@ assign adder_9b_for_s1_qds_spec[1] = nr_f_r_9b_for_nxt_cycle_s1_qds_i + sqrt_csa
 assign adder_9b_for_s1_qds_spec[0] = nr_f_r_9b_for_nxt_cycle_s1_qds_i + sqrt_csa_val_pos_2[0][(REM_W-1) -: 9];
 
 // ================================================================================================================================================
-// stage[0].constants_generator
+// stage[0].cg
 // This is done in parallel with qds
 // ================================================================================================================================================
 assign rt = {~rt_i[53], rt_i[53:0]};
@@ -346,8 +389,8 @@ assign a2_spec_s0[0] = nxt_rt_spec_s0[0][52];
 assign a3_spec_s0[0] = nxt_rt_spec_s0[0][51];
 assign a4_spec_s0[0] = nxt_rt_spec_s0[0][50];
 
-r4_qds_constants_generator 
-u_r4_qds_constants_generator_spec_s0_neg_2 (
+r4_qds_cg 
+u_r4_qds_cg_spec_s0_neg_2 (
 	.a0_i(a0_spec_s0[4]),
 	.a2_i(a2_spec_s0[4]),
 	.a3_i(a3_spec_s0[4]),
@@ -358,8 +401,8 @@ u_r4_qds_constants_generator_spec_s0_neg_2 (
 	.m_pos_2_o(m_pos_2_spec_s0[4])
 );
 
-r4_qds_constants_generator 
-u_r4_qds_constants_generator_spec_s0_neg_1 (
+r4_qds_cg 
+u_r4_qds_cg_spec_s0_neg_1 (
 	.a0_i(a0_spec_s0[3]),
 	.a2_i(a2_spec_s0[3]),
 	.a3_i(a3_spec_s0[3]),
@@ -370,8 +413,8 @@ u_r4_qds_constants_generator_spec_s0_neg_1 (
 	.m_pos_2_o(m_pos_2_spec_s0[3])
 );
 
-r4_qds_constants_generator 
-u_r4_qds_constants_generator_spec_s0_neg_0 (
+r4_qds_cg 
+u_r4_qds_cg_spec_s0_neg_0 (
 	.a0_i(a0_spec_s0[2]),
 	.a2_i(a2_spec_s0[2]),
 	.a3_i(a3_spec_s0[2]),
@@ -382,8 +425,8 @@ u_r4_qds_constants_generator_spec_s0_neg_0 (
 	.m_pos_2_o(m_pos_2_spec_s0[2])
 );
 
-r4_qds_constants_generator 
-u_r4_qds_constants_generator_spec_s0_pos_1 (
+r4_qds_cg 
+u_r4_qds_cg_spec_s0_pos_1 (
 	.a0_i(a0_spec_s0[1]),
 	.a2_i(a2_spec_s0[1]),
 	.a3_i(a3_spec_s0[1]),
@@ -394,8 +437,8 @@ u_r4_qds_constants_generator_spec_s0_pos_1 (
 	.m_pos_2_o(m_pos_2_spec_s0[1])
 );
 
-r4_qds_constants_generator 
-u_r4_qds_constants_generator_spec_s0_pos_2 (
+r4_qds_cg 
+u_r4_qds_cg_spec_s0_pos_2 (
 	.a0_i(a0_spec_s0[0]),
 	.a2_i(a2_spec_s0[0]),
 	.a3_i(a3_spec_s0[0]),
@@ -409,19 +452,6 @@ u_r4_qds_constants_generator_spec_s0_pos_2 (
 // ================================================================================================================================================
 // Select the signals for stage[1]
 // ================================================================================================================================================
-
-assign nxt_f_r_s[0] = 
-  ({(REM_W){nxt_rt_dig[0][4]}} & nxt_f_r_s_spec_s0[4])
-| ({(REM_W){nxt_rt_dig[0][3]}} & nxt_f_r_s_spec_s0[3])
-| ({(REM_W){nxt_rt_dig[0][2]}} & nxt_f_r_s_spec_s0[2])
-| ({(REM_W){nxt_rt_dig[0][1]}} & nxt_f_r_s_spec_s0[1])
-| ({(REM_W){nxt_rt_dig[0][0]}} & nxt_f_r_s_spec_s0[0]);
-assign nxt_f_r_c[0] = 
-  ({(REM_W){nxt_rt_dig[0][4]}} & nxt_f_r_c_spec_s0[4])
-| ({(REM_W){nxt_rt_dig[0][3]}} & nxt_f_r_c_spec_s0[3])
-| ({(REM_W){nxt_rt_dig[0][2]}} & nxt_f_r_c_spec_s0[2])
-| ({(REM_W){nxt_rt_dig[0][1]}} & nxt_f_r_c_spec_s0[1])
-| ({(REM_W){nxt_rt_dig[0][0]}} & nxt_f_r_c_spec_s0[0]);
 
 assign adder_7b_res_for_s1_qds = 
   ({(7){nxt_rt_dig[0][4]}} & adder_9b_for_s1_qds_spec[4][8:2])
@@ -480,57 +510,97 @@ assign sqrt_csa_val_neg_1[1] = ({1'b0, nxt_rt_m1[0]} << 1) | mask_csa_neg_1[1];
 assign sqrt_csa_val_pos_1[1] = ~(({1'b0, nxt_rt[0]} << 1) | mask_csa_pos_1[1]);
 assign sqrt_csa_val_pos_2[1] = ~(({1'b0, nxt_rt[0]} << 2) | mask_csa_pos_2[1]);
 
-// Here we assume nxt_rt_dig[1] = -2
-assign nxt_f_r_s_spec_s1[4] = 
-  {nxt_f_r_s[0][(REM_W-1)-2:0], 2'b0}
-^ {nxt_f_r_c[0][(REM_W-1)-2:0], 2'b0}
-^ sqrt_csa_val_neg_2[1];
-assign nxt_f_r_c_spec_s1[4] = {
-	  ({nxt_f_r_s[0][(REM_W-1)-3:0], 2'b0} & {nxt_f_r_c[0][(REM_W-1)-3:0], 2'b0})
-	| ({nxt_f_r_s[0][(REM_W-1)-3:0], 2'b0} & sqrt_csa_val_neg_2[1][(REM_W-1)-1:0])
-	| ({nxt_f_r_c[0][(REM_W-1)-3:0], 2'b0} & sqrt_csa_val_neg_2[1][(REM_W-1)-1:0]),
-	1'b0
-};
+generate
+if(S1_CSA_SPECULATIVE == 1) begin: g_s1_csa_spec
 
-// Here we assume nxt_rt_dig[1] = -1
-assign nxt_f_r_s_spec_s1[3] = 
-  {nxt_f_r_s[0][(REM_W-1)-2:0], 2'b0}
-^ {nxt_f_r_c[0][(REM_W-1)-2:0], 2'b0}
-^ sqrt_csa_val_neg_1[1];
-assign nxt_f_r_c_spec_s1[3] = {
-	  ({nxt_f_r_s[0][(REM_W-1)-3:0], 2'b0} & {nxt_f_r_c[0][(REM_W-1)-3:0], 2'b0})
-	| ({nxt_f_r_s[0][(REM_W-1)-3:0], 2'b0} & sqrt_csa_val_neg_1[1][(REM_W-1)-1:0])
-	| ({nxt_f_r_c[0][(REM_W-1)-3:0], 2'b0} & sqrt_csa_val_neg_1[1][(REM_W-1)-1:0]),
-	1'b0
-};
+	// Here we assume nxt_rt_dig[1] = -2
+	assign nxt_f_r_s_spec_s1[4] = 
+	  {nxt_f_r_s[0][(REM_W-1)-2:0], 2'b0}
+	^ {nxt_f_r_c[0][(REM_W-1)-2:0], 2'b0}
+	^ sqrt_csa_val_neg_2[1];
+	assign nxt_f_r_c_spec_s1[4] = {
+		  ({nxt_f_r_s[0][(REM_W-1)-3:0], 2'b0} & {nxt_f_r_c[0][(REM_W-1)-3:0], 2'b0})
+		| ({nxt_f_r_s[0][(REM_W-1)-3:0], 2'b0} & sqrt_csa_val_neg_2[1][(REM_W-1)-1:0])
+		| ({nxt_f_r_c[0][(REM_W-1)-3:0], 2'b0} & sqrt_csa_val_neg_2[1][(REM_W-1)-1:0]),
+		1'b0
+	};
 
-// Here we assume nxt_rt_dig[1] = 0
-assign nxt_f_r_s_spec_s1[2] = {nxt_f_r_s[0][(REM_W-1)-2:0], 2'b0};
-assign nxt_f_r_c_spec_s1[2] = {nxt_f_r_c[0][(REM_W-1)-2:0], 2'b0};
+	// Here we assume nxt_rt_dig[1] = -1
+	assign nxt_f_r_s_spec_s1[3] = 
+	  {nxt_f_r_s[0][(REM_W-1)-2:0], 2'b0}
+	^ {nxt_f_r_c[0][(REM_W-1)-2:0], 2'b0}
+	^ sqrt_csa_val_neg_1[1];
+	assign nxt_f_r_c_spec_s1[3] = {
+		  ({nxt_f_r_s[0][(REM_W-1)-3:0], 2'b0} & {nxt_f_r_c[0][(REM_W-1)-3:0], 2'b0})
+		| ({nxt_f_r_s[0][(REM_W-1)-3:0], 2'b0} & sqrt_csa_val_neg_1[1][(REM_W-1)-1:0])
+		| ({nxt_f_r_c[0][(REM_W-1)-3:0], 2'b0} & sqrt_csa_val_neg_1[1][(REM_W-1)-1:0]),
+		1'b0
+	};
 
-// Here we assume nxt_rt_dig[1] = +1
-assign nxt_f_r_s_spec_s1[1] = 
-  {nxt_f_r_s[0][(REM_W-1)-2:0], 2'b0}
-^ {nxt_f_r_c[0][(REM_W-1)-2:0], 2'b0}
-^ sqrt_csa_val_pos_1[1];
-assign nxt_f_r_c_spec_s1[1] = {
-	  ({nxt_f_r_s[0][(REM_W-1)-3:0], 2'b0} & {nxt_f_r_c[0][(REM_W-1)-3:0], 2'b0})
-	| ({nxt_f_r_s[0][(REM_W-1)-3:0], 2'b0} & sqrt_csa_val_pos_1[1][(REM_W-1)-1:0])
-	| ({nxt_f_r_c[0][(REM_W-1)-3:0], 2'b0} & sqrt_csa_val_pos_1[1][(REM_W-1)-1:0]),
-	1'b1
-};
+	// Here we assume nxt_rt_dig[1] = 0
+	assign nxt_f_r_s_spec_s1[2] = {nxt_f_r_s[0][(REM_W-1)-2:0], 2'b0};
+	assign nxt_f_r_c_spec_s1[2] = {nxt_f_r_c[0][(REM_W-1)-2:0], 2'b0};
 
-// Here we assume nxt_rt_dig[1] = +2
-assign nxt_f_r_s_spec_s1[0] = 
-  {nxt_f_r_s[0][(REM_W-1)-2:0], 2'b0}
-^ {nxt_f_r_c[0][(REM_W-1)-2:0], 2'b0}
-^ sqrt_csa_val_pos_2[1];
-assign nxt_f_r_c_spec_s1[0] = {
-	  ({nxt_f_r_s[0][(REM_W-1)-3:0], 2'b0} & {nxt_f_r_c[0][(REM_W-1)-3:0], 2'b0})
-	| ({nxt_f_r_s[0][(REM_W-1)-3:0], 2'b0} & sqrt_csa_val_pos_2[1][(REM_W-1)-1:0])
-	| ({nxt_f_r_c[0][(REM_W-1)-3:0], 2'b0} & sqrt_csa_val_pos_2[1][(REM_W-1)-1:0]),
-	1'b1
-};
+	// Here we assume nxt_rt_dig[1] = +1
+	assign nxt_f_r_s_spec_s1[1] = 
+	  {nxt_f_r_s[0][(REM_W-1)-2:0], 2'b0}
+	^ {nxt_f_r_c[0][(REM_W-1)-2:0], 2'b0}
+	^ sqrt_csa_val_pos_1[1];
+	assign nxt_f_r_c_spec_s1[1] = {
+		  ({nxt_f_r_s[0][(REM_W-1)-3:0], 2'b0} & {nxt_f_r_c[0][(REM_W-1)-3:0], 2'b0})
+		| ({nxt_f_r_s[0][(REM_W-1)-3:0], 2'b0} & sqrt_csa_val_pos_1[1][(REM_W-1)-1:0])
+		| ({nxt_f_r_c[0][(REM_W-1)-3:0], 2'b0} & sqrt_csa_val_pos_1[1][(REM_W-1)-1:0]),
+		1'b1
+	};
+
+	// Here we assume nxt_rt_dig[1] = +2
+	assign nxt_f_r_s_spec_s1[0] = 
+	  {nxt_f_r_s[0][(REM_W-1)-2:0], 2'b0}
+	^ {nxt_f_r_c[0][(REM_W-1)-2:0], 2'b0}
+	^ sqrt_csa_val_pos_2[1];
+	assign nxt_f_r_c_spec_s1[0] = {
+		  ({nxt_f_r_s[0][(REM_W-1)-3:0], 2'b0} & {nxt_f_r_c[0][(REM_W-1)-3:0], 2'b0})
+		| ({nxt_f_r_s[0][(REM_W-1)-3:0], 2'b0} & sqrt_csa_val_pos_2[1][(REM_W-1)-1:0])
+		| ({nxt_f_r_c[0][(REM_W-1)-3:0], 2'b0} & sqrt_csa_val_pos_2[1][(REM_W-1)-1:0]),
+		1'b1
+	};
+
+	assign nxt_f_r_s[1] = 
+	  ({(REM_W){nxt_rt_dig[1][4]}} & nxt_f_r_s_spec_s1[4])
+	| ({(REM_W){nxt_rt_dig[1][3]}} & nxt_f_r_s_spec_s1[3])
+	| ({(REM_W){nxt_rt_dig[1][2]}} & nxt_f_r_s_spec_s1[2])
+	| ({(REM_W){nxt_rt_dig[1][1]}} & nxt_f_r_s_spec_s1[1])
+	| ({(REM_W){nxt_rt_dig[1][0]}} & nxt_f_r_s_spec_s1[0]);
+	assign nxt_f_r_c[1] = 
+	  ({(REM_W){nxt_rt_dig[1][4]}} & nxt_f_r_c_spec_s1[4])
+	| ({(REM_W){nxt_rt_dig[1][3]}} & nxt_f_r_c_spec_s1[3])
+	| ({(REM_W){nxt_rt_dig[1][2]}} & nxt_f_r_c_spec_s1[2])
+	| ({(REM_W){nxt_rt_dig[1][1]}} & nxt_f_r_c_spec_s1[1])
+	| ({(REM_W){nxt_rt_dig[1][0]}} & nxt_f_r_c_spec_s1[0]);
+
+end else begin: g_s1_csa_no_spec
+
+	// If timing is good enough, let the CSA operation starts after "nxt_rt_dig[1]"" is available, so the area of the CSA is reduced.
+
+	assign sqrt_csa_val[1] = 
+	  ({(REM_W){nxt_rt_dig[1][4]}} & sqrt_csa_val_neg_2[1])
+	| ({(REM_W){nxt_rt_dig[1][3]}} & sqrt_csa_val_neg_1[1])
+	| ({(REM_W){nxt_rt_dig[1][1]}} & sqrt_csa_val_pos_1[1])
+	| ({(REM_W){nxt_rt_dig[1][0]}} & sqrt_csa_val_pos_2[1]);
+
+	assign nxt_f_r_s[1] = 
+	  {nxt_f_r_s[0][(REM_W-1)-2:0], 2'b0}
+	^ {nxt_f_r_c[0][(REM_W-1)-2:0], 2'b0}
+	^ sqrt_csa_val[1];
+	assign nxt_f_r_c[1] = {
+		  ({nxt_f_r_s[0][(REM_W-1)-3:0], 2'b0} & {nxt_f_r_c[0][(REM_W-1)-3:0], 2'b0})
+		| ({nxt_f_r_s[0][(REM_W-1)-3:0], 2'b0} & sqrt_csa_val[1][(REM_W-1)-1:0])
+		| ({nxt_f_r_c[0][(REM_W-1)-3:0], 2'b0} & sqrt_csa_val[1][(REM_W-1)-1:0]),
+		nxt_rt_dig[1][1] | nxt_rt_dig[1][0]
+	};
+
+end
+endgenerate
 
 // Get the non-redundant form, for stage[0].qds in the nxt cycle
 assign adder_9b_for_nxt_cycle_s0_qds_spec[4] = 
@@ -583,7 +653,7 @@ assign adder_10b_for_nxt_cycle_s1_qds_spec[0] =
 + sqrt_csa_val_pos_2[1][(REM_W-1)-2 -: 10];
 
 // ================================================================================================================================================
-// stage[1].constants_generator
+// stage[1].cg
 // This is done in parallel with qds
 // ================================================================================================================================================
 assign nxt_rt_spec_s1[4] = nxt_rt_m1[0] | mask_rt_neg_2[1];
@@ -617,8 +687,8 @@ assign a2_spec_s1[0] = nxt_rt_spec_s1[0][52];
 assign a3_spec_s1[0] = nxt_rt_spec_s1[0][51];
 assign a4_spec_s1[0] = nxt_rt_spec_s1[0][50];
 
-r4_qds_constants_generator 
-u_r4_qds_constants_generator_spec_s1_neg_2 (
+r4_qds_cg 
+u_r4_qds_cg_spec_s1_neg_2 (
 	.a0_i(a0_spec_s1[4]),
 	.a2_i(a2_spec_s1[4]),
 	.a3_i(a3_spec_s1[4]),
@@ -629,8 +699,8 @@ u_r4_qds_constants_generator_spec_s1_neg_2 (
 	.m_pos_2_o(m_pos_2_spec_s1[4])
 );
 
-r4_qds_constants_generator 
-u_r4_qds_constants_generator_spec_s1_neg_1 (
+r4_qds_cg 
+u_r4_qds_cg_spec_s1_neg_1 (
 	.a0_i(a0_spec_s1[3]),
 	.a2_i(a2_spec_s1[3]),
 	.a3_i(a3_spec_s1[3]),
@@ -641,8 +711,8 @@ u_r4_qds_constants_generator_spec_s1_neg_1 (
 	.m_pos_2_o(m_pos_2_spec_s1[3])
 );
 
-r4_qds_constants_generator 
-u_r4_qds_constants_generator_spec_s1_neg_0 (
+r4_qds_cg 
+u_r4_qds_cg_spec_s1_neg_0 (
 	.a0_i(a0_spec_s1[2]),
 	.a2_i(a2_spec_s1[2]),
 	.a3_i(a3_spec_s1[2]),
@@ -653,8 +723,8 @@ u_r4_qds_constants_generator_spec_s1_neg_0 (
 	.m_pos_2_o(m_pos_2_spec_s1[2])
 );
 
-r4_qds_constants_generator 
-u_r4_qds_constants_generator_spec_s1_pos_1 (
+r4_qds_cg 
+u_r4_qds_cg_spec_s1_pos_1 (
 	.a0_i(a0_spec_s1[1]),
 	.a2_i(a2_spec_s1[1]),
 	.a3_i(a3_spec_s1[1]),
@@ -665,8 +735,8 @@ u_r4_qds_constants_generator_spec_s1_pos_1 (
 	.m_pos_2_o(m_pos_2_spec_s1[1])
 );
 
-r4_qds_constants_generator 
-u_r4_qds_constants_generator_spec_s1_pos_2 (
+r4_qds_cg 
+u_r4_qds_cg_spec_s1_pos_2 (
 	.a0_i(a0_spec_s1[0]),
 	.a2_i(a2_spec_s1[0]),
 	.a3_i(a3_spec_s1[0]),
@@ -680,15 +750,57 @@ u_r4_qds_constants_generator_spec_s1_pos_2 (
 // ================================================================================================================================================
 // stage[1].qds
 // ================================================================================================================================================
-r4_qds
-u_r4_qds_s1 (
-	.rem_i(adder_7b_res_for_s1_qds),
-	.m_neg_1_i(m_neg_1[1]),
-	.m_neg_0_i(m_neg_0[1]),
-	.m_pos_1_i(m_pos_1[1]),
-	.m_pos_2_i(m_pos_2[1]),
-	.rt_dig_o(nxt_rt_dig[1])
-);
+
+generate
+if(S1_QDS_SPECULATIVE == 1) begin: g_s1_qds_spec
+	r4_qds_spec
+	u_r4_qds_s1 (
+		.rem_i(nr_f_r_9b_for_nxt_cycle_s1_qds_i),
+		.sqrt_csa_val_neg_2_msbs_i(sqrt_csa_val_neg_2[0][(REM_W-1) -: 9]),
+		.sqrt_csa_val_neg_1_msbs_i(sqrt_csa_val_neg_1[0][(REM_W-1) -: 9]),
+		.sqrt_csa_val_pos_1_msbs_i(sqrt_csa_val_pos_1[0][(REM_W-1) -: 9]),
+		.sqrt_csa_val_pos_2_msbs_i(sqrt_csa_val_pos_2[0][(REM_W-1) -: 9]),
+
+		.m_neg_1_neg_2_i(m_neg_1_spec_s0[4]),
+		.m_neg_0_neg_2_i(m_neg_0_spec_s0[4]),
+		.m_pos_1_neg_2_i(m_pos_1_spec_s0[4]),
+		.m_pos_2_neg_2_i(m_pos_2_spec_s0[4]),
+
+		.m_neg_1_neg_1_i(m_neg_1_spec_s0[3]),
+		.m_neg_0_neg_1_i(m_neg_0_spec_s0[3]),
+		.m_pos_1_neg_1_i(m_pos_1_spec_s0[3]),
+		.m_pos_2_neg_1_i(m_pos_2_spec_s0[3]),
+
+		.m_neg_1_neg_0_i(m_neg_1_spec_s0[2]),
+		.m_neg_0_neg_0_i(m_neg_0_spec_s0[2]),
+		.m_pos_1_neg_0_i(m_pos_1_spec_s0[2]),
+		.m_pos_2_neg_0_i(m_pos_2_spec_s0[2]),
+
+		.m_neg_1_pos_1_i(m_neg_1_spec_s0[1]),
+		.m_neg_0_pos_1_i(m_neg_0_spec_s0[1]),
+		.m_pos_1_pos_1_i(m_pos_1_spec_s0[1]),
+		.m_pos_2_pos_1_i(m_pos_2_spec_s0[1]),
+
+		.m_neg_1_pos_2_i(m_neg_1_spec_s0[0]),
+		.m_neg_0_pos_2_i(m_neg_0_spec_s0[0]),
+		.m_pos_1_pos_2_i(m_pos_1_spec_s0[0]),
+		.m_pos_2_pos_2_i(m_pos_2_spec_s0[0]),
+		
+		.prev_rt_dig_i(nxt_rt_dig[0]),
+		.rt_dig_o(nxt_rt_dig[1])
+	);
+end else begin: g_s1_qds_no_spec
+	r4_qds
+	u_r4_qds_s1 (
+		.rem_i(adder_7b_res_for_s1_qds),
+		.m_neg_1_i(m_neg_1[1]),
+		.m_neg_0_i(m_neg_0[1]),
+		.m_pos_1_i(m_pos_1[1]),
+		.m_pos_2_i(m_pos_2[1]),
+		.rt_dig_o(nxt_rt_dig[1])
+	);
+end
+endgenerate
 
 // ================================================================================================================================================
 // Select the signals for nxt cycle
@@ -730,19 +842,6 @@ assign m_pos_2_to_nxt_cycle_o =
 | ({(7){nxt_rt_dig[1][2]}} & m_pos_2_spec_s1[2])
 | ({(7){nxt_rt_dig[1][1]}} & m_pos_2_spec_s1[1])
 | ({(7){nxt_rt_dig[1][0]}} & m_pos_2_spec_s1[0]);
-
-assign nxt_f_r_s[1] = 
-  ({(REM_W){nxt_rt_dig[1][4]}} & nxt_f_r_s_spec_s1[4])
-| ({(REM_W){nxt_rt_dig[1][3]}} & nxt_f_r_s_spec_s1[3])
-| ({(REM_W){nxt_rt_dig[1][2]}} & nxt_f_r_s_spec_s1[2])
-| ({(REM_W){nxt_rt_dig[1][1]}} & nxt_f_r_s_spec_s1[1])
-| ({(REM_W){nxt_rt_dig[1][0]}} & nxt_f_r_s_spec_s1[0]);
-assign nxt_f_r_c[1] = 
-  ({(REM_W){nxt_rt_dig[1][4]}} & nxt_f_r_c_spec_s1[4])
-| ({(REM_W){nxt_rt_dig[1][3]}} & nxt_f_r_c_spec_s1[3])
-| ({(REM_W){nxt_rt_dig[1][2]}} & nxt_f_r_c_spec_s1[2])
-| ({(REM_W){nxt_rt_dig[1][1]}} & nxt_f_r_c_spec_s1[1])
-| ({(REM_W){nxt_rt_dig[1][0]}} & nxt_f_r_c_spec_s1[0]);
 
 assign nxt_rt[1] = 
   ({(55){nxt_rt_dig[1][4]}} & nxt_rt_spec_s1[4])

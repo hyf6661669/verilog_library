@@ -3,7 +3,7 @@
 // Author				: HYF
 // How to Contact		: hyf_sysu@qq.com
 // Created Time    		: 2022-01-15 11:10:46
-// Last Modified Time   : 2022-01-23 21:27:54
+// Last Modified Time   : 2022-02-01 19:32:05
 // ========================================================================================================
 // Description	:
 // TB for FPSQRT.
@@ -245,8 +245,6 @@ initial begin
 		`RESP_WAIT_SIG(clk, dut_finish_ready, stim_end)
 		dut_finish_ready = 0;
 
-		// if((acq_count != 0) & (acq_count % (2 ** 16) == 0))
-		// 	$display("Simulation is still running !!!");
 
 	end while(stim_end == 0);
 
@@ -268,8 +266,11 @@ end
 // ================================================================================================================================================
 // Instantiate DUT here.
 
-fpsqrt_scalar_r16
-u_dut (
+fpsqrt_scalar_r16 #(
+	.S0_CSA_SPECULATIVE(1),
+	.S1_QDS_SPECULATIVE(1),
+	.S1_CSA_SPECULATIVE(1)
+) u_dut (
 	.start_valid_i(dut_start_valid),
 	.start_ready_o(dut_start_ready),
 	.flush_i(1'b0),

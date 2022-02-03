@@ -3,7 +3,7 @@
 // Author				: HYF
 // How to Contact		: hyf_sysu@qq.com
 // Created Time    		: 2022-01-17 17:06:55
-// Last Modified Time   : 2022-01-26 11:37:47
+// Last Modified Time   : 2022-02-03 20:16:04
 // ========================================================================================================
 // Description	:
 // A high performance Floating Point Square-Root module, based on Radix-16 SRT algorithm.
@@ -43,6 +43,10 @@
 
 module fpsqrt_scalar_r16 #(
 	// Put some parameters here, which can be changed by other modules
+	// If "XX_SPECULATIVE" is set to 1, it should lead to better timing with larger area.
+	parameter S0_CSA_SPECULATIVE = 0,
+	parameter S1_QDS_SPECULATIVE = 0,
+	parameter S1_CSA_SPECULATIVE = 1
 )(
 	input  logic start_valid_i,
 	output logic start_ready_o,
@@ -141,7 +145,7 @@ logic [3-1:0] rm_d;
 logic [3-1:0] rm_q;
 logic [11-1:0] out_exp_d;
 logic [11-1:0] out_exp_q;
-logic [12-1:0] res_exp_pre;
+logic [12-1:0] out_exp_pre;
 
 logic op_sign;
 logic [11-1:0] op_exp;
@@ -186,7 +190,7 @@ logic op_frac_is_zero;
 // This design would add "delay(INV_GATE)" to the critical path, it should be negligible.
 // By doing this, we replace the 1-bit reg with a 1-bit INV_GATE, which should reduce some area (I have to admit that the area reduction is very small.)
 
-logic [3-1:0] rt_1st;
+logic [3-1:0] rt_dig_1st;
 // At the beginning, rt_m1 must be {0}.{1x, 52'b0}, so we only need to store [52:0] for rt_m1, and rt_m1[53] must be 1
 logic rt_en;
 logic [54-1:0] rt_d;
@@ -238,22 +242,22 @@ logic [7-1:0] adder_7b_res_for_nxt_cycle_s0_qds;
 logic [9-1:0] adder_9b_res_for_nxt_cycle_s1_qds;
 
 logic m_neg_1_for_nxt_cycle_s0_qds_en;
-// [6:5] = 00, don't need to store it
+// [6:5] = 00 -> A 5-bit reg is enough
 logic [5-1:0] m_neg_1_for_nxt_cycle_s0_qds_d;
 logic [5-1:0] m_neg_1_for_nxt_cycle_s0_qds_q;
 
 logic m_neg_0_for_nxt_cycle_s0_qds_en;
-// [6:4] = 000, don't need to store it
+// [6:4] = 000 -> A 4-bit reg is enough
 logic [4-1:0] m_neg_0_for_nxt_cycle_s0_qds_d;
 logic [4-1:0] m_neg_0_for_nxt_cycle_s0_qds_q;
 
 logic m_pos_1_for_nxt_cycle_s0_qds_en;
-// [6:3] = 1111, don't need to store it
+// [6:3] = 1111 -> A 3-bit reg is enough
 logic [3-1:0] m_pos_1_for_nxt_cycle_s0_qds_d;
 logic [3-1:0] m_pos_1_for_nxt_cycle_s0_qds_q;
 
 logic m_pos_2_for_nxt_cycle_s0_qds_en;
-// [6:5] = 11, [0] = 0, don't need to store it
+// [6:5] = 11, [0] = 0 -> A 4-bit reg is enough
 logic [4-1:0] m_pos_2_for_nxt_cycle_s0_qds_d;
 logic [4-1:0] m_pos_2_for_nxt_cycle_s0_qds_q;
 
@@ -377,7 +381,7 @@ assign res_is_sqrt_2_d = op_frac_is_zero & ~op_exp[0];
 assign out_sign_d = res_is_nan_d ? 1'b0 : op_sign;
 assign fp_format_d = fp_format_i;
 assign rm_d = rm_i;
-assign out_exp_d = res_exp_pre[11:1];
+assign out_exp_d = out_exp_pre[11:1];
 always_ff @(posedge clk) begin
 	if(start_handshaked) begin		
 		out_sign_q <= out_sign_d;
@@ -429,7 +433,7 @@ assign op_frac_l_shifted = {1'b1, rt_m1_q[51:0] << iter_num_q[2:0]};
 // sqrt_res.E = (1023 - 1) / 2 = 511
 // sqrt_res.exp = 511 + 1023 = 10111111110
 // Since x is a normal number -> op_l_shift_num[5:0] = 000000
-// res_exp_pre[11:0] = 
+// out_exp_pre[11:0] = 
 // 011111111110 + 
 // 001111111111 = 
 // 101111111101
@@ -440,7 +444,7 @@ assign op_frac_l_shifted = {1'b1, rt_m1_q[51:0] << iter_num_q[2:0]};
 // sqrt_res.E = -1056 / 2 = -528
 // sqrt_res.exp = -528 + 1023 = 00111101111
 // Since x is a denormal number -> op_l_shift_num[5:0] = 100010
-// res_exp_pre[11:0] = 
+// out_exp_pre[11:0] = 
 // 000000000001 + 
 // 001111011101 = 
 // 001111011110
@@ -456,7 +460,7 @@ assign op_frac_l_shifted = {1'b1, rt_m1_q[51:0] << iter_num_q[2:0]};
 // sqrt.E = x.E / 2;
 // sqrt.exp = sqrt.E + ((fp_format_i == 2'd0) ? 15 : (fp_format_i == 2'd1) ? 127 : 1023);
 // I think the design used here should lead to better PPA.
-assign res_exp_pre = {1'b0, op_exp[10:1], op_exp[0] | op_exp_is_zero} + {
+assign out_exp_pre = {1'b0, op_exp[10:1], op_exp[0] | op_exp_is_zero} + {
 	2'b0,
 	(fp_format_i == 2'd0) ? 6'b0 : (fp_format_i == 2'd1) ? {3'b0, 2'b11, ~op_l_shift_num[4]} : {4'b1111, ~op_l_shift_num[5:4]},
 	~op_l_shift_num[3:0]
@@ -475,9 +479,9 @@ assign current_frac = fsm_q[FSM_PRE_0_BIT] ? op_frac_pre_shifted[51:0] : op_frac
 // [0]: s[1] = -2
 // [1]: s[1] = -1
 // [2]: s[1] =  0
-assign rt_1st[0] = ({current_exp_is_odd, current_frac[51]} == 2'b00);
-assign rt_1st[1] = ({current_exp_is_odd, current_frac[51]} == 2'b01) | ({current_exp_is_odd, current_frac[51]} == 2'b10);
-assign rt_1st[2] = ({current_exp_is_odd, current_frac[51]} == 2'b11);
+assign rt_dig_1st[0] = ({current_exp_is_odd, current_frac[51]} == 2'b00);
+assign rt_dig_1st[1] = ({current_exp_is_odd, current_frac[51]} == 2'b01) | ({current_exp_is_odd, current_frac[51]} == 2'b10);
+assign rt_dig_1st[2] = ({current_exp_is_odd, current_frac[51]} == 2'b11);
 
 // When (op_is_power_of_2) and odd_exp: 
 // f_r_s_iter_init = {1, 55'b0}
@@ -490,22 +494,22 @@ assign rt_1st[2] = ({current_exp_is_odd, current_frac[51]} == 2'b11);
 // In conclusion, when (op_is_power_of_2), the ITER step could be skipped, and we only need to use 1-bit reg to store "op_is_power_of_2 & exp_is_odd", 
 // instead of using 2-bit reg to store "{op_is_power_of_2, exp_is_odd}"
 assign rt_iter_init = 
-  ({(55){rt_1st[0]}} & {3'b010, 52'b0})
-| ({(55){rt_1st[1]}} & {3'b011, 52'b0})
-| ({(55){rt_1st[2]}} & {3'b100, 52'b0});
+  ({(55){rt_dig_1st[0]}} & {3'b010, 52'b0})
+| ({(55){rt_dig_1st[1]}} & {3'b011, 52'b0})
+| ({(55){rt_dig_1st[2]}} & {3'b100, 52'b0});
 // When s[1] = -2, the MSB of rt_m1 is not 1, which doesn't follow my assumption of rt_m1. But you should easily find that in the later iter process,
 // the QDS "MUST" select "0/+1/+2" before the next "-1/-2" is selected. Therefore, rt_m1 will not be used until the next "-1/-2" is selected.
 assign rt_m1_iter_init = 
-  ({(55){rt_1st[0]}} & {3'b001, 52'b0})
-| ({(55){rt_1st[1]}} & {3'b010, 52'b0})
-| ({(55){rt_1st[2]}} & {3'b011, 52'b0});
+  ({(55){rt_dig_1st[0]}} & {3'b001, 52'b0})
+| ({(55){rt_dig_1st[1]}} & {3'b010, 52'b0})
+| ({(55){rt_dig_1st[2]}} & {3'b011, 52'b0});
 
 assign f_r_s_iter_init_pre = {2'b11, current_exp_is_odd ? {1'b1, current_frac, 1'b0} : {1'b0, 1'b1, current_frac}};
 assign f_r_s_iter_init = {f_r_s_iter_init_pre[(REM_W-1)-2:0], 2'b0};
 assign f_r_c_iter_init = 
-  ({(REM_W){rt_1st[0]}} & {2'b11,   {(REM_W - 2){1'b0}}})
-| ({(REM_W){rt_1st[1]}} & {4'b0111, {(REM_W - 4){1'b0}}})
-| ({(REM_W){rt_1st[2]}} & {(REM_W){1'b0}});
+  ({(REM_W){rt_dig_1st[0]}} & {2'b11,   {(REM_W - 2){1'b0}}})
+| ({(REM_W){rt_dig_1st[1]}} & {4'b0111, {(REM_W - 4){1'b0}}})
+| ({(REM_W){rt_dig_1st[2]}} & {(REM_W){1'b0}});
 
 assign rt_en = start_handshaked | fsm_q[FSM_PRE_1_BIT] | fsm_q[FSM_ITER_BIT];
 assign rt_d  = (fsm_q[FSM_PRE_0_BIT] | fsm_q[FSM_PRE_1_BIT]) ? rt_iter_init[53:0] : rt_after_iter;
@@ -561,8 +565,8 @@ assign a0_iter_init = rt_iter_init[54];
 assign a2_iter_init = rt_iter_init[52];
 assign a3_iter_init = rt_iter_init[51];
 assign a4_iter_init = rt_iter_init[50];
-r4_qds_constants_generator 
-u_r4_qds_constants_generator_iter_init (
+r4_qds_cg
+u_r4_qds_cg_iter_init (
 	.a0_i(a0_iter_init),
 	.a2_i(a2_iter_init),
 	.a3_i(a3_iter_init),
@@ -624,6 +628,9 @@ end
 // ================================================================================================================================================
 
 fpsqrt_r16_block #(
+	.S0_CSA_SPECULATIVE(S0_CSA_SPECULATIVE),
+	.S1_QDS_SPECULATIVE(S1_QDS_SPECULATIVE),
+	.S1_CSA_SPECULATIVE(S1_CSA_SPECULATIVE),
 	.REM_W(REM_W),
 	.RT_DIG_W(RT_DIG_W)
 ) u_fpsqrt_r16_block (
@@ -693,7 +700,7 @@ assign nr_f_r = f_r_s_q + f_r_c_q;
 // For f_r, the MSB is sign, so we only need to know the value of ((f_r_s_q[(REM_W-1)-1:0] + f_r_c_q[(REM_W-1)-1:0]) == 0)
 // Apparently, the calculation of "{f_r_xor, f_r_or, f_r_xor != f_r_or}" and "nr_f_r[REM_W-1]" is in parallel
 assign f_r_xor = f_r_s_q[(REM_W-1)-1:1] ^ f_r_c_q[(REM_W-1)-1:1];
-assign f_r_or = f_r_s_q[(REM_W-1)-2:0] | f_r_c_q[(REM_W-1)-2:0];
+assign f_r_or  = f_r_s_q[(REM_W-1)-2:0] | f_r_c_q[(REM_W-1)-2:0];
 // The algorithm we use is "Minimally Redundant Radix 4", and its redundnat factor is 2/3.
 // So we must have "|rem| <= D * (2/3)" -> when (nr_f_r < 0), the "positive rem" must be NON_ZERO
 // Which means we don't have to calculate "nr_f_r_plus_d"

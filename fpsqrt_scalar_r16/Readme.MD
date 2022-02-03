@@ -15,12 +15,12 @@ _When the operand is a normal number and is a power of 2, the "SRT_ITER" step co
 
 _So the latency could be reduced by 13/6/3 for F64/F32/F16._
 
-# Performance Comparison Other CPUs (Assuming normal input)
+# Performance Comparison with Other CPUs (Normal Input)
 
 |CPU|F16|F32|F64|
 |------|------|------|------|
 |**This design**|**5**|**8**|**15**|
-|Intel Coeffee Lake[^coffee]|x|12|15 ~ 16|
+|Intel Coffee Lake[^coffee]|x|12|15 ~ 16|
 |AMD Zen3/Zen2[^amd]|x|14|20|
 |AMD Jaguar[^Jaguar]|x|16|27|
 |ARM Cortex A55, and other "small cores"[^arm]|8|12|22|

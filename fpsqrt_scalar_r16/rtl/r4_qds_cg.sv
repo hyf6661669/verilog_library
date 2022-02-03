@@ -1,11 +1,12 @@
 // ========================================================================================================
-// File Name			: r4_qds_constants_generator.sv
+// File Name			: r4_qds_cg.sv
 // Author				: HYF
 // How to Contact		: hyf_sysu@qq.com
 // Created Time    		: 2022-01-15 20:37:05
-// Last Modified Time   : 2022-01-15 21:16:33
+// Last Modified Time   : 2022-02-03 20:14:52
 // ========================================================================================================
 // Description	:
+// cg = constants generator
 // For more details, please look at "TABLE 6.5" and "equation 6.29" in:
 // Digital Arithmetic By M.D. Ercegovac, 2004
 // ========================================================================================================
@@ -41,7 +42,7 @@
 
 // include some definitions here
 
-module r4_qds_constants_generator #(
+module r4_qds_cg #(
 	// Put some parameters here, which can be changed by other modules.
 )(
 	input  logic a0_i,

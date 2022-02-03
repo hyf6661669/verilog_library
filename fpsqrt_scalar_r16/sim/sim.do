@@ -14,9 +14,9 @@ vmap work ./lib/work
 set RAND_SEED [expr {int(rand() * 999999999)}]
 set TEST_LEVEL 1
 set MAX_ERROR_COUNT 10
-set FP64_TEST_NUM [expr {int(pow(2, 25))}]
-set FP32_TEST_NUM [expr {int(pow(2, 25))}]
-set FP16_TEST_NUM [expr {int(pow(2, 0))}]
+set FP64_TEST_NUM [expr {int(pow(2, 19))}]
+set FP32_TEST_NUM [expr {int(pow(2, 19))}]
+set FP16_TEST_NUM [expr {int(pow(2, 10))}]
 
 
 vlog -work work -incr -lint \
@@ -26,7 +26,7 @@ vlog -work work -incr -lint \
 
 vsim \
 -sv_lib ../cmodel/lib/softfloat -sv_lib ../cmodel/lib/cmodel \
--c -l ./log/tb_top.log -wlf ./wave/tb_top.wlf -voptargs=+acc -sv_seed $RAND_SEED work.tb_top
+-c -l ./log/tb_$RAND_SEED.log -wlf ./wave/tb_$RAND_SEED.wlf -voptargs=+acc -sv_seed $RAND_SEED work.tb_top
 
 
 # 0: full names

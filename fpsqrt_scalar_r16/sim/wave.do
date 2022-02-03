@@ -13,7 +13,7 @@ add wave -position insertpoint -expand -group FSM_CTRL sim:/tb_top/u_dut/final_i
 add wave -position insertpoint -expand -group FSM_CTRL sim:/tb_top/fpsqrt_op
 add wave -position insertpoint -expand -group FSM_CTRL sim:/tb_top/dut_fpsqrt_res
 
-add wave -position insertpoint -expand -group PRE -radix binary sim:/tb_top/u_dut/rt_1st
+add wave -position insertpoint -expand -group PRE -radix binary sim:/tb_top/u_dut/rt_dig_1st
 add wave -position insertpoint -expand -group PRE sim:/tb_top/u_dut/rt_iter_init
 add wave -position insertpoint -expand -group PRE sim:/tb_top/u_dut/rt_m1_iter_init
 add wave -position insertpoint -expand -group PRE sim:/tb_top/u_dut/f_r_s_iter_init_pre
@@ -89,6 +89,7 @@ add wave -position insertpoint -expand -group S0_ITER sim:/tb_top/u_dut/u_fpsqrt
 add wave -position insertpoint -expand -group S0_ITER sim:/tb_top/u_dut/u_fpsqrt_r16_block/sqrt_csa_val_neg_1[0]
 add wave -position insertpoint -expand -group S0_ITER sim:/tb_top/u_dut/u_fpsqrt_r16_block/sqrt_csa_val_pos_1[0]
 add wave -position insertpoint -expand -group S0_ITER sim:/tb_top/u_dut/u_fpsqrt_r16_block/sqrt_csa_val_pos_2[0]
+add wave -position insertpoint -expand -group S0_ITER sim:/tb_top/u_dut/u_fpsqrt_r16_block/sqrt_csa_val[0]
 add wave -position insertpoint -expand -group S0_ITER sim:/tb_top/u_dut/u_fpsqrt_r16_block/rt
 add wave -position insertpoint -expand -group S0_ITER sim:/tb_top/u_dut/u_fpsqrt_r16_block/rt_m1
 add wave -position insertpoint -expand -group S0_ITER sim:/tb_top/u_dut/u_fpsqrt_r16_block/nxt_f_r_s[0]
@@ -101,23 +102,54 @@ add wave -position insertpoint -expand -group S1_ITER -radix binary sim:/tb_top/
 add wave -position insertpoint -expand -group S1_ITER -radix binary sim:/tb_top/u_dut/u_fpsqrt_r16_block/m_neg_0[1]
 add wave -position insertpoint -expand -group S1_ITER -radix binary sim:/tb_top/u_dut/u_fpsqrt_r16_block/m_pos_1[1]
 add wave -position insertpoint -expand -group S1_ITER -radix binary sim:/tb_top/u_dut/u_fpsqrt_r16_block/m_pos_2[1]
-add wave -position insertpoint -expand -group S1_ITER -radix binary sim:/tb_top/u_dut/u_fpsqrt_r16_block/u_r4_qds_s1/rem_i
-add wave -position insertpoint -expand -group S1_ITER -radix binary sim:/tb_top/u_dut/u_fpsqrt_r16_block/u_r4_qds_s1/qds_sign
+
+# Used for S1_QDS_SPECULATIVE = 0
+add wave -position insertpoint -expand -group S1_ITER -radix binary sim:/tb_top/u_dut/u_fpsqrt_r16_block/g_s1_qds_no_spec/u_r4_qds_s1/rem_i
+add wave -position insertpoint -expand -group S1_ITER -radix binary sim:/tb_top/u_dut/u_fpsqrt_r16_block/g_s1_qds_no_spec/u_r4_qds_s1/qds_sign
+
+# Used for S1_QDS_SPECULATIVE = 1
+# add wave -position insertpoint -expand -group S1_ITER -radix binary sim:/tb_top/u_dut/u_fpsqrt_r16_block/g_s1_qds_spec/u_r4_qds_s1/rem_i
+# add wave -position insertpoint -expand -group S1_ITER -radix binary sim:/tb_top/u_dut/u_fpsqrt_r16_block/g_s1_qds_spec/u_r4_qds_s1/sqrt_csa_val_neg_2_msbs_i
+# add wave -position insertpoint -expand -group S1_ITER -radix binary sim:/tb_top/u_dut/u_fpsqrt_r16_block/g_s1_qds_spec/u_r4_qds_s1/sqrt_csa_val_neg_1_msbs_i
+# add wave -position insertpoint -expand -group S1_ITER -radix binary sim:/tb_top/u_dut/u_fpsqrt_r16_block/g_s1_qds_spec/u_r4_qds_s1/sqrt_csa_val_pos_1_msbs_i
+# add wave -position insertpoint -expand -group S1_ITER -radix binary sim:/tb_top/u_dut/u_fpsqrt_r16_block/g_s1_qds_spec/u_r4_qds_s1/sqrt_csa_val_pos_2_msbs_i
+# add wave -position insertpoint -expand -group S1_ITER -radix binary sim:/tb_top/u_dut/u_fpsqrt_r16_block/g_s1_qds_spec/u_r4_qds_s1/m_neg_1_neg_2_i
+# add wave -position insertpoint -expand -group S1_ITER -radix binary sim:/tb_top/u_dut/u_fpsqrt_r16_block/g_s1_qds_spec/u_r4_qds_s1/m_neg_0_neg_2_i
+# add wave -position insertpoint -expand -group S1_ITER -radix binary sim:/tb_top/u_dut/u_fpsqrt_r16_block/g_s1_qds_spec/u_r4_qds_s1/m_pos_1_neg_2_i
+# add wave -position insertpoint -expand -group S1_ITER -radix binary sim:/tb_top/u_dut/u_fpsqrt_r16_block/g_s1_qds_spec/u_r4_qds_s1/m_pos_2_neg_2_i
+# add wave -position insertpoint -expand -group S1_ITER -radix binary sim:/tb_top/u_dut/u_fpsqrt_r16_block/g_s1_qds_spec/u_r4_qds_s1/m_neg_1_neg_1_i
+# add wave -position insertpoint -expand -group S1_ITER -radix binary sim:/tb_top/u_dut/u_fpsqrt_r16_block/g_s1_qds_spec/u_r4_qds_s1/m_neg_0_neg_1_i
+# add wave -position insertpoint -expand -group S1_ITER -radix binary sim:/tb_top/u_dut/u_fpsqrt_r16_block/g_s1_qds_spec/u_r4_qds_s1/m_pos_1_neg_1_i
+# add wave -position insertpoint -expand -group S1_ITER -radix binary sim:/tb_top/u_dut/u_fpsqrt_r16_block/g_s1_qds_spec/u_r4_qds_s1/m_pos_2_neg_1_i
+# add wave -position insertpoint -expand -group S1_ITER -radix binary sim:/tb_top/u_dut/u_fpsqrt_r16_block/g_s1_qds_spec/u_r4_qds_s1/m_neg_1_neg_0_i
+# add wave -position insertpoint -expand -group S1_ITER -radix binary sim:/tb_top/u_dut/u_fpsqrt_r16_block/g_s1_qds_spec/u_r4_qds_s1/m_neg_0_neg_0_i
+# add wave -position insertpoint -expand -group S1_ITER -radix binary sim:/tb_top/u_dut/u_fpsqrt_r16_block/g_s1_qds_spec/u_r4_qds_s1/m_pos_1_neg_0_i
+# add wave -position insertpoint -expand -group S1_ITER -radix binary sim:/tb_top/u_dut/u_fpsqrt_r16_block/g_s1_qds_spec/u_r4_qds_s1/m_pos_2_neg_0_i
+# add wave -position insertpoint -expand -group S1_ITER -radix binary sim:/tb_top/u_dut/u_fpsqrt_r16_block/g_s1_qds_spec/u_r4_qds_s1/m_neg_1_pos_1_i
+# add wave -position insertpoint -expand -group S1_ITER -radix binary sim:/tb_top/u_dut/u_fpsqrt_r16_block/g_s1_qds_spec/u_r4_qds_s1/m_neg_0_pos_1_i
+# add wave -position insertpoint -expand -group S1_ITER -radix binary sim:/tb_top/u_dut/u_fpsqrt_r16_block/g_s1_qds_spec/u_r4_qds_s1/m_pos_1_pos_1_i
+# add wave -position insertpoint -expand -group S1_ITER -radix binary sim:/tb_top/u_dut/u_fpsqrt_r16_block/g_s1_qds_spec/u_r4_qds_s1/m_pos_2_pos_1_i
+# add wave -position insertpoint -expand -group S1_ITER -radix binary sim:/tb_top/u_dut/u_fpsqrt_r16_block/g_s1_qds_spec/u_r4_qds_s1/m_neg_1_pos_2_i
+# add wave -position insertpoint -expand -group S1_ITER -radix binary sim:/tb_top/u_dut/u_fpsqrt_r16_block/g_s1_qds_spec/u_r4_qds_s1/m_neg_0_pos_2_i
+# add wave -position insertpoint -expand -group S1_ITER -radix binary sim:/tb_top/u_dut/u_fpsqrt_r16_block/g_s1_qds_spec/u_r4_qds_s1/m_pos_1_pos_2_i
+# add wave -position insertpoint -expand -group S1_ITER -radix binary sim:/tb_top/u_dut/u_fpsqrt_r16_block/g_s1_qds_spec/u_r4_qds_s1/m_pos_2_pos_2_i
+# add wave -position insertpoint -expand -group S1_ITER -radix binary sim:/tb_top/u_dut/u_fpsqrt_r16_block/g_s1_qds_spec/u_r4_qds_s1/prev_rt_dig_i
+# add wave -position insertpoint -expand -group S1_ITER -radix binary sim:/tb_top/u_dut/u_fpsqrt_r16_block/g_s1_qds_spec/u_r4_qds_s1/qds_sign_spec[4]
+# add wave -position insertpoint -expand -group S1_ITER -radix binary sim:/tb_top/u_dut/u_fpsqrt_r16_block/g_s1_qds_spec/u_r4_qds_s1/qds_sign_spec[3]
+# add wave -position insertpoint -expand -group S1_ITER -radix binary sim:/tb_top/u_dut/u_fpsqrt_r16_block/g_s1_qds_spec/u_r4_qds_s1/qds_sign_spec[2]
+# add wave -position insertpoint -expand -group S1_ITER -radix binary sim:/tb_top/u_dut/u_fpsqrt_r16_block/g_s1_qds_spec/u_r4_qds_s1/qds_sign_spec[1]
+# add wave -position insertpoint -expand -group S1_ITER -radix binary sim:/tb_top/u_dut/u_fpsqrt_r16_block/g_s1_qds_spec/u_r4_qds_s1/qds_sign_spec[0]
+# add wave -position insertpoint -expand -group S1_ITER -radix binary sim:/tb_top/u_dut/u_fpsqrt_r16_block/g_s1_qds_spec/u_r4_qds_s1/qds_sign
+
 add wave -position insertpoint -expand -group S1_ITER -radix binary sim:/tb_top/u_dut/u_fpsqrt_r16_block/nxt_rt_dig[1]
 add wave -position insertpoint -expand -group S1_ITER sim:/tb_top/u_dut/u_fpsqrt_r16_block/mask_csa_ext[1]
 add wave -position insertpoint -expand -group S1_ITER sim:/tb_top/u_dut/u_fpsqrt_r16_block/sqrt_csa_val_neg_2[1]
 add wave -position insertpoint -expand -group S1_ITER sim:/tb_top/u_dut/u_fpsqrt_r16_block/sqrt_csa_val_neg_1[1]
 add wave -position insertpoint -expand -group S1_ITER sim:/tb_top/u_dut/u_fpsqrt_r16_block/sqrt_csa_val_pos_1[1]
 add wave -position insertpoint -expand -group S1_ITER sim:/tb_top/u_dut/u_fpsqrt_r16_block/sqrt_csa_val_pos_2[1]
+add wave -position insertpoint -expand -group S1_ITER sim:/tb_top/u_dut/u_fpsqrt_r16_block/sqrt_csa_val[1]
 add wave -position insertpoint -expand -group S1_ITER sim:/tb_top/u_dut/u_fpsqrt_r16_block/nxt_f_r_s[1]
 add wave -position insertpoint -expand -group S1_ITER sim:/tb_top/u_dut/u_fpsqrt_r16_block/nxt_f_r_c[1]
 add wave -position insertpoint -expand -group S1_ITER sim:/tb_top/u_dut/u_fpsqrt_r16_block/nxt_rt[1]
 add wave -position insertpoint -expand -group S1_ITER sim:/tb_top/u_dut/u_fpsqrt_r16_block/nxt_rt_m1[1]
-
-
-
-
-
-
-
 
