@@ -1,0 +1,10 @@
++incdir+../rtl
+
+../rtl/fpsqrt_vector_r16.sv
+../rtl/fpsqrt_r16_block.sv
+../rtl/r4_qds.sv
+../rtl/r4_qds_spec.sv
+../rtl/r4_qds_cg.sv
+../rtl/lzc.sv
+
+
