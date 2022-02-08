@@ -10,13 +10,13 @@ vlib ./lib/work
 
 vmap work ./lib/work
 
-# set RAND_SEED 642273601
+# set RAND_SEED 932715047
 set RAND_SEED [expr {int(rand() * 999999999)}]
 set TEST_LEVEL 1
 set MAX_ERROR_COUNT 10
 set FP64_TEST_NUM [expr {int(pow(2, 19))}]
 set FP32_TEST_NUM [expr {int(pow(2, 19))}]
-set FP16_TEST_NUM [expr {int(pow(2, 10))}]
+set FP16_TEST_NUM [expr {int(pow(2, 16))}]
 
 
 vlog -work work -incr -lint \
@@ -35,7 +35,10 @@ configure wave -signalnamewidth 1
 configure wave -timelineunits ns
 
 # Display waves ??
+# Use this when S1_QDS_SPECULATIVE = 0
 # do wave.do
+# Use this when S1_QDS_SPECULATIVE = 1
+# do wave_2.do
 
 run -all
 
