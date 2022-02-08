@@ -3,7 +3,7 @@
 // Author				: HYF
 // How to Contact		: hyf_sysu@qq.com
 // Created Time    		: 2022-01-17 17:06:55
-// Last Modified Time   : 2022-02-03 20:16:04
+// Last Modified Time   : 2022-02-08 16:05:06
 // ========================================================================================================
 // Description	:
 // A high performance Floating Point Square-Root module, based on Radix-16 SRT algorithm.
@@ -72,13 +72,27 @@ module fpsqrt_scalar_r16 #(
 
 localparam REM_W = 2 + 54;
 
-localparam FP64_FRAC_W = 52 + 1;
-localparam FP32_FRAC_W = 23 + 1;
-localparam FP16_FRAC_W = 10 + 1;
+// F64: We would get 54-bit root -> We need 54 + 2 = 56-bit REM.
+localparam F64_REM_W = 2 + 54;
+// F32: We would get 26-bit root -> We need 26 + 2 = 28-bit REM.
+localparam F32_REM_W = 2 + 26;
+// F16: We would get 14-bit root -> We need 14 + 2 = 16-bit REM.
+localparam F16_REM_W = 2 + 14;
 
-localparam FP64_EXP_W = 11;
-localparam FP32_EXP_W = 8;
-localparam FP16_EXP_W = 5;
+// F64: The root could be 55-bit in the early stage, but finally the significant digits must be 54.
+localparam F64_FULL_RT_W = F64_REM_W - 1;
+// F32: The root could be 27-bit in the early stage, but finally the significant digits must be 26.
+localparam F32_FULL_RT_W = F32_REM_W - 1;
+// F16: The root could be 15-bit in the early stage, but finally the significant digits must be 14.
+localparam F16_FULL_RT_W = F16_REM_W - 1;
+
+localparam F64_FRAC_W = 52 + 1;
+localparam F32_FRAC_W = 23 + 1;
+localparam F16_FRAC_W = 10 + 1;
+
+localparam F64_EXP_W = 11;
+localparam F32_EXP_W = 8;
+localparam F16_EXP_W = 5;
 
 localparam FSM_W = 4;
 localparam FSM_PRE_0 	= (1 << 0);
@@ -106,7 +120,7 @@ localparam RT_DIG_POS_1 = (1 << 1);
 localparam RT_DIG_POS_2 = (1 << 0);
 
 // Used when we find that the op is the power of 2 and it has an odd_exp.
-localparam SQRT_2_WITH_ROUND_BIT = 54'b1_01101010000010011110011001100111111100111011110011001;
+localparam [54-1:0] SQRT_2_WITH_ROUND_BIT = 54'b1_01101010000010011110011001100111111100111011110011001;
 
 localparam RM_RNE = 3'b000;
 localparam RM_RTZ = 3'b001;
@@ -174,11 +188,11 @@ logic res_is_sqrt_2_q;
 logic early_finish;
 // ================================================================================================================================================
 
-logic [$clog2(FP64_FRAC_W)-1:0] op_l_shift_num_pre;
-logic [$clog2(FP64_FRAC_W)-1:0] op_l_shift_num;
-logic [FP64_FRAC_W-1:0] op_frac_pre_shifted;
-logic [(FP64_FRAC_W-1)-1:0] op_frac_l_shifted_s5_to_s3;
-logic [FP64_FRAC_W-1:0] op_frac_l_shifted;
+logic [$clog2(F64_FRAC_W)-1:0] op_l_shift_num_pre;
+logic [$clog2(F64_FRAC_W)-1:0] op_l_shift_num;
+logic [F64_FRAC_W-1:0] op_frac_pre_shifted;
+logic [(F64_FRAC_W-1)-1:0] op_frac_l_shifted_s5_to_s2;
+logic [F64_FRAC_W-1:0] op_frac_l_shifted;
 logic op_frac_is_zero;
 
 // For F64, it needs 13 cycles for iter, so we would get 13 * 4 + 2 = 54-bit root after iter is finished.
@@ -193,18 +207,18 @@ logic op_frac_is_zero;
 logic [3-1:0] rt_dig_1st;
 // At the beginning, rt_m1 must be {0}.{1x, 52'b0}, so we only need to store [52:0] for rt_m1, and rt_m1[53] must be 1
 logic rt_en;
-logic [54-1:0] rt_d;
-logic [54-1:0] rt_q;
+logic [(F64_FULL_RT_W-1)-1:0] rt_d;
+logic [(F64_FULL_RT_W-1)-1:0] rt_q;
 logic rt_m1_en;
-logic [53-1:0] rt_m1_d;
-logic [53-1:0] rt_m1_q;
-logic [55-1:0] rt_iter_init;
-logic [55-1:0] rt_m1_iter_init;
-logic [54-1:0] rt_after_iter;
-logic [53-1:0] rt_m1_after_iter;
+logic [(F64_FULL_RT_W-2)-1:0] rt_m1_d;
+logic [(F64_FULL_RT_W-2)-1:0] rt_m1_q;
+logic [F64_FULL_RT_W-1:0] rt_iter_init;
+logic [F64_FULL_RT_W-1:0] rt_m1_iter_init;
+logic [(F64_FULL_RT_W-1)-1:0] rt_after_iter;
+logic [(F64_FULL_RT_W-2)-1:0] rt_m1_after_iter;
 
 logic current_exp_is_odd;
-logic [52-1:0] current_frac;
+logic [(F64_FRAC_W-1)-1:0] current_frac;
 
 logic mask_en;
 logic [13-1:0] mask_d;
@@ -272,18 +286,11 @@ logic [(REM_W-2)-1:0] f_r_or;
 logic rem_is_not_zero;
 logic select_rt_m1;
 
-logic [54-1:0] rt_before_round_f64;
-logic [54-1:0] rt_before_round_f32;
-logic [54-1:0] rt_before_round_f16;
-logic [54-1:0] rt_before_round;
-logic [54-1:0] rt_m1_before_round_f64;
-logic [54-1:0] rt_m1_before_round_f32;
-logic [54-1:0] rt_m1_before_round_f16;
-logic [54-1:0] rt_m1_before_round;
-logic [52-1:0] rt_pre_inc;
-logic [52-1:0] rt_m1_pre_inc;
-logic [53-1:0] rt_inc_res;
-logic [52-1:0] rt_m1_inc_res;
+logic [(F64_FRAC_W-1)-1:0] rt_inc_lane;
+logic [F64_FRAC_W-1:0] rt_pre_inc;
+logic [(F64_FRAC_W-1)-1:0] rt_m1_pre_inc;
+logic [F64_FRAC_W-1:0] rt_inc_res;
+logic [F64_FRAC_W-1:0] rt_m1_inc_res;
 
 logic guard_bit_rt;
 logic round_bit_rt;
@@ -295,20 +302,20 @@ logic guard_bit_rt_m1;
 logic round_bit_rt_m1;
 logic rt_m1_need_rup;
 
-logic [53-1:0] rt_rounded;
-logic [52-1:0] rt_m1_rounded;
+logic [F64_FRAC_W-1:0] rt_rounded;
+logic [F64_FRAC_W-1:0] rt_m1_rounded;
 logic inexact;
 logic carry_after_round;
-logic [53-1:0] frac_rounded;
-logic [11-1:0] exp_rounded;
+logic [F64_FRAC_W-1:0] frac_rounded;
+logic [F64_EXP_W-1:0] exp_rounded;
 
-logic [FP16_EXP_W-1:0] f16_out_exp;
-logic [FP32_EXP_W-1:0] f32_out_exp;
-logic [FP64_EXP_W-1:0] f64_out_exp;
+logic [F16_EXP_W-1:0] f16_exp_res;
+logic [F32_EXP_W-1:0] f32_exp_res;
+logic [F64_EXP_W-1:0] f64_exp_res;
 
-logic [(FP16_FRAC_W-1)-1:0] f16_out_frac;
-logic [(FP32_FRAC_W-1)-1:0] f32_out_frac;
-logic [(FP64_FRAC_W-1)-1:0] f64_out_frac;
+logic [(F16_FRAC_W-1)-1:0] f16_frac_res;
+logic [(F32_FRAC_W-1)-1:0] f32_frac_res;
+logic [(F64_FRAC_W-1)-1:0] f64_frac_res;
 
 logic fflags_invalid_operation;
 logic fflags_div_by_zero;
@@ -316,9 +323,9 @@ logic fflags_overflow;
 logic fflags_underflow;
 logic fflags_inexact;
 
-logic [(FP16_EXP_W + FP16_FRAC_W)-1:0] f16_res;
-logic [(FP32_EXP_W + FP32_FRAC_W)-1:0] f32_res;
-logic [(FP64_EXP_W + FP64_FRAC_W)-1:0] f64_res;
+logic [(F16_EXP_W + F16_FRAC_W)-1:0] f16_res;
+logic [(F32_EXP_W + F32_FRAC_W)-1:0] f32_res;
+logic [(F64_EXP_W + F64_FRAC_W)-1:0] f64_res;
 
 
 // signals end
@@ -361,7 +368,6 @@ assign finish_valid_o = fsm_q[FSM_POST_0_BIT];
 // ================================================================================================================================================
 // Pre
 // ================================================================================================================================================
-
 assign op_sign = (fp_format_i == 2'd0) ? op_i[15] : (fp_format_i == 2'd1) ? op_i[31] : op_i[63];
 assign op_exp = (fp_format_i == 2'd0) ? {6'b0, op_i[14:10]} : (fp_format_i == 2'd1) ? {3'b0, op_i[30:23]} : op_i[62:52];
 assign op_exp_is_zero = (op_exp == 11'b0);
@@ -404,11 +410,11 @@ assign early_finish =
 // ================================================================================================================================================
 // Make the MSB of frac of different formats aligned.
 assign op_frac_pre_shifted = 
-  ({(FP64_FRAC_W){fp_format_i == 2'd0}} & {1'b0, op_i[0 +: (FP16_FRAC_W - 1)], {(FP64_FRAC_W - FP16_FRAC_W){1'b0}}})
-| ({(FP64_FRAC_W){fp_format_i == 2'd1}} & {1'b0, op_i[0 +: (FP32_FRAC_W - 1)], {(FP64_FRAC_W - FP32_FRAC_W){1'b0}}})
-| ({(FP64_FRAC_W){fp_format_i == 2'd2}} & {1'b0, op_i[0 +: (FP64_FRAC_W - 1)], {(FP64_FRAC_W - FP64_FRAC_W){1'b0}}});
+  ({(F64_FRAC_W){fp_format_i == 2'd0}} & {1'b0, op_i[0 +: (F16_FRAC_W - 1)], {(F64_FRAC_W - F16_FRAC_W){1'b0}}})
+| ({(F64_FRAC_W){fp_format_i == 2'd1}} & {1'b0, op_i[0 +: (F32_FRAC_W - 1)], {(F64_FRAC_W - F32_FRAC_W){1'b0}}})
+| ({(F64_FRAC_W){fp_format_i == 2'd2}} & {1'b0, op_i[0 +: (F64_FRAC_W - 1)], {(F64_FRAC_W - F64_FRAC_W){1'b0}}});
 lzc #(
-	.WIDTH(FP64_FRAC_W),
+	.WIDTH(F64_FRAC_W),
 	// 0: trailing zero.
 	// 1: leading zero.
 	.MODE(1'b1)
@@ -419,10 +425,10 @@ lzc #(
 	.empty_o(op_frac_is_zero)
 );
 assign op_l_shift_num = {(6){op_exp_is_zero}} & op_l_shift_num_pre;
-// Do stage[5:3] l_shift in pre_0, because in the common CLZ logic, delay(MSB) should be smaller than delay(LSB).
-assign op_frac_l_shifted_s5_to_s3 = op_frac_pre_shifted[51:0] << {op_l_shift_num[5:3], 3'b0};
-// Do stage[2:0] l_shift in pre_1
-assign op_frac_l_shifted = {1'b1, rt_m1_q[51:0] << iter_num_q[2:0]};
+// Do stage[5:2] l_shift in pre_0, because in the common CLZ logic, delay(MSB) should be smaller than delay(LSB).
+assign op_frac_l_shifted_s5_to_s2 = op_frac_pre_shifted[0 +: (F64_FRAC_W - 1)] << {op_l_shift_num[5:2], 2'b0};
+// Do stage[1:0] l_shift in pre_1
+assign op_frac_l_shifted = {1'b1, rt_m1_q[0 +: (F64_FRAC_W - 1)] << iter_num_q[1:0]};
 
 // It might be a little bit difficult to understand the logic here.
 // E: Real exponent of a number
@@ -462,15 +468,16 @@ assign op_frac_l_shifted = {1'b1, rt_m1_q[51:0] << iter_num_q[2:0]};
 // I think the design used here should lead to better PPA.
 assign out_exp_pre = {1'b0, op_exp[10:1], op_exp[0] | op_exp_is_zero} + {
 	2'b0,
-	(fp_format_i == 2'd0) ? 6'b0 : (fp_format_i == 2'd1) ? {3'b0, 2'b11, ~op_l_shift_num[4]} : {4'b1111, ~op_l_shift_num[5:4]},
+ 	  ({(6){fp_format_i == 2'd0}} & 6'b0)
+	| ({(6){fp_format_i == 2'd1}} & {3'b0, 2'b11, ~op_l_shift_num[4]})
+	| ({(6){fp_format_i == 2'd2}} & {4'b1111, ~op_l_shift_num[5:4]}),
 	~op_l_shift_num[3:0]
 };
-
 
 // pre_0: op is from input port
 // pre_1: op is from l_shifted result
 assign current_exp_is_odd = fsm_q[FSM_PRE_0_BIT] ? ~op_exp[0] : iter_num_q[0];
-assign current_frac = fsm_q[FSM_PRE_0_BIT] ? op_frac_pre_shifted[51:0] : op_frac_l_shifted[51:0];
+assign current_frac = fsm_q[FSM_PRE_0_BIT] ? op_frac_pre_shifted[0 +: (F64_FRAC_W - 1)] : op_frac_l_shifted[0 +: (F64_FRAC_W - 1)];
 // Look at the paper for more details.
 // even_exp, digit in (2 ^ -1) is 0: s[1] = -2, rt = {0}.{1, 53'b0} , rt_m1 = {0}.{01, 52'b0}
 // even_exp, digit in (2 ^ -1) is 1: s[1] = -1, rt = {0}.{11, 52'b0}, rt_m1 = {0}.{10, 52'b0}
@@ -479,9 +486,9 @@ assign current_frac = fsm_q[FSM_PRE_0_BIT] ? op_frac_pre_shifted[51:0] : op_frac
 // [0]: s[1] = -2
 // [1]: s[1] = -1
 // [2]: s[1] =  0
-assign rt_dig_1st[0] = ({current_exp_is_odd, current_frac[51]} == 2'b00);
-assign rt_dig_1st[1] = ({current_exp_is_odd, current_frac[51]} == 2'b01) | ({current_exp_is_odd, current_frac[51]} == 2'b10);
-assign rt_dig_1st[2] = ({current_exp_is_odd, current_frac[51]} == 2'b11);
+assign rt_dig_1st[0] = ({current_exp_is_odd, current_frac[F64_FRAC_W-2]} == 2'b00);
+assign rt_dig_1st[1] = ({current_exp_is_odd, current_frac[F64_FRAC_W-2]} == 2'b01) | ({current_exp_is_odd, current_frac[F64_FRAC_W-2]} == 2'b10);
+assign rt_dig_1st[2] = ({current_exp_is_odd, current_frac[F64_FRAC_W-2]} == 2'b11);
 
 // When (op_is_power_of_2) and odd_exp: 
 // f_r_s_iter_init = {1, 55'b0}
@@ -494,15 +501,15 @@ assign rt_dig_1st[2] = ({current_exp_is_odd, current_frac[51]} == 2'b11);
 // In conclusion, when (op_is_power_of_2), the ITER step could be skipped, and we only need to use 1-bit reg to store "op_is_power_of_2 & exp_is_odd", 
 // instead of using 2-bit reg to store "{op_is_power_of_2, exp_is_odd}"
 assign rt_iter_init = 
-  ({(55){rt_dig_1st[0]}} & {3'b010, 52'b0})
-| ({(55){rt_dig_1st[1]}} & {3'b011, 52'b0})
-| ({(55){rt_dig_1st[2]}} & {3'b100, 52'b0});
+  ({(F64_FULL_RT_W){rt_dig_1st[0]}} & {3'b010, {(F64_FULL_RT_W - 3){1'b0}}})
+| ({(F64_FULL_RT_W){rt_dig_1st[1]}} & {3'b011, {(F64_FULL_RT_W - 3){1'b0}}})
+| ({(F64_FULL_RT_W){rt_dig_1st[2]}} & {3'b100, {(F64_FULL_RT_W - 3){1'b0}}});
 // When s[1] = -2, the MSB of rt_m1 is not 1, which doesn't follow my assumption of rt_m1. But you should easily find that in the later iter process,
 // the QDS "MUST" select "0/+1/+2" before the next "-1/-2" is selected. Therefore, rt_m1 will not be used until the next "-1/-2" is selected.
 assign rt_m1_iter_init = 
-  ({(55){rt_dig_1st[0]}} & {3'b001, 52'b0})
-| ({(55){rt_dig_1st[1]}} & {3'b010, 52'b0})
-| ({(55){rt_dig_1st[2]}} & {3'b011, 52'b0});
+  ({(F64_FULL_RT_W){rt_dig_1st[0]}} & {3'b001, {(F64_FULL_RT_W - 3){1'b0}}})
+| ({(F64_FULL_RT_W){rt_dig_1st[1]}} & {3'b010, {(F64_FULL_RT_W - 3){1'b0}}})
+| ({(F64_FULL_RT_W){rt_dig_1st[2]}} & {3'b011, {(F64_FULL_RT_W - 3){1'b0}}});
 
 assign f_r_s_iter_init_pre = {2'b11, current_exp_is_odd ? {1'b1, current_frac, 1'b0} : {1'b0, 1'b1, current_frac}};
 assign f_r_s_iter_init = {f_r_s_iter_init_pre[(REM_W-1)-2:0], 2'b0};
@@ -512,13 +519,13 @@ assign f_r_c_iter_init =
 | ({(REM_W){rt_dig_1st[2]}} & {(REM_W){1'b0}});
 
 assign rt_en = start_handshaked | fsm_q[FSM_PRE_1_BIT] | fsm_q[FSM_ITER_BIT];
-assign rt_d  = (fsm_q[FSM_PRE_0_BIT] | fsm_q[FSM_PRE_1_BIT]) ? rt_iter_init[53:0] : rt_after_iter;
+assign rt_d  = (fsm_q[FSM_PRE_0_BIT] | fsm_q[FSM_PRE_1_BIT]) ? rt_iter_init[0 +: (F64_FULL_RT_W - 1)] : rt_after_iter;
 
 assign rt_m1_en = start_handshaked | fsm_q[FSM_PRE_1_BIT] | fsm_q[FSM_ITER_BIT];
 // Use rt_m1_q to store the unfinished l_shifted result when op is a denormal number.
 assign rt_m1_d  = 
-fsm_q[FSM_PRE_0_BIT] ? (op_exp_is_zero ? {rt_m1_q[52], op_frac_l_shifted_s5_to_s3} : rt_m1_iter_init[52:0]) : 
-fsm_q[FSM_PRE_1_BIT] ? rt_m1_iter_init[52:0] : 
+fsm_q[FSM_PRE_0_BIT] ? (op_exp_is_zero ? {rt_m1_q[52], op_frac_l_shifted_s5_to_s2} : rt_m1_iter_init[0 +: (F64_FULL_RT_W - 2)]) : 
+fsm_q[FSM_PRE_1_BIT] ? rt_m1_iter_init[0 +: (F64_FULL_RT_W - 2)] : 
 rt_m1_after_iter;
 
 assign mask_en = start_handshaked | fsm_q[FSM_PRE_1_BIT] | fsm_q[FSM_ITER_BIT];
@@ -540,10 +547,17 @@ assign iter_num_en = start_handshaked | fsm_q[FSM_PRE_1_BIT] | (fsm_q[FSM_ITER_B
 assign iter_num_d  = 
 fsm_q[FSM_PRE_0_BIT] ? (
 	early_finish ? {res_is_nan_d, res_is_inf_d, res_is_exact_zero_d, op_invalid_d} : 
-	op_exp_is_zero ? {iter_num_q[3], op_l_shift_num[2:0]} : 
-	((fp_format_i == 2'd0) ? 4'd2 : (fp_format_i == 2'd1) ? 4'd5 : 4'd12)
+	op_exp_is_zero ? {iter_num_q[3:2], op_l_shift_num[1:0]} : (
+		  ({(4){fp_format_i == 2'd0}} & 4'd2)
+		| ({(4){fp_format_i == 2'd1}} & 4'd5)
+		| ({(4){fp_format_i == 2'd2}} & 4'd12)
+	)
 ) : 
-fsm_q[FSM_PRE_1_BIT] ? ((fp_format_q == 2'd0) ? 4'd2 : (fp_format_q == 2'd1) ? 4'd5 : 4'd12) : 
+fsm_q[FSM_PRE_1_BIT] ? (
+	  ({(4){fp_format_q == 2'd0}} & 4'd2)
+	| ({(4){fp_format_q == 2'd1}} & 4'd5)
+	| ({(4){fp_format_q == 2'd2}} & 4'd12)
+) : 
 (iter_num_q - 4'd1);
 
 assign final_iter = (iter_num_q == 4'd0);
@@ -561,10 +575,10 @@ assign adder_9b_iter_init = {f_r_s_iter_init[(REM_W-1)-2 -: 2] + f_r_c_iter_init
 assign nr_f_r_9b_for_nxt_cycle_s1_qds_en = start_handshaked | fsm_q[FSM_PRE_1_BIT] | fsm_q[FSM_ITER_BIT];
 assign nr_f_r_9b_for_nxt_cycle_s1_qds_d  = (fsm_q[FSM_PRE_0_BIT] | fsm_q[FSM_PRE_1_BIT]) ? adder_9b_iter_init : adder_9b_res_for_nxt_cycle_s1_qds;
 
-assign a0_iter_init = rt_iter_init[54];
-assign a2_iter_init = rt_iter_init[52];
-assign a3_iter_init = rt_iter_init[51];
-assign a4_iter_init = rt_iter_init[50];
+assign a0_iter_init = rt_iter_init[F64_FULL_RT_W-1];
+assign a2_iter_init = rt_iter_init[F64_FULL_RT_W-3];
+assign a3_iter_init = rt_iter_init[F64_FULL_RT_W-4];
+assign a4_iter_init = rt_iter_init[F64_FULL_RT_W-5];
 r4_qds_cg
 u_r4_qds_cg_iter_init (
 	.a0_i(a0_iter_init),
@@ -707,26 +721,31 @@ assign f_r_or  = f_r_s_q[(REM_W-1)-2:0] | f_r_c_q[(REM_W-1)-2:0];
 assign rem_is_not_zero = nr_f_r[REM_W-1] | (f_r_xor != f_r_or);
 
 // Similar to fpdiv, to get the correct rounded result, we don't need the digits after "round_bit".
-// Make the integer part ZERO so we can get the carry bit
-assign rt_before_round_f64 = {1'b0, res_is_sqrt_2_q ? SQRT_2_WITH_ROUND_BIT[52:0] : rt_q[52:0]};
-assign rt_before_round_f32 = {{(54 - 24){1'b0}}, res_is_sqrt_2_q ? SQRT_2_WITH_ROUND_BIT[52 -: 24] : rt_q[52 -: 24]};
-assign rt_before_round_f16 = {{(54 - 11){1'b0}}, res_is_sqrt_2_q ? SQRT_2_WITH_ROUND_BIT[52 -: 11] : rt_q[52 -: 11]};
-assign rt_before_round = 
-  ({(54){fp_format_q == 2'd0}} & rt_before_round_f16)
-| ({(54){fp_format_q == 2'd1}} & rt_before_round_f32)
-| ({(54){fp_format_q == 2'd2}} & rt_before_round_f64);
+assign rt_pre_inc = res_is_sqrt_2_q ? SQRT_2_WITH_ROUND_BIT[0 +: F64_FRAC_W] : rt_q[0 +: F64_FRAC_W];
+assign rt_inc_lane = 
+  ({(52){fp_format_q == 2'd0}} & { 9'b0, 1'b1, 42'b0})
+| ({(52){fp_format_q == 2'd1}} & {22'b0, 1'b1, 29'b0})
+| ({(52){fp_format_q == 2'd2}} & {51'b0, 1'b1});
 
-// Make the integer part ZERO so we can get the carry bit
-assign rt_m1_before_round_f64 = {1'b0, rt_m1_q};
-assign rt_m1_before_round_f32 = {{(54 - 24){1'b0}}, rt_m1_q[52 -: 24]};
-assign rt_m1_before_round_f16 = {{(54 - 11){1'b0}}, rt_m1_q[52 -: 11]};
-assign rt_m1_before_round = 
-  ({(54){fp_format_q == 2'd0}} & rt_m1_before_round_f16)
-| ({(54){fp_format_q == 2'd1}} & rt_m1_before_round_f32)
-| ({(54){fp_format_q == 2'd2}} & rt_m1_before_round_f64);
+assign round_bit_rt = 
+  ({(1){fp_format_q == 2'd0}} & rt_pre_inc[42])
+| ({(1){fp_format_q == 2'd1}} & rt_pre_inc[29])
+| ({(1){fp_format_q == 2'd2}} & rt_pre_inc[ 0]);
 
-assign rt_pre_inc[51:0] = rt_before_round[52:1];
-assign rt_m1_pre_inc[51:0] = rt_m1_before_round[52:1];
+assign round_bit_rt_m1 = 
+  ({(1){fp_format_q == 2'd0}} & rt_m1_q[42])
+| ({(1){fp_format_q == 2'd1}} & rt_m1_q[29])
+| ({(1){fp_format_q == 2'd2}} & rt_m1_q[ 0]);
+
+assign guard_bit_rt = 
+  ({(1){fp_format_q == 2'd0}} & rt_pre_inc[43])
+| ({(1){fp_format_q == 2'd1}} & rt_pre_inc[30])
+| ({(1){fp_format_q == 2'd2}} & rt_pre_inc[ 1]);
+
+assign guard_bit_rt_m1 = 
+  ({(1){fp_format_q == 2'd0}} & rt_m1_q[43])
+| ({(1){fp_format_q == 2'd1}} & rt_m1_q[30])
+| ({(1){fp_format_q == 2'd2}} & rt_m1_q[ 1]);
 
 // Carry will only happen when the following conditions are met:
 // 1. exp_is_odd
@@ -734,17 +753,15 @@ assign rt_m1_pre_inc[51:0] = rt_m1_before_round[52:1];
 // 3. Rounding_Mode = RUP
 // That means we can also get its value in initialization step, but it seems that 
 // "Getting its value in initialization step" has no benefit...
-assign rt_inc_res[52:0] = rt_pre_inc + {52'b0, 1'b1};
-// When(f64), for rt_m1, "carry_after_round" is impossible
-// But it is possible for f16, because we get 14-bit root.
-assign rt_m1_inc_res[51:0] = (rt_m1_pre_inc[0] == rt_pre_inc[0]) ? rt_inc_res[51:0] : rt_pre_inc[51:0];
+assign rt_inc_res = {1'b0, rt_pre_inc[52:1]} + {1'b0, rt_inc_lane};
+
+assign rt_m1_pre_inc = rt_m1_q[52:1];
+assign rt_m1_inc_res = (guard_bit_rt_m1 == guard_bit_rt) ? rt_inc_res : {1'b0, rt_pre_inc[52:1]};
 
 assign select_rt_m1 = nr_f_r[REM_W-1] & ~res_is_sqrt_2_q;
 
-assign guard_bit_rt = rt_before_round[1];
-assign round_bit_rt = rt_before_round[0];
-assign sticky_bit_rt = rem_is_not_zero;
 
+assign sticky_bit_rt = rem_is_not_zero;
 // For SQRT, there is no "Midpoint" result, which means, if round_bit is 1, then sticky_bit must be 1 as well. By using this property,
 // We could known that the effect of RNE is totally equal to RMM. So we can save several gates here.
 // However, in most real-world CPU design, people prefer using a signle module to calculate fpdiv/sqrt, which means div and sqrt will share the same rounding
@@ -755,17 +772,17 @@ assign rt_need_rup =
 | ({rm_q == RM_RMM} &  round_bit_rt);
 assign inexact_rt = round_bit_rt | sticky_bit_rt;
 
-assign guard_bit_rt_m1 = rt_m1_before_round[1];
-assign round_bit_rt_m1 = rt_m1_before_round[0];
+
 // As said before, for rt_m1 the sticky_bit must be 1.
 assign rt_m1_need_rup = (rm_q == RM_RUP) | (((rm_q == RM_RNE) | (rm_q == RM_RMM)) & round_bit_rt_m1);
 
-assign rt_rounded = rt_need_rup ? rt_inc_res : {1'b0, rt_pre_inc};
-assign rt_m1_rounded = rt_m1_need_rup ? rt_m1_inc_res : rt_m1_pre_inc;
+
+assign rt_rounded = rt_need_rup ? rt_inc_res : {1'b0, rt_pre_inc[52:1]};
+assign rt_m1_rounded = rt_m1_need_rup ? rt_m1_inc_res : {1'b0, rt_m1_pre_inc};
 assign inexact = select_rt_m1 | inexact_rt;
 
-assign frac_rounded = select_rt_m1 ? {1'b0, rt_m1_rounded} : rt_rounded;
-assign carry_after_round = (fp_format_q == 2'd0) ? frac_rounded[10] : (fp_format_q == 2'd1) ? frac_rounded[23] : frac_rounded[52];
+assign frac_rounded = select_rt_m1 ? rt_m1_rounded : rt_rounded;
+assign carry_after_round = frac_rounded[52];
 assign exp_rounded = carry_after_round ? (out_exp_q + 11'd1) : out_exp_q;
 
 assign {
@@ -775,44 +792,46 @@ assign {
 	op_invalid_q
 } = iter_num_q;
 
-assign f16_out_exp = 
+assign f16_exp_res = 
 (res_is_nan_q | res_is_inf_q) ? {(5){1'b1}} : 
 res_is_exact_zero_q ? 5'b0 : 
 exp_rounded[4:0];
 
-assign f32_out_exp = 
+assign f32_exp_res = 
 (res_is_nan_q | res_is_inf_q) ? {(8){1'b1}} : 
 res_is_exact_zero_q ? 8'b0 : 
 exp_rounded[7:0];
 
-assign f64_out_exp = 
+assign f64_exp_res = 
 (res_is_nan_q | res_is_inf_q) ? {(11){1'b1}} : 
 res_is_exact_zero_q ? 11'b0 : 
 exp_rounded[10:0];
 
-assign f16_out_frac = 
+assign f16_frac_res = 
 res_is_nan_q ? {1'b1, 9'b0} : 
 (res_is_inf_q | res_is_exact_zero_q) ? 10'b0 : 
-frac_rounded[9:0];
+frac_rounded[51 -: 10];
 
-assign f32_out_frac = 
+assign f32_frac_res = 
 res_is_nan_q ? {1'b1, 22'b0} : 
 (res_is_inf_q | res_is_exact_zero_q) ? 23'b0 : 
-frac_rounded[22:0];
+frac_rounded[51 -: 23];
 
-assign f64_out_frac = 
+assign f64_frac_res = 
 res_is_nan_q ? {1'b1, 51'b0} : 
 (res_is_inf_q | res_is_exact_zero_q) ? 52'b0 : 
-frac_rounded[51:0];
+frac_rounded[51 -: 52];
 
-assign f16_res = {out_sign_q, f16_out_exp, f16_out_frac};
-assign f32_res = {out_sign_q, f32_out_exp, f32_out_frac};
-assign f64_res = {out_sign_q, f64_out_exp, f64_out_frac};
+assign f16_res = {out_sign_q, f16_exp_res, f16_frac_res};
+assign f32_res = {out_sign_q, f32_exp_res, f32_frac_res};
+assign f64_res = {out_sign_q, f64_exp_res, f64_frac_res};
 
 assign fpsqrt_res_o = {
 	f64_res[63:32], 
 	(fp_format_q == 2'd1) ? f32_res[31:16] : f64_res[31:16], 
-	(fp_format_q == 2'd0) ? f16_res[15:0] : (fp_format_q == 2'd1) ? f32_res[15:0] : f64_res[15:0]
+	  ({(16){fp_format_q == 2'd0}} & f16_res[15:0])
+	| ({(16){fp_format_q == 2'd1}} & f32_res[15:0])
+	| ({(16){fp_format_q == 2'd2}} & f64_res[15:0])
 };
 
 assign fflags_invalid_operation = op_invalid_q;

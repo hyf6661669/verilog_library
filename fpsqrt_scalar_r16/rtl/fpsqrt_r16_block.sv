@@ -3,7 +3,7 @@
 // Author				: HYF
 // How to Contact		: hyf_sysu@qq.com
 // Created Time    		: 2022-02-01 18:39:18
-// Last Modified Time   : 2022-02-03 20:17:19
+// Last Modified Time   : 2022-02-08 15:05:37
 // ========================================================================================================
 // Description	:
 // Radix-16 SRT algorithm for the frac part of fpsqrt.
@@ -77,7 +77,19 @@ module fpsqrt_r16_block #(
 // ================================================================================================================================================
 // (local) parameters begin
 
+// F64: We would get 54-bit root -> We need 54 + 2 = 56-bit REM.
+localparam F64_REM_W = 2 + 54;
+// F32: We would get 26-bit root -> We need 26 + 2 = 28-bit REM.
+localparam F32_REM_W = 2 + 26;
+// F16: We would get 14-bit root -> We need 14 + 2 = 16-bit REM.
+localparam F16_REM_W = 2 + 14;
 
+// F64: The root could be 55-bit in the early stage, but finally the significant digits must be 54.
+localparam F64_FULL_RT_W = F64_REM_W - 1;
+// F32: The root could be 27-bit in the early stage, but finally the significant digits must be 26.
+localparam F32_FULL_RT_W = F32_REM_W - 1;
+// F16: The root could be 15-bit in the early stage, but finally the significant digits must be 14.
+localparam F16_FULL_RT_W = F16_REM_W - 1;
 
 // (local) parameters end
 // ================================================================================================================================================
@@ -85,12 +97,12 @@ module fpsqrt_r16_block #(
 // ================================================================================================================================================
 // signals begin
 
-logic [55-1:0] rt;
-logic [55-1:0] rt_m1;
-logic [55-1:0] nxt_rt_spec_s0 [5-1:0];
-logic [55-1:0] nxt_rt_spec_s1 [5-1:0];
-logic [55-1:0] nxt_rt [2-1:0];
-logic [55-1:0] nxt_rt_m1 [2-1:0];
+logic [F64_FULL_RT_W-1:0] rt;
+logic [F64_FULL_RT_W-1:0] rt_m1;
+logic [F64_FULL_RT_W-1:0] nxt_rt_spec_s0 [5-1:0];
+logic [F64_FULL_RT_W-1:0] nxt_rt_spec_s1 [5-1:0];
+logic [F64_FULL_RT_W-1:0] nxt_rt [2-1:0];
+logic [F64_FULL_RT_W-1:0] nxt_rt_m1 [2-1:0];
 logic [RT_DIG_W-1:0] nxt_rt_dig [2-1:0];
 
 logic [REM_W-1:0] mask_csa_ext [2-1:0];
@@ -99,17 +111,17 @@ logic [REM_W-1:0] mask_csa_neg_1 [2-1:0];
 logic [REM_W-1:0] mask_csa_pos_1 [2-1:0];
 logic [REM_W-1:0] mask_csa_pos_2 [2-1:0];
 
-logic [55-1:0] mask_rt_ext [2-1:0];
-logic [55-1:0] mask_rt_neg_2 [2-1:0];
-logic [55-1:0] mask_rt_neg_1 [2-1:0];
-logic [55-1:0] mask_rt_neg_0 [2-1:0];
-logic [55-1:0] mask_rt_pos_1 [2-1:0];
-logic [55-1:0] mask_rt_pos_2 [2-1:0];
-logic [55-1:0] mask_rt_m1_neg_2 [2-1:0];
-logic [55-1:0] mask_rt_m1_neg_1 [2-1:0];
-logic [55-1:0] mask_rt_m1_neg_0 [2-1:0];
-logic [55-1:0] mask_rt_m1_pos_1 [2-1:0];
-logic [55-1:0] mask_rt_m1_pos_2 [2-1:0];
+logic [F64_FULL_RT_W-1:0] mask_rt_ext [2-1:0];
+logic [F64_FULL_RT_W-1:0] mask_rt_neg_2 [2-1:0];
+logic [F64_FULL_RT_W-1:0] mask_rt_neg_1 [2-1:0];
+logic [F64_FULL_RT_W-1:0] mask_rt_neg_0 [2-1:0];
+logic [F64_FULL_RT_W-1:0] mask_rt_pos_1 [2-1:0];
+logic [F64_FULL_RT_W-1:0] mask_rt_pos_2 [2-1:0];
+logic [F64_FULL_RT_W-1:0] mask_rt_m1_neg_2 [2-1:0];
+logic [F64_FULL_RT_W-1:0] mask_rt_m1_neg_1 [2-1:0];
+logic [F64_FULL_RT_W-1:0] mask_rt_m1_neg_0 [2-1:0];
+logic [F64_FULL_RT_W-1:0] mask_rt_m1_pos_1 [2-1:0];
+logic [F64_FULL_RT_W-1:0] mask_rt_m1_pos_2 [2-1:0];
 
 logic [REM_W-1:0] nxt_f_r_s [2-1:0];
 logic [REM_W-1:0] nxt_f_r_c [2-1:0];
@@ -189,7 +201,7 @@ assign mask_csa_neg_1[0] = mask_csa_ext[0] | (mask_csa_ext[0] << 1) | (mask_csa_
 assign mask_csa_pos_1[0] = mask_csa_ext[0];
 assign mask_csa_pos_2[0] = mask_csa_ext[0] << 2;
 // Gemerate ofc_mask for different rt_dig
-assign mask_rt_ext[0] = mask_csa_ext[0][54:0];
+assign mask_rt_ext[0] = mask_csa_ext[0][F64_FULL_RT_W-1:0];
 
 assign mask_rt_neg_2[0] = mask_rt_ext[0] << 1;
 assign mask_rt_neg_1[0] = mask_rt_ext[0] | (mask_rt_ext[0] << 1);
@@ -244,6 +256,9 @@ u_r4_qds_s0 (
 // stage[0].csa + full-adder
 // This is done in parallel with qds
 // ================================================================================================================================================
+assign rt = {~rt_i[F64_FULL_RT_W-2], rt_i[F64_FULL_RT_W-2:0]};
+assign rt_m1 = {1'b0, 1'b1, rt_m1_i[F64_FULL_RT_W-3:0]};
+
 assign sqrt_csa_val_neg_2[0] = ({1'b0, rt_m1} << 2) | mask_csa_neg_2[0];
 assign sqrt_csa_val_neg_1[0] = ({1'b0, rt_m1} << 1) | mask_csa_neg_1[0];
 assign sqrt_csa_val_pos_1[0] = ~(({1'b0, rt} << 1) | mask_csa_pos_1[0]);
@@ -342,52 +357,45 @@ endgenerate
 
 // Get the non-redundant form, for stage[1].qds
 assign adder_9b_for_s1_qds_spec[4] = nr_f_r_9b_for_nxt_cycle_s1_qds_i + sqrt_csa_val_neg_2[0][(REM_W-1) -: 9];
-
 assign adder_9b_for_s1_qds_spec[3] = nr_f_r_9b_for_nxt_cycle_s1_qds_i + sqrt_csa_val_neg_1[0][(REM_W-1) -: 9];
-
 assign adder_9b_for_s1_qds_spec[2] = nr_f_r_9b_for_nxt_cycle_s1_qds_i;
-
 assign adder_9b_for_s1_qds_spec[1] = nr_f_r_9b_for_nxt_cycle_s1_qds_i + sqrt_csa_val_pos_1[0][(REM_W-1) -: 9];
-
 assign adder_9b_for_s1_qds_spec[0] = nr_f_r_9b_for_nxt_cycle_s1_qds_i + sqrt_csa_val_pos_2[0][(REM_W-1) -: 9];
 
 // ================================================================================================================================================
 // stage[0].cg
 // This is done in parallel with qds
 // ================================================================================================================================================
-assign rt = {~rt_i[53], rt_i[53:0]};
-assign rt_m1 = {1'b0, 1'b1, rt_m1_i[52:0]};
-
 assign nxt_rt_spec_s0[4] = rt_m1 | mask_rt_neg_2[0];
 assign nxt_rt_spec_s0[3] = rt_m1 | mask_rt_neg_1[0];
 assign nxt_rt_spec_s0[2] = rt;
 assign nxt_rt_spec_s0[1] = rt    | mask_rt_pos_1[0];
 assign nxt_rt_spec_s0[0] = rt    | mask_rt_pos_2[0];
 
-assign a0_spec_s0[4] = nxt_rt_spec_s0[4][54];
-assign a2_spec_s0[4] = nxt_rt_spec_s0[4][52];
-assign a3_spec_s0[4] = nxt_rt_spec_s0[4][51];
-assign a4_spec_s0[4] = nxt_rt_spec_s0[4][50];
+assign a0_spec_s0[4] = nxt_rt_spec_s0[4][F64_FULL_RT_W-1];
+assign a2_spec_s0[4] = nxt_rt_spec_s0[4][F64_FULL_RT_W-3];
+assign a3_spec_s0[4] = nxt_rt_spec_s0[4][F64_FULL_RT_W-4];
+assign a4_spec_s0[4] = nxt_rt_spec_s0[4][F64_FULL_RT_W-5];
 
-assign a0_spec_s0[3] = nxt_rt_spec_s0[3][54];
-assign a2_spec_s0[3] = nxt_rt_spec_s0[3][52];
-assign a3_spec_s0[3] = nxt_rt_spec_s0[3][51];
-assign a4_spec_s0[3] = nxt_rt_spec_s0[3][50];
+assign a0_spec_s0[3] = nxt_rt_spec_s0[3][F64_FULL_RT_W-1];
+assign a2_spec_s0[3] = nxt_rt_spec_s0[3][F64_FULL_RT_W-3];
+assign a3_spec_s0[3] = nxt_rt_spec_s0[3][F64_FULL_RT_W-4];
+assign a4_spec_s0[3] = nxt_rt_spec_s0[3][F64_FULL_RT_W-5];
 
-assign a0_spec_s0[2] = nxt_rt_spec_s0[2][54];
-assign a2_spec_s0[2] = nxt_rt_spec_s0[2][52];
-assign a3_spec_s0[2] = nxt_rt_spec_s0[2][51];
-assign a4_spec_s0[2] = nxt_rt_spec_s0[2][50];
+assign a0_spec_s0[2] = nxt_rt_spec_s0[2][F64_FULL_RT_W-1];
+assign a2_spec_s0[2] = nxt_rt_spec_s0[2][F64_FULL_RT_W-3];
+assign a3_spec_s0[2] = nxt_rt_spec_s0[2][F64_FULL_RT_W-4];
+assign a4_spec_s0[2] = nxt_rt_spec_s0[2][F64_FULL_RT_W-5];
 
-assign a0_spec_s0[1] = nxt_rt_spec_s0[1][54];
-assign a2_spec_s0[1] = nxt_rt_spec_s0[1][52];
-assign a3_spec_s0[1] = nxt_rt_spec_s0[1][51];
-assign a4_spec_s0[1] = nxt_rt_spec_s0[1][50];
+assign a0_spec_s0[1] = nxt_rt_spec_s0[1][F64_FULL_RT_W-1];
+assign a2_spec_s0[1] = nxt_rt_spec_s0[1][F64_FULL_RT_W-3];
+assign a3_spec_s0[1] = nxt_rt_spec_s0[1][F64_FULL_RT_W-4];
+assign a4_spec_s0[1] = nxt_rt_spec_s0[1][F64_FULL_RT_W-5];
 
-assign a0_spec_s0[0] = nxt_rt_spec_s0[0][54];
-assign a2_spec_s0[0] = nxt_rt_spec_s0[0][52];
-assign a3_spec_s0[0] = nxt_rt_spec_s0[0][51];
-assign a4_spec_s0[0] = nxt_rt_spec_s0[0][50];
+assign a0_spec_s0[0] = nxt_rt_spec_s0[0][F64_FULL_RT_W-1];
+assign a2_spec_s0[0] = nxt_rt_spec_s0[0][F64_FULL_RT_W-3];
+assign a3_spec_s0[0] = nxt_rt_spec_s0[0][F64_FULL_RT_W-4];
+assign a4_spec_s0[0] = nxt_rt_spec_s0[0][F64_FULL_RT_W-5];
 
 r4_qds_cg 
 u_r4_qds_cg_spec_s0_neg_2 (
@@ -489,17 +497,17 @@ assign m_pos_2[1] =
 // OFC after stage[0].qds is finished
 // ================================================================================================================================================
 assign nxt_rt[0] = 
-  ({(55){nxt_rt_dig[0][4]}} & nxt_rt_spec_s0[4])
-| ({(55){nxt_rt_dig[0][3]}} & nxt_rt_spec_s0[3])
-| ({(55){nxt_rt_dig[0][2]}} & nxt_rt_spec_s0[2])
-| ({(55){nxt_rt_dig[0][1]}} & nxt_rt_spec_s0[1])
-| ({(55){nxt_rt_dig[0][0]}} & nxt_rt_spec_s0[0]);
+  ({(F64_FULL_RT_W){nxt_rt_dig[0][4]}} & nxt_rt_spec_s0[4])
+| ({(F64_FULL_RT_W){nxt_rt_dig[0][3]}} & nxt_rt_spec_s0[3])
+| ({(F64_FULL_RT_W){nxt_rt_dig[0][2]}} & nxt_rt_spec_s0[2])
+| ({(F64_FULL_RT_W){nxt_rt_dig[0][1]}} & nxt_rt_spec_s0[1])
+| ({(F64_FULL_RT_W){nxt_rt_dig[0][0]}} & nxt_rt_spec_s0[0]);
 assign nxt_rt_m1[0] = 
-  ({(55){nxt_rt_dig[0][4]}} & (rt_m1 | mask_rt_m1_neg_2[0]))
-| ({(55){nxt_rt_dig[0][3]}} & (rt_m1 | mask_rt_m1_neg_1[0]))
-| ({(55){nxt_rt_dig[0][2]}} & (rt_m1 | mask_rt_m1_neg_0[0]))
-| ({(55){nxt_rt_dig[0][1]}} & rt)
-| ({(55){nxt_rt_dig[0][0]}} & (rt    | mask_rt_m1_pos_2[0]));
+  ({(F64_FULL_RT_W){nxt_rt_dig[0][4]}} & (rt_m1 | mask_rt_m1_neg_2[0]))
+| ({(F64_FULL_RT_W){nxt_rt_dig[0][3]}} & (rt_m1 | mask_rt_m1_neg_1[0]))
+| ({(F64_FULL_RT_W){nxt_rt_dig[0][2]}} & (rt_m1 | mask_rt_m1_neg_0[0]))
+| ({(F64_FULL_RT_W){nxt_rt_dig[0][1]}} & rt)
+| ({(F64_FULL_RT_W){nxt_rt_dig[0][0]}} & (rt    | mask_rt_m1_pos_2[0]));
 
 // ================================================================================================================================================
 // stage[1].csa + full-adder
@@ -511,7 +519,7 @@ assign sqrt_csa_val_pos_1[1] = ~(({1'b0, nxt_rt[0]} << 1) | mask_csa_pos_1[1]);
 assign sqrt_csa_val_pos_2[1] = ~(({1'b0, nxt_rt[0]} << 2) | mask_csa_pos_2[1]);
 
 generate
-if(S1_CSA_SPECULATIVE == 1) begin: g_s1_csa_spec
+if(S1_CSA_SPECULATIVE == 1) begin
 
 	// Here we assume nxt_rt_dig[1] = -2
 	assign nxt_f_r_s_spec_s1[4] = 
@@ -578,7 +586,7 @@ if(S1_CSA_SPECULATIVE == 1) begin: g_s1_csa_spec
 	| ({(REM_W){nxt_rt_dig[1][1]}} & nxt_f_r_c_spec_s1[1])
 	| ({(REM_W){nxt_rt_dig[1][0]}} & nxt_f_r_c_spec_s1[0]);
 
-end else begin: g_s1_csa_no_spec
+end else begin
 
 	// If timing is good enough, let the CSA operation starts after "nxt_rt_dig[1]"" is available, so the area of the CSA is reduced.
 
@@ -662,30 +670,30 @@ assign nxt_rt_spec_s1[2] = nxt_rt[0];
 assign nxt_rt_spec_s1[1] = nxt_rt[0]    | mask_rt_pos_1[1];
 assign nxt_rt_spec_s1[0] = nxt_rt[0]    | mask_rt_pos_2[1];
 
-assign a0_spec_s1[4] = nxt_rt_spec_s1[4][54];
-assign a2_spec_s1[4] = nxt_rt_spec_s1[4][52];
-assign a3_spec_s1[4] = nxt_rt_spec_s1[4][51];
-assign a4_spec_s1[4] = nxt_rt_spec_s1[4][50];
+assign a0_spec_s1[4] = nxt_rt_spec_s1[4][F64_FULL_RT_W-1];
+assign a2_spec_s1[4] = nxt_rt_spec_s1[4][F64_FULL_RT_W-3];
+assign a3_spec_s1[4] = nxt_rt_spec_s1[4][F64_FULL_RT_W-4];
+assign a4_spec_s1[4] = nxt_rt_spec_s1[4][F64_FULL_RT_W-5];
 
-assign a0_spec_s1[3] = nxt_rt_spec_s1[3][54];
-assign a2_spec_s1[3] = nxt_rt_spec_s1[3][52];
-assign a3_spec_s1[3] = nxt_rt_spec_s1[3][51];
-assign a4_spec_s1[3] = nxt_rt_spec_s1[3][50];
+assign a0_spec_s1[3] = nxt_rt_spec_s1[3][F64_FULL_RT_W-1];
+assign a2_spec_s1[3] = nxt_rt_spec_s1[3][F64_FULL_RT_W-3];
+assign a3_spec_s1[3] = nxt_rt_spec_s1[3][F64_FULL_RT_W-4];
+assign a4_spec_s1[3] = nxt_rt_spec_s1[3][F64_FULL_RT_W-5];
 
-assign a0_spec_s1[2] = nxt_rt_spec_s1[2][54];
-assign a2_spec_s1[2] = nxt_rt_spec_s1[2][52];
-assign a3_spec_s1[2] = nxt_rt_spec_s1[2][51];
-assign a4_spec_s1[2] = nxt_rt_spec_s1[2][50];
+assign a0_spec_s1[2] = nxt_rt_spec_s1[2][F64_FULL_RT_W-1];
+assign a2_spec_s1[2] = nxt_rt_spec_s1[2][F64_FULL_RT_W-3];
+assign a3_spec_s1[2] = nxt_rt_spec_s1[2][F64_FULL_RT_W-4];
+assign a4_spec_s1[2] = nxt_rt_spec_s1[2][F64_FULL_RT_W-5];
 
-assign a0_spec_s1[1] = nxt_rt_spec_s1[1][54];
-assign a2_spec_s1[1] = nxt_rt_spec_s1[1][52];
-assign a3_spec_s1[1] = nxt_rt_spec_s1[1][51];
-assign a4_spec_s1[1] = nxt_rt_spec_s1[1][50];
+assign a0_spec_s1[1] = nxt_rt_spec_s1[1][F64_FULL_RT_W-1];
+assign a2_spec_s1[1] = nxt_rt_spec_s1[1][F64_FULL_RT_W-3];
+assign a3_spec_s1[1] = nxt_rt_spec_s1[1][F64_FULL_RT_W-4];
+assign a4_spec_s1[1] = nxt_rt_spec_s1[1][F64_FULL_RT_W-5];
 
-assign a0_spec_s1[0] = nxt_rt_spec_s1[0][54];
-assign a2_spec_s1[0] = nxt_rt_spec_s1[0][52];
-assign a3_spec_s1[0] = nxt_rt_spec_s1[0][51];
-assign a4_spec_s1[0] = nxt_rt_spec_s1[0][50];
+assign a0_spec_s1[0] = nxt_rt_spec_s1[0][F64_FULL_RT_W-1];
+assign a2_spec_s1[0] = nxt_rt_spec_s1[0][F64_FULL_RT_W-3];
+assign a3_spec_s1[0] = nxt_rt_spec_s1[0][F64_FULL_RT_W-4];
+assign a4_spec_s1[0] = nxt_rt_spec_s1[0][F64_FULL_RT_W-5];
 
 r4_qds_cg 
 u_r4_qds_cg_spec_s1_neg_2 (
@@ -750,7 +758,6 @@ u_r4_qds_cg_spec_s1_pos_2 (
 // ================================================================================================================================================
 // stage[1].qds
 // ================================================================================================================================================
-
 generate
 if(S1_QDS_SPECULATIVE == 1) begin: g_s1_qds_spec
 	r4_qds_spec
@@ -844,20 +851,20 @@ assign m_pos_2_to_nxt_cycle_o =
 | ({(7){nxt_rt_dig[1][0]}} & m_pos_2_spec_s1[0]);
 
 assign nxt_rt[1] = 
-  ({(55){nxt_rt_dig[1][4]}} & nxt_rt_spec_s1[4])
-| ({(55){nxt_rt_dig[1][3]}} & nxt_rt_spec_s1[3])
-| ({(55){nxt_rt_dig[1][2]}} & nxt_rt_spec_s1[2])
-| ({(55){nxt_rt_dig[1][1]}} & nxt_rt_spec_s1[1])
-| ({(55){nxt_rt_dig[1][0]}} & nxt_rt_spec_s1[0]);
+  ({(F64_FULL_RT_W){nxt_rt_dig[1][4]}} & nxt_rt_spec_s1[4])
+| ({(F64_FULL_RT_W){nxt_rt_dig[1][3]}} & nxt_rt_spec_s1[3])
+| ({(F64_FULL_RT_W){nxt_rt_dig[1][2]}} & nxt_rt_spec_s1[2])
+| ({(F64_FULL_RT_W){nxt_rt_dig[1][1]}} & nxt_rt_spec_s1[1])
+| ({(F64_FULL_RT_W){nxt_rt_dig[1][0]}} & nxt_rt_spec_s1[0]);
 assign nxt_rt_m1[1] = 
-  ({(55){nxt_rt_dig[1][4]}} & (nxt_rt_m1[0] | mask_rt_m1_neg_2[1]))
-| ({(55){nxt_rt_dig[1][3]}} & (nxt_rt_m1[0] | mask_rt_m1_neg_1[1]))
-| ({(55){nxt_rt_dig[1][2]}} & (nxt_rt_m1[0] | mask_rt_m1_neg_0[1]))
-| ({(55){nxt_rt_dig[1][1]}} & nxt_rt[0])
-| ({(55){nxt_rt_dig[1][0]}} & (nxt_rt[0]    | mask_rt_m1_pos_2[1]));
+  ({(F64_FULL_RT_W){nxt_rt_dig[1][4]}} & (nxt_rt_m1[0] | mask_rt_m1_neg_2[1]))
+| ({(F64_FULL_RT_W){nxt_rt_dig[1][3]}} & (nxt_rt_m1[0] | mask_rt_m1_neg_1[1]))
+| ({(F64_FULL_RT_W){nxt_rt_dig[1][2]}} & (nxt_rt_m1[0] | mask_rt_m1_neg_0[1]))
+| ({(F64_FULL_RT_W){nxt_rt_dig[1][1]}} & nxt_rt[0])
+| ({(F64_FULL_RT_W){nxt_rt_dig[1][0]}} & (nxt_rt[0]    | mask_rt_m1_pos_2[1]));
 
-assign nxt_rt_o = nxt_rt[1][54-1:0];
-assign nxt_rt_m1_o = nxt_rt_m1[1][53-1:0];
+assign nxt_rt_o = nxt_rt[1][(F64_FULL_RT_W-1)-1:0];
+assign nxt_rt_m1_o = nxt_rt_m1[1][(F64_FULL_RT_W-2)-1:0];
 assign nxt_f_r_s_o = nxt_f_r_s;
 assign nxt_f_r_c_o = nxt_f_r_c;
 

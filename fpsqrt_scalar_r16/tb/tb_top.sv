@@ -3,7 +3,7 @@
 // Author				: HYF
 // How to Contact		: hyf_sysu@qq.com
 // Created Time    		: 2022-01-15 11:10:46
-// Last Modified Time   : 2022-02-01 19:32:05
+// Last Modified Time   : 2022-02-04 14:55:56
 // ========================================================================================================
 // Description	:
 // TB for FPSQRT.
@@ -268,7 +268,7 @@ end
 
 fpsqrt_scalar_r16 #(
 	.S0_CSA_SPECULATIVE(1),
-	.S1_QDS_SPECULATIVE(1),
+	.S1_QDS_SPECULATIVE(0),
 	.S1_CSA_SPECULATIVE(1)
 ) u_dut (
 	.start_valid_i(dut_start_valid),
