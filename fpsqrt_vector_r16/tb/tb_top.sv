@@ -3,7 +3,7 @@
 // Author				: HYF
 // How to Contact		: hyf_sysu@qq.com
 // Created Time    		: 2022-01-15 11:10:46
-// Last Modified Time   : 2022-02-06 21:39:02
+// Last Modified Time   : 2022-02-08 09:36:23
 // ========================================================================================================
 // Description	:
 // TB for FPSQRT.
@@ -270,10 +270,10 @@ end
 // Instantiate DUT here.
 
 fpsqrt_vector_r16 #(
-	.S0_CSA_SPECULATIVE(1),
+	.S0_CSA_SPECULATIVE(0),
 	.S0_CSA_MERGED(1),	
 	.S1_QDS_SPECULATIVE(0),
-	.S1_CSA_SPECULATIVE(1),
+	.S1_CSA_SPECULATIVE(0),
 	.S1_CSA_MERGED(0)
 ) u_dut (
 	.start_valid_i(dut_start_valid),

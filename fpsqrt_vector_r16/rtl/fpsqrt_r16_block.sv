@@ -3,7 +3,7 @@
 // Author				: HYF
 // How to Contact		: hyf_sysu@qq.com
 // Created Time    		: 2022-02-01 18:39:18
-// Last Modified Time   : 2022-02-07 11:27:24
+// Last Modified Time   : 2022-02-08 14:43:52
 // ========================================================================================================
 // Description	:
 // Radix-16 SRT algorithm for the frac part of fpsqrt.
@@ -230,15 +230,19 @@ logic [F16_REM_W-1:0] f_r_c_for_csa_3 [2-1:0];
 
 logic [F64_REM_W-1:0] nxt_f_r_s_0 [2-1:0];
 logic [F64_REM_W-1:0] nxt_f_r_c_0 [2-1:0];
+logic [F64_REM_W-1:0] nxt_f_r_c_pre_0 [2-1:0];
 
 logic [F32_REM_W-1:0] nxt_f_r_s_1 [2-1:0];
 logic [F32_REM_W-1:0] nxt_f_r_c_1 [2-1:0];
+logic [F32_REM_W-1:0] nxt_f_r_c_pre_1 [2-1:0];
 
 logic [F16_REM_W-1:0] nxt_f_r_s_2 [2-1:0];
 logic [F16_REM_W-1:0] nxt_f_r_c_2 [2-1:0];
+logic [F16_REM_W-1:0] nxt_f_r_c_pre_2 [2-1:0];
 
 logic [F16_REM_W-1:0] nxt_f_r_s_3 [2-1:0];
 logic [F16_REM_W-1:0] nxt_f_r_c_3 [2-1:0];
+logic [F16_REM_W-1:0] nxt_f_r_c_pre_3 [2-1:0];
 
 logic [MERGED_REM_W-1:0] nxt_f_r_s_merged [2-1:0];
 logic [MERGED_REM_W-1:0] nxt_f_r_c_merged [2-1:0];
@@ -1426,155 +1430,213 @@ u_r4_qds_cg_spec_s0_pos_2_3 (
 // ================================================================================================================================================
 // Select the signals for stage[1]
 // ================================================================================================================================================
-assign nxt_f_r_s_0[0] = 
-  ({(F64_REM_W){nxt_rt_dig_0[0][4]}} & nxt_f_r_s_spec_s0_0[4])
-| ({(F64_REM_W){nxt_rt_dig_0[0][3]}} & nxt_f_r_s_spec_s0_0[3])
-| ({(F64_REM_W){nxt_rt_dig_0[0][2]}} & nxt_f_r_s_spec_s0_0[2])
-| ({(F64_REM_W){nxt_rt_dig_0[0][1]}} & nxt_f_r_s_spec_s0_0[1])
-| ({(F64_REM_W){nxt_rt_dig_0[0][0]}} & nxt_f_r_s_spec_s0_0[0]);
+generate
+if(S0_CSA_SPECULATIVE == 1) begin
 
-assign nxt_f_r_s_1[0] = 
-  ({(F32_REM_W){nxt_rt_dig_1[0][4]}} & nxt_f_r_s_spec_s0_1[4])
-| ({(F32_REM_W){nxt_rt_dig_1[0][3]}} & nxt_f_r_s_spec_s0_1[3])
-| ({(F32_REM_W){nxt_rt_dig_1[0][2]}} & nxt_f_r_s_spec_s0_1[2])
-| ({(F32_REM_W){nxt_rt_dig_1[0][1]}} & nxt_f_r_s_spec_s0_1[1])
-| ({(F32_REM_W){nxt_rt_dig_1[0][0]}} & nxt_f_r_s_spec_s0_1[0]);
+	assign nxt_f_r_s_0[0] = 
+	  ({(F64_REM_W){nxt_rt_dig_0[0][4]}} & nxt_f_r_s_spec_s0_0[4])
+	| ({(F64_REM_W){nxt_rt_dig_0[0][3]}} & nxt_f_r_s_spec_s0_0[3])
+	| ({(F64_REM_W){nxt_rt_dig_0[0][2]}} & nxt_f_r_s_spec_s0_0[2])
+	| ({(F64_REM_W){nxt_rt_dig_0[0][1]}} & nxt_f_r_s_spec_s0_0[1])
+	| ({(F64_REM_W){nxt_rt_dig_0[0][0]}} & nxt_f_r_s_spec_s0_0[0]);
 
-assign nxt_f_r_s_2[0] = 
-  ({(F16_REM_W){nxt_rt_dig_2[0][4]}} & nxt_f_r_s_spec_s0_2[4])
-| ({(F16_REM_W){nxt_rt_dig_2[0][3]}} & nxt_f_r_s_spec_s0_2[3])
-| ({(F16_REM_W){nxt_rt_dig_2[0][2]}} & nxt_f_r_s_spec_s0_2[2])
-| ({(F16_REM_W){nxt_rt_dig_2[0][1]}} & nxt_f_r_s_spec_s0_2[1])
-| ({(F16_REM_W){nxt_rt_dig_2[0][0]}} & nxt_f_r_s_spec_s0_2[0]);
+	assign nxt_f_r_s_1[0] = 
+	  ({(F32_REM_W){nxt_rt_dig_1[0][4]}} & nxt_f_r_s_spec_s0_1[4])
+	| ({(F32_REM_W){nxt_rt_dig_1[0][3]}} & nxt_f_r_s_spec_s0_1[3])
+	| ({(F32_REM_W){nxt_rt_dig_1[0][2]}} & nxt_f_r_s_spec_s0_1[2])
+	| ({(F32_REM_W){nxt_rt_dig_1[0][1]}} & nxt_f_r_s_spec_s0_1[1])
+	| ({(F32_REM_W){nxt_rt_dig_1[0][0]}} & nxt_f_r_s_spec_s0_1[0]);
 
-assign nxt_f_r_s_3[0] = 
-  ({(F16_REM_W){nxt_rt_dig_3[0][4]}} & nxt_f_r_s_spec_s0_3[4])
-| ({(F16_REM_W){nxt_rt_dig_3[0][3]}} & nxt_f_r_s_spec_s0_3[3])
-| ({(F16_REM_W){nxt_rt_dig_3[0][2]}} & nxt_f_r_s_spec_s0_3[2])
-| ({(F16_REM_W){nxt_rt_dig_3[0][1]}} & nxt_f_r_s_spec_s0_3[1])
-| ({(F16_REM_W){nxt_rt_dig_3[0][0]}} & nxt_f_r_s_spec_s0_3[0]);
+	assign nxt_f_r_s_2[0] = 
+	  ({(F16_REM_W){nxt_rt_dig_2[0][4]}} & nxt_f_r_s_spec_s0_2[4])
+	| ({(F16_REM_W){nxt_rt_dig_2[0][3]}} & nxt_f_r_s_spec_s0_2[3])
+	| ({(F16_REM_W){nxt_rt_dig_2[0][2]}} & nxt_f_r_s_spec_s0_2[2])
+	| ({(F16_REM_W){nxt_rt_dig_2[0][1]}} & nxt_f_r_s_spec_s0_2[1])
+	| ({(F16_REM_W){nxt_rt_dig_2[0][0]}} & nxt_f_r_s_spec_s0_2[0]);
 
-assign nxt_f_r_c_0[0] = 
-  ({(F64_REM_W){nxt_rt_dig_0[0][4]}} & nxt_f_r_c_spec_s0_0[4])
-| ({(F64_REM_W){nxt_rt_dig_0[0][3]}} & nxt_f_r_c_spec_s0_0[3])
-| ({(F64_REM_W){nxt_rt_dig_0[0][2]}} & nxt_f_r_c_spec_s0_0[2])
-| ({(F64_REM_W){nxt_rt_dig_0[0][1]}} & nxt_f_r_c_spec_s0_0[1])
-| ({(F64_REM_W){nxt_rt_dig_0[0][0]}} & nxt_f_r_c_spec_s0_0[0]);
+	assign nxt_f_r_s_3[0] = 
+	  ({(F16_REM_W){nxt_rt_dig_3[0][4]}} & nxt_f_r_s_spec_s0_3[4])
+	| ({(F16_REM_W){nxt_rt_dig_3[0][3]}} & nxt_f_r_s_spec_s0_3[3])
+	| ({(F16_REM_W){nxt_rt_dig_3[0][2]}} & nxt_f_r_s_spec_s0_3[2])
+	| ({(F16_REM_W){nxt_rt_dig_3[0][1]}} & nxt_f_r_s_spec_s0_3[1])
+	| ({(F16_REM_W){nxt_rt_dig_3[0][0]}} & nxt_f_r_s_spec_s0_3[0]);
 
-assign nxt_f_r_c_1[0] = 
-  ({(F32_REM_W){nxt_rt_dig_1[0][4]}} & nxt_f_r_c_spec_s0_1[4])
-| ({(F32_REM_W){nxt_rt_dig_1[0][3]}} & nxt_f_r_c_spec_s0_1[3])
-| ({(F32_REM_W){nxt_rt_dig_1[0][2]}} & nxt_f_r_c_spec_s0_1[2])
-| ({(F32_REM_W){nxt_rt_dig_1[0][1]}} & nxt_f_r_c_spec_s0_1[1])
-| ({(F32_REM_W){nxt_rt_dig_1[0][0]}} & nxt_f_r_c_spec_s0_1[0]);
+	assign nxt_f_r_c_0[0] = 
+	  ({(F64_REM_W){nxt_rt_dig_0[0][4]}} & nxt_f_r_c_spec_s0_0[4])
+	| ({(F64_REM_W){nxt_rt_dig_0[0][3]}} & nxt_f_r_c_spec_s0_0[3])
+	| ({(F64_REM_W){nxt_rt_dig_0[0][2]}} & nxt_f_r_c_spec_s0_0[2])
+	| ({(F64_REM_W){nxt_rt_dig_0[0][1]}} & nxt_f_r_c_spec_s0_0[1])
+	| ({(F64_REM_W){nxt_rt_dig_0[0][0]}} & nxt_f_r_c_spec_s0_0[0]);
 
-assign nxt_f_r_c_2[0] = 
-  ({(F16_REM_W){nxt_rt_dig_2[0][4]}} & nxt_f_r_c_spec_s0_2[4])
-| ({(F16_REM_W){nxt_rt_dig_2[0][3]}} & nxt_f_r_c_spec_s0_2[3])
-| ({(F16_REM_W){nxt_rt_dig_2[0][2]}} & nxt_f_r_c_spec_s0_2[2])
-| ({(F16_REM_W){nxt_rt_dig_2[0][1]}} & nxt_f_r_c_spec_s0_2[1])
-| ({(F16_REM_W){nxt_rt_dig_2[0][0]}} & nxt_f_r_c_spec_s0_2[0]);
+	assign nxt_f_r_c_1[0] = 
+	  ({(F32_REM_W){nxt_rt_dig_1[0][4]}} & nxt_f_r_c_spec_s0_1[4])
+	| ({(F32_REM_W){nxt_rt_dig_1[0][3]}} & nxt_f_r_c_spec_s0_1[3])
+	| ({(F32_REM_W){nxt_rt_dig_1[0][2]}} & nxt_f_r_c_spec_s0_1[2])
+	| ({(F32_REM_W){nxt_rt_dig_1[0][1]}} & nxt_f_r_c_spec_s0_1[1])
+	| ({(F32_REM_W){nxt_rt_dig_1[0][0]}} & nxt_f_r_c_spec_s0_1[0]);
 
-assign nxt_f_r_c_3[0] = 
-  ({(F16_REM_W){nxt_rt_dig_3[0][4]}} & nxt_f_r_c_spec_s0_3[4])
-| ({(F16_REM_W){nxt_rt_dig_3[0][3]}} & nxt_f_r_c_spec_s0_3[3])
-| ({(F16_REM_W){nxt_rt_dig_3[0][2]}} & nxt_f_r_c_spec_s0_3[2])
-| ({(F16_REM_W){nxt_rt_dig_3[0][1]}} & nxt_f_r_c_spec_s0_3[1])
-| ({(F16_REM_W){nxt_rt_dig_3[0][0]}} & nxt_f_r_c_spec_s0_3[0]);
+	assign nxt_f_r_c_2[0] = 
+	  ({(F16_REM_W){nxt_rt_dig_2[0][4]}} & nxt_f_r_c_spec_s0_2[4])
+	| ({(F16_REM_W){nxt_rt_dig_2[0][3]}} & nxt_f_r_c_spec_s0_2[3])
+	| ({(F16_REM_W){nxt_rt_dig_2[0][2]}} & nxt_f_r_c_spec_s0_2[2])
+	| ({(F16_REM_W){nxt_rt_dig_2[0][1]}} & nxt_f_r_c_spec_s0_2[1])
+	| ({(F16_REM_W){nxt_rt_dig_2[0][0]}} & nxt_f_r_c_spec_s0_2[0]);
 
+	assign nxt_f_r_c_3[0] = 
+	  ({(F16_REM_W){nxt_rt_dig_3[0][4]}} & nxt_f_r_c_spec_s0_3[4])
+	| ({(F16_REM_W){nxt_rt_dig_3[0][3]}} & nxt_f_r_c_spec_s0_3[3])
+	| ({(F16_REM_W){nxt_rt_dig_3[0][2]}} & nxt_f_r_c_spec_s0_3[2])
+	| ({(F16_REM_W){nxt_rt_dig_3[0][1]}} & nxt_f_r_c_spec_s0_3[1])
+	| ({(F16_REM_W){nxt_rt_dig_3[0][0]}} & nxt_f_r_c_spec_s0_3[0]);
 
-// TODO: Implement merged csa later
-// generate
-// if(S0_CSA_IS_MERGED == 1) begin
-// 	// For MERGED REM, the width is 70, the meaning of different positions:
-// 	// [69:54]
-// 	// f16: f16_0.rem[15: 0]
-// 	// f32: f32_0.rem[27:12]
-// 	// f64: f64_0.rem[55:40]
-// 	// [53:52]
-// 	// f16: 2'b0
-// 	// f32: f32_0.rem[11:10]
-// 	// f64: f64_0.rem[39:38]
-// 	// [51:36]
-// 	// f16: f16_2.rem[15: 0]
-// 	// f32: f32_0.rem[ 9: 0], 6'b0
-// 	// f64: f64_0.rem[37:22]
-// 	// [35:34]
-// 	// f16: 2'b0
-// 	// f32: 2'b0
-// 	// f64: f64_0.rem[21:20]
-// 	// [33:18]
-// 	// f16: f16_1.rem[15: 0]
-// 	// f32: f32_1.rem[27:12]
-// 	// f64: f64_0.rem[19: 4]
-// 	// [17:16]
-// 	// f16: 2'b0
-// 	// f32: f32_1.rem[11:10]
-// 	// f64: f64_0.rem[ 3: 2]
-// 	// [15: 0]
-// 	// f16: f16_3.rem[15: 0]
-// 	// f32: f32_1.rem[ 9: 0], 6'b0
-// 	// f64: f64_0.rem[ 1: 0], 14'b0
+end else if(S0_CSA_MERGED == 0) begin
+
+	// DO CSA after nxt_rt_dig_x[0] is available
+	assign nxt_f_r_s_0[0] = 
+	  f_r_s_for_csa_0[0]
+	^ f_r_c_for_csa_0[0]
+	^ sqrt_csa_val_0[0];
+	assign nxt_f_r_c_pre_0[0] = {
+		  (f_r_s_for_csa_0[0][(F64_REM_W-1)-1:0] & f_r_c_for_csa_0[0][(F64_REM_W-1)-1:0])
+		| (f_r_s_for_csa_0[0][(F64_REM_W-1)-1:0] & sqrt_csa_val_0[0][(F64_REM_W-1)-1:0])
+		| (f_r_c_for_csa_0[0][(F64_REM_W-1)-1:0] & sqrt_csa_val_0[0][(F64_REM_W-1)-1:0]),
+		nxt_rt_dig_0[0][0] | nxt_rt_dig_0[0][1]
+	};
+	assign nxt_f_r_c_0[0] = {
+		nxt_f_r_c_pre_0[0][55:41],
+		fp_fmt_i[0] ? (nxt_rt_dig_0[0][0] | nxt_rt_dig_0[0][1]) : nxt_f_r_c_pre_0[0][40],
+		nxt_f_r_c_pre_0[0][39:29],
+		fp_fmt_i[1] ? (nxt_rt_dig_0[0][0] | nxt_rt_dig_0[0][1]) : nxt_f_r_c_pre_0[0][28],
+		nxt_f_r_c_pre_0[0][27:0]
+	};
+
+	assign nxt_f_r_s_1[0] = 
+	  f_r_s_for_csa_1[0]
+	^ f_r_c_for_csa_1[0]
+	^ sqrt_csa_val_1[0];
+	assign nxt_f_r_c_pre_1[0] = {
+		  (f_r_s_for_csa_1[0][(F32_REM_W-1)-1:0] & f_r_c_for_csa_1[0][(F32_REM_W-1)-1:0])
+		| (f_r_s_for_csa_1[0][(F32_REM_W-1)-1:0] & sqrt_csa_val_1[0][(F32_REM_W-1)-1:0])
+		| (f_r_c_for_csa_1[0][(F32_REM_W-1)-1:0] & sqrt_csa_val_1[0][(F32_REM_W-1)-1:0]),
+		nxt_rt_dig_1[0][0] | nxt_rt_dig_1[0][1]
+	};
+	assign nxt_f_r_c_1[0] = {
+		nxt_f_r_c_pre_1[0][27:13],
+		fp_fmt_i[0] ? (nxt_rt_dig_1[0][0] | nxt_rt_dig_1[0][1]) : nxt_f_r_c_pre_1[0][12],
+		nxt_f_r_c_pre_1[0][11:0]
+	};
+
+	assign nxt_f_r_s_2[0] = 
+	  f_r_s_for_csa_2[0]
+	^ f_r_c_for_csa_2[0]
+	^ sqrt_csa_val_2[0];
+	assign nxt_f_r_c_pre_2[0] = {
+		  (f_r_s_for_csa_2[0][(F16_REM_W-1)-1:0] & f_r_c_for_csa_2[0][(F16_REM_W-1)-1:0])
+		| (f_r_s_for_csa_2[0][(F16_REM_W-1)-1:0] & sqrt_csa_val_2[0][(F16_REM_W-1)-1:0])
+		| (f_r_c_for_csa_2[0][(F16_REM_W-1)-1:0] & sqrt_csa_val_2[0][(F16_REM_W-1)-1:0]),
+		nxt_rt_dig_2[0][0] | nxt_rt_dig_2[0][1]
+	};
+	assign nxt_f_r_c_2[0] = nxt_f_r_c_pre_2[0];
+
+	assign nxt_f_r_s_3[0] = 
+	  f_r_s_for_csa_3[0]
+	^ f_r_c_for_csa_3[0]
+	^ sqrt_csa_val_3[0];
+	assign nxt_f_r_c_pre_3[0] = {
+		  (f_r_s_for_csa_3[0][(F16_REM_W-1)-1:0] & f_r_c_for_csa_3[0][(F16_REM_W-1)-1:0])
+		| (f_r_s_for_csa_3[0][(F16_REM_W-1)-1:0] & sqrt_csa_val_3[0][(F16_REM_W-1)-1:0])
+		| (f_r_c_for_csa_3[0][(F16_REM_W-1)-1:0] & sqrt_csa_val_3[0][(F16_REM_W-1)-1:0]),
+		nxt_rt_dig_3[0][0] | nxt_rt_dig_3[0][1]
+	};
+	assign nxt_f_r_c_3[0] = nxt_f_r_c_pre_3[0];
 	
-// 	assign f_r_s_for_csa_merged[0] = {f_r_s_i[(REM_W-2)-1:0], 2'b0};
-// 	assign f_r_c_for_csa_merged[0] = {f_r_c_i[(REM_W-2)-1:0], 2'b0};
-// 	assign sqrt_csa_val_merged[0] = 
-// 	  ({(REM_W){fp_fmt_i[0]}} & {
-// 		sqrt_csa_val_0[0][F64_REM_W-1 -: F16_REM_W],
-// 		2'b00,
-// 		sqrt_csa_val_2[0],
-// 		2'b00,
-// 		sqrt_csa_val_1[0][F32_REM_W-1 -: F16_REM_W],
-// 		2'b00,
-// 		sqrt_csa_val_3[0]
-// 	})
-// 	| ({(REM_W){fp_fmt_i[1]}} & {sqrt_csa_val_0[0][F64_REM_W-1 -: F32_REM_W], 6'b0, 2'b0, sqrt_csa_val_1[0], 6'b0})
-// 	| ({(REM_W){fp_fmt_i[2]}} & {sqrt_csa_val_0[0], 14'b0});
+end else begin
 
-// 	assign nxt_f_r_s_merged[0] = 
-// 	  f_r_s_for_csa_merged[0]
-// 	^ f_r_c_for_csa_merged[0]
-// 	^ sqrt_csa_val_merged[0];
-
-// 	assign nxt_f_r_c_merged_pre[0] = {
-// 		  (f_r_s_for_csa_merged[0][(REM_W-1)-1:0] & f_r_c_for_csa_merged[0][(REM_W-1)-1:0])
-// 		| (f_r_s_for_csa_merged[0][(REM_W-1)-1:0] & sqrt_csa_val_merged[0][(REM_W-1)-1:0])
-// 		| (f_r_c_for_csa_merged[0][(REM_W-1)-1:0] & sqrt_csa_val_merged[0][(REM_W-1)-1:0]),
-// 		1'b0
-// 	};
-
-// 	assign nxt_f_r_c_merged[0] = 
-// 	  ({(REM_W){fp_fmt_i[0]}} & {
-// 		nxt_f_r_c_merged_pre[0][69:55],
-// 		nxt_rt_dig_0[0][1] | nxt_rt_dig_0[0][0],
-// 		2'b0,
-// 		nxt_f_r_c_merged_pre[0][51:37],
-// 		nxt_rt_dig_2[0][1] | nxt_rt_dig_2[0][0],
-// 		2'b0,
-// 		nxt_f_r_c_merged_pre[0][33:19],
-// 		nxt_rt_dig_1[0][1] | nxt_rt_dig_1[0][0],
-// 		2'b0,
-// 		nxt_f_r_c_merged_pre[0][15:1],
-// 		nxt_rt_dig_3[0][1] | nxt_rt_dig_3[0][0]
-// 	})
-// 	| ({(REM_W){fp_fmt_i[1]}} & {
-// 		nxt_f_r_c_merged_pre[0][69:43],
-// 		nxt_rt_dig_0[0][1] | nxt_rt_dig_0[0][0],
-// 		6'b0,
-// 		2'b0,
-// 		nxt_f_r_c_merged_pre[0][33:7],
-// 		nxt_rt_dig_1[0][1] | nxt_rt_dig_1[0][0],
-// 		6'b0
-// 	})
-// 	| ({(REM_W){fp_fmt_i[2]}} & nxt_f_r_c_merged_pre[0][69:15], nxt_rt_dig_0[0][1] | nxt_rt_dig_0[0][0], 14'b0);
-
-
-// end else begin
-
+	// S0_CSA_IS_MERGED == 1
+	// For MERGED REM, the width is 70, the meaning of different positions:
+	// [69:54]
+	// f16: f16_0.rem[15: 0]
+	// f32: f32_0.rem[27:12]
+	// f64: f64_0.rem[55:40]
+	// [53:52]
+	// f16: 2'b0
+	// f32: f32_0.rem[11:10]
+	// f64: f64_0.rem[39:38]
+	// [51:36]
+	// f16: f16_2.rem[15: 0]
+	// f32: f32_0.rem[ 9: 0], 6'b0
+	// f64: f64_0.rem[37:22]
+	// [35:34]
+	// f16: 2'b0
+	// f32: 2'b0
+	// f64: f64_0.rem[21:20]
+	// [33:18]
+	// f16: f16_1.rem[15: 0]
+	// f32: f32_1.rem[27:12]
+	// f64: f64_0.rem[19: 4]
+	// [17:16]
+	// f16: 2'b0
+	// f32: f32_1.rem[11:10]
+	// f64: f64_0.rem[ 3: 2]
+	// [15: 0]
+	// f16: f16_3.rem[15: 0]
+	// f32: f32_1.rem[ 9: 0], 6'b0
+	// f64: f64_0.rem[ 1: 0], 14'b0
 	
+	assign f_r_s_for_csa_merged[0] = {f_r_s_i[(REM_W-2)-1:0], 2'b0};
+	assign f_r_c_for_csa_merged[0] = {f_r_c_i[(REM_W-2)-1:0], 2'b0};
+	assign sqrt_csa_val_merged[0] = 
+		({(REM_W){fp_fmt_i[0]}} & {
+		sqrt_csa_val_0[0][F64_REM_W-1 -: F16_REM_W],
+		2'b00,
+		sqrt_csa_val_2[0],
+		2'b00,
+		sqrt_csa_val_1[0][F32_REM_W-1 -: F16_REM_W],
+		2'b00,
+		sqrt_csa_val_3[0]
+	})
+	| ({(REM_W){fp_fmt_i[1]}} & {sqrt_csa_val_0[0][F64_REM_W-1 -: F32_REM_W], 6'b0, 2'b0, sqrt_csa_val_1[0], 6'b0})
+	| ({(REM_W){fp_fmt_i[2]}} & {sqrt_csa_val_0[0], 14'b0});
 
-// end
-// endgenerate
+	assign nxt_f_r_s_merged[0] = 
+	  f_r_s_for_csa_merged[0]
+	^ f_r_c_for_csa_merged[0]
+	^ sqrt_csa_val_merged[0];
+
+	assign nxt_f_r_c_merged_pre[0] = {
+		  (f_r_s_for_csa_merged[0][(REM_W-1)-1:0] & f_r_c_for_csa_merged[0][(REM_W-1)-1:0])
+		| (f_r_s_for_csa_merged[0][(REM_W-1)-1:0] & sqrt_csa_val_merged[0][(REM_W-1)-1:0])
+		| (f_r_c_for_csa_merged[0][(REM_W-1)-1:0] & sqrt_csa_val_merged[0][(REM_W-1)-1:0]),
+		1'b0
+	};
+
+	assign nxt_f_r_c_merged[0] = 
+	  ({(REM_W){fp_fmt_i[0]}} & {
+		nxt_f_r_c_merged_pre[0][69:55],
+		nxt_rt_dig_0[0][1] | nxt_rt_dig_0[0][0],
+		2'b0,
+		nxt_f_r_c_merged_pre[0][51:37],
+		nxt_rt_dig_2[0][1] | nxt_rt_dig_2[0][0],
+		2'b0,
+		nxt_f_r_c_merged_pre[0][33:19],
+		nxt_rt_dig_1[0][1] | nxt_rt_dig_1[0][0],
+		2'b0,
+		nxt_f_r_c_merged_pre[0][15:1],
+		nxt_rt_dig_3[0][1] | nxt_rt_dig_3[0][0]
+	})
+	| ({(REM_W){fp_fmt_i[1]}} & {
+		nxt_f_r_c_merged_pre[0][69:43],
+		nxt_rt_dig_0[0][1] | nxt_rt_dig_0[0][0],
+		6'b0,
+		2'b0,
+		nxt_f_r_c_merged_pre[0][33:7],
+		nxt_rt_dig_1[0][1] | nxt_rt_dig_1[0][0],
+		6'b0
+	})
+	| ({(REM_W){fp_fmt_i[2]}} & {nxt_f_r_c_merged_pre[0][69:15], nxt_rt_dig_0[0][1] | nxt_rt_dig_0[0][0], 14'b0});
+		
+end
+endgenerate
 
 
 assign adder_7b_res_for_s1_qds_0 = 
@@ -1749,6 +1811,7 @@ assign nxt_rt_m1_1[0] =
 | ({(F32_FULL_RT_W){nxt_rt_dig_1[0][1]}} & rt_1)
 | ({(F32_FULL_RT_W){nxt_rt_dig_1[0][0]}} & (rt_1    | mask_rt_m1_pos_2[0][F64_FULL_RT_W-1 -: F32_FULL_RT_W]));
 
+
 // Clear the lower part of rt/rt_m1 when necessary -> Make sure the lower part will not influence the higher part 
 // when we are doing "<< 1" and "<< 2" operation to generate "sqrt_csa_val_xxx"
 // Only "*_0" and "*_1" will need this operation.
@@ -1821,25 +1884,52 @@ assign sqrt_csa_val_0[1] =
 | ({(F64_REM_W){nxt_rt_dig_0[1][1]}} & sqrt_csa_val_pos_1_0[1])
 | ({(F64_REM_W){nxt_rt_dig_0[1][0]}} & sqrt_csa_val_pos_2_0[1]);
 
-// f64: {f_r_s/f_r_c[53:0], 2'b00} should be used for csa
-// f32: {f_r_s/f_r_c[53:28], 2'b00, f_r_s/f_r_c[25:0], 2'b00} should be used for csa, csa_res[27:0] will be ignored.
-// f16: {f_r_s/f_r_c[53:40], 2'b00, f_r_s/f_r_c[37:0], 2'b00} should be used for csa, csa_res[39:0] will be ignored.
-assign f_r_s_for_csa_0[1] = {
-	nxt_f_r_s_0[0][53:40],
-	fp_fmt_i[0] ? 2'b00 : nxt_f_r_s_0[0][39:38],
-	nxt_f_r_s_0[0][37:28],
-	fp_fmt_i[1] ? 2'b00 : nxt_f_r_s_0[0][27:26],
-	nxt_f_r_s_0[0][25:0],
-	2'b00
-};
-assign f_r_c_for_csa_0[1] = {
-	nxt_f_r_c_0[0][53:40],
-	fp_fmt_i[0] ? 2'b00 : nxt_f_r_c_0[0][39:38],
-	nxt_f_r_c_0[0][37:28],
-	fp_fmt_i[1] ? 2'b00 : nxt_f_r_c_0[0][27:26],
-	nxt_f_r_c_0[0][25:0],
-	2'b00
-};
+
+generate
+if(S0_CSA_IS_MERGED == 1) begin
+
+	assign f_r_s_for_csa_0[1] = {
+		nxt_f_r_s_merged[0][67:54],
+		fp_fmt_i[0] ? 2'b00 : nxt_f_r_s_merged[0][53:52],
+		nxt_f_r_s_merged[0][51:40],
+		fp_fmt_i[1] ? 2'b00 : nxt_f_r_s_merged[0][39:38],
+		nxt_f_r_s_merged[0][37:14],
+		2'b00
+	};
+	assign f_r_c_for_csa_0[1] = {
+		nxt_f_r_c_merged[0][67:54],
+		fp_fmt_i[0] ? 2'b00 : nxt_f_r_c_merged[0][53:52],
+		nxt_f_r_c_merged[0][51:40],
+		fp_fmt_i[1] ? 2'b00 : nxt_f_r_c_merged[0][39:38],
+		nxt_f_r_c_merged[0][37:14],
+		2'b00
+	};
+
+end else begin
+
+	// f64: {f_r_s/f_r_c[53:0], 2'b00} should be used for csa
+	// f32: {f_r_s/f_r_c[53:28], 2'b00, f_r_s/f_r_c[25:0], 2'b00} should be used for csa, csa_res[27:0] will be ignored.
+	// f16: {f_r_s/f_r_c[53:40], 2'b00, f_r_s/f_r_c[37:0], 2'b00} should be used for csa, csa_res[39:0] will be ignored.
+	assign f_r_s_for_csa_0[1] = {
+		nxt_f_r_s_0[0][53:40],
+		fp_fmt_i[0] ? 2'b00 : nxt_f_r_s_0[0][39:38],
+		nxt_f_r_s_0[0][37:28],
+		fp_fmt_i[1] ? 2'b00 : nxt_f_r_s_0[0][27:26],
+		nxt_f_r_s_0[0][25:0],
+		2'b00
+	};
+	assign f_r_c_for_csa_0[1] = {
+		nxt_f_r_c_0[0][53:40],
+		fp_fmt_i[0] ? 2'b00 : nxt_f_r_c_0[0][39:38],
+		nxt_f_r_c_0[0][37:28],
+		fp_fmt_i[1] ? 2'b00 : nxt_f_r_c_0[0][27:26],
+		nxt_f_r_c_0[0][25:0],
+		2'b00
+	};
+
+end
+endgenerate
+
 
 // Here we assume s1.qds will generate rt_dig = -2
 assign nxt_f_r_s_spec_s1_0[4] = 
@@ -1936,20 +2026,42 @@ assign sqrt_csa_val_1[1] =
 | ({(F32_REM_W){nxt_rt_dig_1[1][1]}} & sqrt_csa_val_pos_1_1[1])
 | ({(F32_REM_W){nxt_rt_dig_1[1][0]}} & sqrt_csa_val_pos_2_1[1]);
 
-// f32: {f_r_s/f_r_c[25:0], 2'b00} should be used for csa
-// f16: {f_r_s/f_r_c[25:12], 2'b00, f_r_s/f_r_c[9:0], 2'b00} should be used for csa, csa_res[11:0] will be ignored.
-assign f_r_s_for_csa_1[1] = {
-	nxt_f_r_s_1[0][25:12],
-	fp_fmt_i[0] ? 2'b00 : nxt_f_r_s_1[0][11:10],
-	nxt_f_r_s_1[0][9:0],
-	2'b00
-};
-assign f_r_c_for_csa_1[1] = {
-	nxt_f_r_c_1[0][25:12],
-	fp_fmt_i[0] ? 2'b00 : nxt_f_r_c_1[0][11:10],
-	nxt_f_r_c_1[0][9:0],
-	2'b00
-};
+
+generate
+if(S0_CSA_IS_MERGED == 1) begin
+
+	assign f_r_s_for_csa_1[1] = {
+		nxt_f_r_s_merged[0][31:18],
+		fp_fmt_i[0] ? 2'b00 : nxt_f_r_s_merged[0][17:16],
+		nxt_f_r_s_merged[0][15: 6],
+		2'b00
+	};
+	assign f_r_c_for_csa_1[1] = {
+		nxt_f_r_c_merged[0][31:18],
+		fp_fmt_i[0] ? 2'b00 : nxt_f_r_c_merged[0][17:16],
+		nxt_f_r_c_merged[0][15: 6],
+		2'b00
+	};
+
+end else begin
+
+	// f32: {f_r_s/f_r_c[25:0], 2'b00} should be used for csa
+	// f16: {f_r_s/f_r_c[25:12], 2'b00, f_r_s/f_r_c[9:0], 2'b00} should be used for csa, csa_res[11:0] will be ignored.
+	assign f_r_s_for_csa_1[1] = {
+		nxt_f_r_s_1[0][25:12],
+		fp_fmt_i[0] ? 2'b00 : nxt_f_r_s_1[0][11:10],
+		nxt_f_r_s_1[0][9:0],
+		2'b00
+	};
+	assign f_r_c_for_csa_1[1] = {
+		nxt_f_r_c_1[0][25:12],
+		fp_fmt_i[0] ? 2'b00 : nxt_f_r_c_1[0][11:10],
+		nxt_f_r_c_1[0][9:0],
+		2'b00
+	};
+
+end
+endgenerate
 
 // Here we assume s1.qds will generate rt_dig = -2
 assign nxt_f_r_s_spec_s1_1[4] = 
@@ -2038,8 +2150,19 @@ assign sqrt_csa_val_2[1] =
 | ({(F16_REM_W){nxt_rt_dig_2[1][1]}} & sqrt_csa_val_pos_1_2[1])
 | ({(F16_REM_W){nxt_rt_dig_2[1][0]}} & sqrt_csa_val_pos_2_2[1]);
 
-assign f_r_s_for_csa_2[1] = {nxt_f_r_s_2[0][13:0], 2'b00};
-assign f_r_c_for_csa_2[1] = {nxt_f_r_c_2[0][13:0], 2'b00};
+generate
+if(S0_CSA_IS_MERGED == 1) begin
+
+	assign f_r_s_for_csa_2[1] = {nxt_f_r_s_merged[0][49:36], 2'b00};
+	assign f_r_c_for_csa_2[1] = {nxt_f_r_c_merged[0][49:36], 2'b00};
+
+end else begin
+
+	assign f_r_s_for_csa_2[1] = {nxt_f_r_s_2[0][13:0], 2'b00};
+	assign f_r_c_for_csa_2[1] = {nxt_f_r_c_2[0][13:0], 2'b00};
+
+end
+endgenerate
 
 // Here we assume s1.qds will generate rt_dig = -2
 assign nxt_f_r_s_spec_s1_2[4] = 
@@ -2112,8 +2235,19 @@ assign sqrt_csa_val_3[1] =
 | ({(F16_REM_W){nxt_rt_dig_3[1][1]}} & sqrt_csa_val_pos_1_3[1])
 | ({(F16_REM_W){nxt_rt_dig_3[1][0]}} & sqrt_csa_val_pos_2_3[1]);
 
-assign f_r_s_for_csa_3[1] = {nxt_f_r_s_3[0][13:0], 2'b00};
-assign f_r_c_for_csa_3[1] = {nxt_f_r_c_3[0][13:0], 2'b00};
+generate
+if(S0_CSA_IS_MERGED == 1) begin
+
+	assign f_r_s_for_csa_3[1] = {nxt_f_r_s_merged[0][13:0], 2'b00};
+	assign f_r_c_for_csa_3[1] = {nxt_f_r_c_merged[0][13:0], 2'b00};
+
+end else begin
+
+	assign f_r_s_for_csa_3[1] = {nxt_f_r_s_3[0][13:0], 2'b00};
+	assign f_r_c_for_csa_3[1] = {nxt_f_r_c_3[0][13:0], 2'b00};
+
+end
+endgenerate
 
 // Here we assume s1.qds will generate rt_dig = -2
 assign nxt_f_r_s_spec_s1_3[4] = 
@@ -2172,217 +2306,431 @@ assign nxt_f_r_c_pre_spec_s1_3[0] = {
 };
 assign nxt_f_r_c_spec_s1_3[0] = nxt_f_r_c_pre_spec_s1_3[0];
 
-// ================================================================================================================================================
-// stage[1].fa for *_0
-// ================================================================================================================================================
-assign adder_9b_for_nxt_cycle_s0_qds_spec_0[4] = 
-  nxt_f_r_s_0[0][(F64_REM_W-1)-2 -: 9]
-+ nxt_f_r_c_0[0][(F64_REM_W-1)-2 -: 9]
-+ sqrt_csa_val_neg_2_0[1][(F64_REM_W-1) -: 9];
 
-assign adder_9b_for_nxt_cycle_s0_qds_spec_0[3] = 
-  nxt_f_r_s_0[0][(F64_REM_W-1)-2 -: 9]
-+ nxt_f_r_c_0[0][(F64_REM_W-1)-2 -: 9]
-+ sqrt_csa_val_neg_1_0[1][(F64_REM_W-1) -: 9];
+generate
+if(S0_CSA_IS_MERGED == 1) begin
 
-assign adder_9b_for_nxt_cycle_s0_qds_spec_0[2] = 
-  nxt_f_r_s_0[0][(F64_REM_W-1)-2 -: 9]
-+ nxt_f_r_c_0[0][(F64_REM_W-1)-2 -: 9];
+	// ================================================================================================================================================
+	// stage[1].fa for *_0
+	// ================================================================================================================================================
+	assign adder_9b_for_nxt_cycle_s0_qds_spec_0[4] = 
+	  nxt_f_r_s_merged[0][69-2 -: 9]
+	+ nxt_f_r_c_merged[0][69-2 -: 9]
+	+ sqrt_csa_val_neg_2_0[1][(F64_REM_W-1) -: 9];
 
-assign adder_9b_for_nxt_cycle_s0_qds_spec_0[1] = 
-  nxt_f_r_s_0[0][(F64_REM_W-1)-2 -: 9]
-+ nxt_f_r_c_0[0][(F64_REM_W-1)-2 -: 9]
-+ sqrt_csa_val_pos_1_0[1][(F64_REM_W-1) -: 9];
+	assign adder_9b_for_nxt_cycle_s0_qds_spec_0[3] = 
+	  nxt_f_r_s_merged[0][69-2 -: 9]
+	+ nxt_f_r_c_merged[0][69-2 -: 9]
+	+ sqrt_csa_val_neg_1_0[1][(F64_REM_W-1) -: 9];
 
-assign adder_9b_for_nxt_cycle_s0_qds_spec_0[0] = 
-  nxt_f_r_s_0[0][(F64_REM_W-1)-2 -: 9]
-+ nxt_f_r_c_0[0][(F64_REM_W-1)-2 -: 9]
-+ sqrt_csa_val_pos_2_0[1][(F64_REM_W-1) -: 9];
+	assign adder_9b_for_nxt_cycle_s0_qds_spec_0[2] = 
+	  nxt_f_r_s_merged[0][69-2 -: 9]
+	+ nxt_f_r_c_merged[0][69-2 -: 9];
 
+	assign adder_9b_for_nxt_cycle_s0_qds_spec_0[1] = 
+	  nxt_f_r_s_merged[0][69-2 -: 9]
+	+ nxt_f_r_c_merged[0][69-2 -: 9]
+	+ sqrt_csa_val_pos_1_0[1][(F64_REM_W-1) -: 9];
 
-
-assign adder_10b_for_nxt_cycle_s1_qds_spec_0[4] = 
-  nxt_f_r_s_0[0][(F64_REM_W-1)-2-2 -: 10]
-+ nxt_f_r_c_0[0][(F64_REM_W-1)-2-2 -: 10]
-+ sqrt_csa_val_neg_2_0[1][(F64_REM_W-1)-2 -: 10];
-
-assign adder_10b_for_nxt_cycle_s1_qds_spec_0[3] = 
-  nxt_f_r_s_0[0][(F64_REM_W-1)-2-2 -: 10]
-+ nxt_f_r_c_0[0][(F64_REM_W-1)-2-2 -: 10]
-+ sqrt_csa_val_neg_1_0[1][(F64_REM_W-1)-2 -: 10];
-
-assign adder_10b_for_nxt_cycle_s1_qds_spec_0[2] = 
-  nxt_f_r_s_0[0][(F64_REM_W-1)-2-2 -: 10]
-+ nxt_f_r_c_0[0][(F64_REM_W-1)-2-2 -: 10];
-
-assign adder_10b_for_nxt_cycle_s1_qds_spec_0[1] = 
-  nxt_f_r_s_0[0][(F64_REM_W-1)-2-2 -: 10]
-+ nxt_f_r_c_0[0][(F64_REM_W-1)-2-2 -: 10]
-+ sqrt_csa_val_pos_1_0[1][(F64_REM_W-1)-2 -: 10];
-
-assign adder_10b_for_nxt_cycle_s1_qds_spec_0[0] = 
-  nxt_f_r_s_0[0][(F64_REM_W-1)-2-2 -: 10]
-+ nxt_f_r_c_0[0][(F64_REM_W-1)-2-2 -: 10]
-+ sqrt_csa_val_pos_2_0[1][(F64_REM_W-1)-2 -: 10];
-
-// ================================================================================================================================================
-// stage[1].fa for *_1
-// ================================================================================================================================================
-assign adder_9b_for_nxt_cycle_s0_qds_spec_1[4] = 
-  nxt_f_r_s_1[0][(F32_REM_W-1)-2 -: 9]
-+ nxt_f_r_c_1[0][(F32_REM_W-1)-2 -: 9]
-+ sqrt_csa_val_neg_2_1[1][(F32_REM_W-1) -: 9];
-
-assign adder_9b_for_nxt_cycle_s0_qds_spec_1[3] = 
-  nxt_f_r_s_1[0][(F32_REM_W-1)-2 -: 9]
-+ nxt_f_r_c_1[0][(F32_REM_W-1)-2 -: 9]
-+ sqrt_csa_val_neg_1_1[1][(F32_REM_W-1) -: 9];
-
-assign adder_9b_for_nxt_cycle_s0_qds_spec_1[2] = 
-  nxt_f_r_s_1[0][(F32_REM_W-1)-2 -: 9]
-+ nxt_f_r_c_1[0][(F32_REM_W-1)-2 -: 9];
-
-assign adder_9b_for_nxt_cycle_s0_qds_spec_1[1] = 
-  nxt_f_r_s_1[0][(F32_REM_W-1)-2 -: 9]
-+ nxt_f_r_c_1[0][(F32_REM_W-1)-2 -: 9]
-+ sqrt_csa_val_pos_1_1[1][(F32_REM_W-1) -: 9];
-
-assign adder_9b_for_nxt_cycle_s0_qds_spec_1[0] = 
-  nxt_f_r_s_1[0][(F32_REM_W-1)-2 -: 9]
-+ nxt_f_r_c_1[0][(F32_REM_W-1)-2 -: 9]
-+ sqrt_csa_val_pos_2_1[1][(F32_REM_W-1) -: 9];
+	assign adder_9b_for_nxt_cycle_s0_qds_spec_0[0] = 
+	  nxt_f_r_s_merged[0][69-2 -: 9]
+	+ nxt_f_r_c_merged[0][69-2 -: 9]
+	+ sqrt_csa_val_pos_2_0[1][(F64_REM_W-1) -: 9];
 
 
+	assign adder_10b_for_nxt_cycle_s1_qds_spec_0[4] = 
+	  nxt_f_r_s_merged[0][69-2-2 -: 10]
+	+ nxt_f_r_c_merged[0][69-2-2 -: 10]
+	+ sqrt_csa_val_neg_2_0[1][(F64_REM_W-1)-2 -: 10];
 
-assign adder_10b_for_nxt_cycle_s1_qds_spec_1[4] = 
-  nxt_f_r_s_1[0][(F32_REM_W-1)-2-2 -: 10]
-+ nxt_f_r_c_1[0][(F32_REM_W-1)-2-2 -: 10]
-+ sqrt_csa_val_neg_2_1[1][(F32_REM_W-1)-2 -: 10];
+	assign adder_10b_for_nxt_cycle_s1_qds_spec_0[3] = 
+	  nxt_f_r_s_merged[0][69-2-2 -: 10]
+	+ nxt_f_r_c_merged[0][69-2-2 -: 10]
+	+ sqrt_csa_val_neg_1_0[1][(F64_REM_W-1)-2 -: 10];
 
-assign adder_10b_for_nxt_cycle_s1_qds_spec_1[3] = 
-  nxt_f_r_s_1[0][(F32_REM_W-1)-2-2 -: 10]
-+ nxt_f_r_c_1[0][(F32_REM_W-1)-2-2 -: 10]
-+ sqrt_csa_val_neg_1_1[1][(F32_REM_W-1)-2 -: 10];
+	assign adder_10b_for_nxt_cycle_s1_qds_spec_0[2] = 
+	  nxt_f_r_s_merged[0][69-2-2 -: 10]
+	+ nxt_f_r_c_merged[0][69-2-2 -: 10];
 
-assign adder_10b_for_nxt_cycle_s1_qds_spec_1[2] = 
-  nxt_f_r_s_1[0][(F32_REM_W-1)-2-2 -: 10]
-+ nxt_f_r_c_1[0][(F32_REM_W-1)-2-2 -: 10];
+	assign adder_10b_for_nxt_cycle_s1_qds_spec_0[1] = 
+	  nxt_f_r_s_merged[0][69-2-2 -: 10]
+	+ nxt_f_r_c_merged[0][69-2-2 -: 10]
+	+ sqrt_csa_val_pos_1_0[1][(F64_REM_W-1)-2 -: 10];
 
-assign adder_10b_for_nxt_cycle_s1_qds_spec_1[1] = 
-  nxt_f_r_s_1[0][(F32_REM_W-1)-2-2 -: 10]
-+ nxt_f_r_c_1[0][(F32_REM_W-1)-2-2 -: 10]
-+ sqrt_csa_val_pos_1_1[1][(F32_REM_W-1)-2 -: 10];
+	assign adder_10b_for_nxt_cycle_s1_qds_spec_0[0] = 
+	  nxt_f_r_s_merged[0][69-2-2 -: 10]
+	+ nxt_f_r_c_merged[0][69-2-2 -: 10]
+	+ sqrt_csa_val_pos_2_0[1][(F64_REM_W-1)-2 -: 10];
 
-assign adder_10b_for_nxt_cycle_s1_qds_spec_1[0] = 
-  nxt_f_r_s_1[0][(F32_REM_W-1)-2-2 -: 10]
-+ nxt_f_r_c_1[0][(F32_REM_W-1)-2-2 -: 10]
-+ sqrt_csa_val_pos_2_1[1][(F32_REM_W-1)-2 -: 10];
+	// ================================================================================================================================================
+	// stage[1].fa for *_1
+	// ================================================================================================================================================
+	assign adder_9b_for_nxt_cycle_s0_qds_spec_1[4] = 
+	  nxt_f_r_s_merged[0][33-2 -: 9]
+	+ nxt_f_r_c_merged[0][33-2 -: 9]
+	+ sqrt_csa_val_neg_2_1[1][(F32_REM_W-1) -: 9];
 
-// ================================================================================================================================================
-// stage[1].fa for *_2
-// ================================================================================================================================================
-assign adder_9b_for_nxt_cycle_s0_qds_spec_2[4] = 
-  nxt_f_r_s_2[0][(F16_REM_W-1)-2 -: 9]
-+ nxt_f_r_c_2[0][(F16_REM_W-1)-2 -: 9]
-+ sqrt_csa_val_neg_2_2[1][(F16_REM_W-1) -: 9];
+	assign adder_9b_for_nxt_cycle_s0_qds_spec_1[3] = 
+	  nxt_f_r_s_merged[0][33-2 -: 9]
+	+ nxt_f_r_c_merged[0][33-2 -: 9]
+	+ sqrt_csa_val_neg_1_1[1][(F32_REM_W-1) -: 9];
 
-assign adder_9b_for_nxt_cycle_s0_qds_spec_2[3] = 
-  nxt_f_r_s_2[0][(F16_REM_W-1)-2 -: 9]
-+ nxt_f_r_c_2[0][(F16_REM_W-1)-2 -: 9]
-+ sqrt_csa_val_neg_1_2[1][(F16_REM_W-1) -: 9];
+	assign adder_9b_for_nxt_cycle_s0_qds_spec_1[2] = 
+	  nxt_f_r_s_merged[0][33-2 -: 9]
+	+ nxt_f_r_c_merged[0][33-2 -: 9];
 
-assign adder_9b_for_nxt_cycle_s0_qds_spec_2[2] = 
-  nxt_f_r_s_2[0][(F16_REM_W-1)-2 -: 9]
-+ nxt_f_r_c_2[0][(F16_REM_W-1)-2 -: 9];
+	assign adder_9b_for_nxt_cycle_s0_qds_spec_1[1] = 
+	  nxt_f_r_s_merged[0][33-2 -: 9]
+	+ nxt_f_r_c_merged[0][33-2 -: 9]
+	+ sqrt_csa_val_pos_1_1[1][(F32_REM_W-1) -: 9];
 
-assign adder_9b_for_nxt_cycle_s0_qds_spec_2[1] = 
-  nxt_f_r_s_2[0][(F16_REM_W-1)-2 -: 9]
-+ nxt_f_r_c_2[0][(F16_REM_W-1)-2 -: 9]
-+ sqrt_csa_val_pos_1_2[1][(F16_REM_W-1) -: 9];
-
-assign adder_9b_for_nxt_cycle_s0_qds_spec_2[0] = 
-  nxt_f_r_s_2[0][(F16_REM_W-1)-2 -: 9]
-+ nxt_f_r_c_2[0][(F16_REM_W-1)-2 -: 9]
-+ sqrt_csa_val_pos_2_2[1][(F16_REM_W-1) -: 9];
-
+	assign adder_9b_for_nxt_cycle_s0_qds_spec_1[0] = 
+	  nxt_f_r_s_merged[0][33-2 -: 9]
+	+ nxt_f_r_c_merged[0][33-2 -: 9]
+	+ sqrt_csa_val_pos_2_1[1][(F32_REM_W-1) -: 9];
 
 
-assign adder_10b_for_nxt_cycle_s1_qds_spec_2[4] = 
-  nxt_f_r_s_2[0][(F16_REM_W-1)-2-2 -: 10]
-+ nxt_f_r_c_2[0][(F16_REM_W-1)-2-2 -: 10]
-+ sqrt_csa_val_neg_2_2[1][(F16_REM_W-1)-2 -: 10];
+	assign adder_10b_for_nxt_cycle_s1_qds_spec_1[4] = 
+	  nxt_f_r_s_merged[0][33-2-2 -: 10]
+	+ nxt_f_r_c_merged[0][33-2-2 -: 10]
+	+ sqrt_csa_val_neg_2_1[1][(F32_REM_W-1)-2 -: 10];
 
-assign adder_10b_for_nxt_cycle_s1_qds_spec_2[3] = 
-  nxt_f_r_s_2[0][(F16_REM_W-1)-2-2 -: 10]
-+ nxt_f_r_c_2[0][(F16_REM_W-1)-2-2 -: 10]
-+ sqrt_csa_val_neg_1_2[1][(F16_REM_W-1)-2 -: 10];
+	assign adder_10b_for_nxt_cycle_s1_qds_spec_1[3] = 
+	  nxt_f_r_s_merged[0][33-2-2 -: 10]
+	+ nxt_f_r_c_merged[0][33-2-2 -: 10]
+	+ sqrt_csa_val_neg_1_1[1][(F32_REM_W-1)-2 -: 10];
 
-assign adder_10b_for_nxt_cycle_s1_qds_spec_2[2] = 
-  nxt_f_r_s_2[0][(F16_REM_W-1)-2-2 -: 10]
-+ nxt_f_r_c_2[0][(F16_REM_W-1)-2-2 -: 10];
+	assign adder_10b_for_nxt_cycle_s1_qds_spec_1[2] = 
+	  nxt_f_r_s_merged[0][33-2-2 -: 10]
+	+ nxt_f_r_c_merged[0][33-2-2 -: 10];
 
-assign adder_10b_for_nxt_cycle_s1_qds_spec_2[1] = 
-  nxt_f_r_s_2[0][(F16_REM_W-1)-2-2 -: 10]
-+ nxt_f_r_c_2[0][(F16_REM_W-1)-2-2 -: 10]
-+ sqrt_csa_val_pos_1_2[1][(F16_REM_W-1)-2 -: 10];
+	assign adder_10b_for_nxt_cycle_s1_qds_spec_1[1] = 
+	  nxt_f_r_s_merged[0][33-2-2 -: 10]
+	+ nxt_f_r_c_merged[0][33-2-2 -: 10]
+	+ sqrt_csa_val_pos_1_1[1][(F32_REM_W-1)-2 -: 10];
 
-assign adder_10b_for_nxt_cycle_s1_qds_spec_2[0] = 
-  nxt_f_r_s_2[0][(F16_REM_W-1)-2-2 -: 10]
-+ nxt_f_r_c_2[0][(F16_REM_W-1)-2-2 -: 10]
-+ sqrt_csa_val_pos_2_2[1][(F16_REM_W-1)-2 -: 10];
+	assign adder_10b_for_nxt_cycle_s1_qds_spec_1[0] = 
+	  nxt_f_r_s_merged[0][33-2-2 -: 10]
+	+ nxt_f_r_c_merged[0][33-2-2 -: 10]
+	+ sqrt_csa_val_pos_2_1[1][(F32_REM_W-1)-2 -: 10];
 
-// ================================================================================================================================================
-// stage[1].fa for *_3
-// ================================================================================================================================================
-assign adder_9b_for_nxt_cycle_s0_qds_spec_3[4] = 
-  nxt_f_r_s_3[0][(F16_REM_W-1)-2 -: 9]
-+ nxt_f_r_c_3[0][(F16_REM_W-1)-2 -: 9]
-+ sqrt_csa_val_neg_2_3[1][(F16_REM_W-1) -: 9];
+	// ================================================================================================================================================
+	// stage[1].fa for *_2
+	// ================================================================================================================================================
+	assign adder_9b_for_nxt_cycle_s0_qds_spec_2[4] = 
+	  nxt_f_r_s_merged[0][51-2 -: 9]
+	+ nxt_f_r_c_merged[0][51-2 -: 9]
+	+ sqrt_csa_val_neg_2_2[1][(F16_REM_W-1) -: 9];
 
-assign adder_9b_for_nxt_cycle_s0_qds_spec_3[3] = 
-  nxt_f_r_s_3[0][(F16_REM_W-1)-2 -: 9]
-+ nxt_f_r_c_3[0][(F16_REM_W-1)-2 -: 9]
-+ sqrt_csa_val_neg_1_3[1][(F16_REM_W-1) -: 9];
+	assign adder_9b_for_nxt_cycle_s0_qds_spec_2[3] = 
+	  nxt_f_r_s_merged[0][51-2 -: 9]
+	+ nxt_f_r_c_merged[0][51-2 -: 9]
+	+ sqrt_csa_val_neg_1_2[1][(F16_REM_W-1) -: 9];
 
-assign adder_9b_for_nxt_cycle_s0_qds_spec_3[2] = 
-  nxt_f_r_s_3[0][(F16_REM_W-1)-2 -: 9]
-+ nxt_f_r_c_3[0][(F16_REM_W-1)-2 -: 9];
+	assign adder_9b_for_nxt_cycle_s0_qds_spec_2[2] = 
+	  nxt_f_r_s_merged[0][51-2 -: 9]
+	+ nxt_f_r_c_merged[0][51-2 -: 9];
 
-assign adder_9b_for_nxt_cycle_s0_qds_spec_3[1] = 
-  nxt_f_r_s_3[0][(F16_REM_W-1)-2 -: 9]
-+ nxt_f_r_c_3[0][(F16_REM_W-1)-2 -: 9]
-+ sqrt_csa_val_pos_1_3[1][(F16_REM_W-1) -: 9];
+	assign adder_9b_for_nxt_cycle_s0_qds_spec_2[1] = 
+	  nxt_f_r_s_merged[0][51-2 -: 9]
+	+ nxt_f_r_c_merged[0][51-2 -: 9]
+	+ sqrt_csa_val_pos_1_2[1][(F16_REM_W-1) -: 9];
 
-assign adder_9b_for_nxt_cycle_s0_qds_spec_3[0] = 
-  nxt_f_r_s_3[0][(F16_REM_W-1)-2 -: 9]
-+ nxt_f_r_c_3[0][(F16_REM_W-1)-2 -: 9]
-+ sqrt_csa_val_pos_2_3[1][(F16_REM_W-1) -: 9];
+	assign adder_9b_for_nxt_cycle_s0_qds_spec_2[0] = 
+	  nxt_f_r_s_merged[0][51-2 -: 9]
+	+ nxt_f_r_c_merged[0][51-2 -: 9]
+	+ sqrt_csa_val_pos_2_2[1][(F16_REM_W-1) -: 9];
 
 
+	assign adder_10b_for_nxt_cycle_s1_qds_spec_2[4] = 
+	  nxt_f_r_s_merged[0][51-2-2 -: 10]
+	+ nxt_f_r_c_merged[0][51-2-2 -: 10]
+	+ sqrt_csa_val_neg_2_2[1][(F16_REM_W-1)-2 -: 10];
 
-assign adder_10b_for_nxt_cycle_s1_qds_spec_3[4] = 
-  nxt_f_r_s_3[0][(F16_REM_W-1)-2-2 -: 10]
-+ nxt_f_r_c_3[0][(F16_REM_W-1)-2-2 -: 10]
-+ sqrt_csa_val_neg_2_3[1][(F16_REM_W-1)-2 -: 10];
+	assign adder_10b_for_nxt_cycle_s1_qds_spec_2[3] = 
+	  nxt_f_r_s_merged[0][51-2-2 -: 10]
+	+ nxt_f_r_c_merged[0][51-2-2 -: 10]
+	+ sqrt_csa_val_neg_1_2[1][(F16_REM_W-1)-2 -: 10];
 
-assign adder_10b_for_nxt_cycle_s1_qds_spec_3[3] = 
-  nxt_f_r_s_3[0][(F16_REM_W-1)-2-2 -: 10]
-+ nxt_f_r_c_3[0][(F16_REM_W-1)-2-2 -: 10]
-+ sqrt_csa_val_neg_1_3[1][(F16_REM_W-1)-2 -: 10];
+	assign adder_10b_for_nxt_cycle_s1_qds_spec_2[2] = 
+	  nxt_f_r_s_merged[0][51-2-2 -: 10]
+	+ nxt_f_r_c_merged[0][51-2-2 -: 10];
 
-assign adder_10b_for_nxt_cycle_s1_qds_spec_3[2] = 
-  nxt_f_r_s_3[0][(F16_REM_W-1)-2-2 -: 10]
-+ nxt_f_r_c_3[0][(F16_REM_W-1)-2-2 -: 10];
+	assign adder_10b_for_nxt_cycle_s1_qds_spec_2[1] = 
+	  nxt_f_r_s_merged[0][51-2-2 -: 10]
+	+ nxt_f_r_c_merged[0][51-2-2 -: 10]
+	+ sqrt_csa_val_pos_1_2[1][(F16_REM_W-1)-2 -: 10];
 
-assign adder_10b_for_nxt_cycle_s1_qds_spec_3[1] = 
-  nxt_f_r_s_3[0][(F16_REM_W-1)-2-2 -: 10]
-+ nxt_f_r_c_3[0][(F16_REM_W-1)-2-2 -: 10]
-+ sqrt_csa_val_pos_1_3[1][(F16_REM_W-1)-2 -: 10];
+	assign adder_10b_for_nxt_cycle_s1_qds_spec_2[0] = 
+	  nxt_f_r_s_merged[0][51-2-2 -: 10]
+	+ nxt_f_r_c_merged[0][51-2-2 -: 10]
+	+ sqrt_csa_val_pos_2_2[1][(F16_REM_W-1)-2 -: 10];
 
-assign adder_10b_for_nxt_cycle_s1_qds_spec_3[0] = 
-  nxt_f_r_s_3[0][(F16_REM_W-1)-2-2 -: 10]
-+ nxt_f_r_c_3[0][(F16_REM_W-1)-2-2 -: 10]
-+ sqrt_csa_val_pos_2_3[1][(F16_REM_W-1)-2 -: 10];
+	// ================================================================================================================================================
+	// stage[1].fa for *_3
+	// ================================================================================================================================================
+	assign adder_9b_for_nxt_cycle_s0_qds_spec_3[4] = 
+	  nxt_f_r_s_merged[0][15-2 -: 9]
+	+ nxt_f_r_c_merged[0][15-2 -: 9]
+	+ sqrt_csa_val_neg_2_3[1][(F16_REM_W-1) -: 9];
+
+	assign adder_9b_for_nxt_cycle_s0_qds_spec_3[3] = 
+	  nxt_f_r_s_merged[0][15-2 -: 9]
+	+ nxt_f_r_c_merged[0][15-2 -: 9]
+	+ sqrt_csa_val_neg_1_3[1][(F16_REM_W-1) -: 9];
+
+	assign adder_9b_for_nxt_cycle_s0_qds_spec_3[2] = 
+	  nxt_f_r_s_merged[0][15-2 -: 9]
+	+ nxt_f_r_c_merged[0][15-2 -: 9];
+
+	assign adder_9b_for_nxt_cycle_s0_qds_spec_3[1] = 
+	  nxt_f_r_s_merged[0][15-2 -: 9]
+	+ nxt_f_r_c_merged[0][15-2 -: 9]
+	+ sqrt_csa_val_pos_1_3[1][(F16_REM_W-1) -: 9];
+
+	assign adder_9b_for_nxt_cycle_s0_qds_spec_3[0] = 
+	  nxt_f_r_s_merged[0][15-2 -: 9]
+	+ nxt_f_r_c_merged[0][15-2 -: 9]
+	+ sqrt_csa_val_pos_2_3[1][(F16_REM_W-1) -: 9];
+
+
+	assign adder_10b_for_nxt_cycle_s1_qds_spec_3[4] = 
+	  nxt_f_r_s_merged[0][15-2-2 -: 10]
+	+ nxt_f_r_c_merged[0][15-2-2 -: 10]
+	+ sqrt_csa_val_neg_2_3[1][(F16_REM_W-1)-2 -: 10];
+
+	assign adder_10b_for_nxt_cycle_s1_qds_spec_3[3] = 
+	  nxt_f_r_s_merged[0][15-2-2 -: 10]
+	+ nxt_f_r_c_merged[0][15-2-2 -: 10]
+	+ sqrt_csa_val_neg_1_3[1][(F16_REM_W-1)-2 -: 10];
+
+	assign adder_10b_for_nxt_cycle_s1_qds_spec_3[2] = 
+	  nxt_f_r_s_merged[0][15-2-2 -: 10]
+	+ nxt_f_r_c_merged[0][15-2-2 -: 10];
+
+	assign adder_10b_for_nxt_cycle_s1_qds_spec_3[1] = 
+	  nxt_f_r_s_merged[0][15-2-2 -: 10]
+	+ nxt_f_r_c_merged[0][15-2-2 -: 10]
+	+ sqrt_csa_val_pos_1_3[1][(F16_REM_W-1)-2 -: 10];
+
+	assign adder_10b_for_nxt_cycle_s1_qds_spec_3[0] = 
+	  nxt_f_r_s_merged[0][15-2-2 -: 10]
+	+ nxt_f_r_c_merged[0][15-2-2 -: 10]
+	+ sqrt_csa_val_pos_2_3[1][(F16_REM_W-1)-2 -: 10];
+	
+end else begin
+
+	// ================================================================================================================================================
+	// stage[1].fa for *_0
+	// ================================================================================================================================================
+	assign adder_9b_for_nxt_cycle_s0_qds_spec_0[4] = 
+	  nxt_f_r_s_0[0][(F64_REM_W-1)-2 -: 9]
+	+ nxt_f_r_c_0[0][(F64_REM_W-1)-2 -: 9]
+	+ sqrt_csa_val_neg_2_0[1][(F64_REM_W-1) -: 9];
+
+	assign adder_9b_for_nxt_cycle_s0_qds_spec_0[3] = 
+	  nxt_f_r_s_0[0][(F64_REM_W-1)-2 -: 9]
+	+ nxt_f_r_c_0[0][(F64_REM_W-1)-2 -: 9]
+	+ sqrt_csa_val_neg_1_0[1][(F64_REM_W-1) -: 9];
+
+	assign adder_9b_for_nxt_cycle_s0_qds_spec_0[2] = 
+	  nxt_f_r_s_0[0][(F64_REM_W-1)-2 -: 9]
+	+ nxt_f_r_c_0[0][(F64_REM_W-1)-2 -: 9];
+
+	assign adder_9b_for_nxt_cycle_s0_qds_spec_0[1] = 
+	  nxt_f_r_s_0[0][(F64_REM_W-1)-2 -: 9]
+	+ nxt_f_r_c_0[0][(F64_REM_W-1)-2 -: 9]
+	+ sqrt_csa_val_pos_1_0[1][(F64_REM_W-1) -: 9];
+
+	assign adder_9b_for_nxt_cycle_s0_qds_spec_0[0] = 
+	  nxt_f_r_s_0[0][(F64_REM_W-1)-2 -: 9]
+	+ nxt_f_r_c_0[0][(F64_REM_W-1)-2 -: 9]
+	+ sqrt_csa_val_pos_2_0[1][(F64_REM_W-1) -: 9];
+
+
+	assign adder_10b_for_nxt_cycle_s1_qds_spec_0[4] = 
+	  nxt_f_r_s_0[0][(F64_REM_W-1)-2-2 -: 10]
+	+ nxt_f_r_c_0[0][(F64_REM_W-1)-2-2 -: 10]
+	+ sqrt_csa_val_neg_2_0[1][(F64_REM_W-1)-2 -: 10];
+
+	assign adder_10b_for_nxt_cycle_s1_qds_spec_0[3] = 
+	  nxt_f_r_s_0[0][(F64_REM_W-1)-2-2 -: 10]
+	+ nxt_f_r_c_0[0][(F64_REM_W-1)-2-2 -: 10]
+	+ sqrt_csa_val_neg_1_0[1][(F64_REM_W-1)-2 -: 10];
+
+	assign adder_10b_for_nxt_cycle_s1_qds_spec_0[2] = 
+	  nxt_f_r_s_0[0][(F64_REM_W-1)-2-2 -: 10]
+	+ nxt_f_r_c_0[0][(F64_REM_W-1)-2-2 -: 10];
+
+	assign adder_10b_for_nxt_cycle_s1_qds_spec_0[1] = 
+	  nxt_f_r_s_0[0][(F64_REM_W-1)-2-2 -: 10]
+	+ nxt_f_r_c_0[0][(F64_REM_W-1)-2-2 -: 10]
+	+ sqrt_csa_val_pos_1_0[1][(F64_REM_W-1)-2 -: 10];
+
+	assign adder_10b_for_nxt_cycle_s1_qds_spec_0[0] = 
+	  nxt_f_r_s_0[0][(F64_REM_W-1)-2-2 -: 10]
+	+ nxt_f_r_c_0[0][(F64_REM_W-1)-2-2 -: 10]
+	+ sqrt_csa_val_pos_2_0[1][(F64_REM_W-1)-2 -: 10];
+
+	// ================================================================================================================================================
+	// stage[1].fa for *_1
+	// ================================================================================================================================================
+	assign adder_9b_for_nxt_cycle_s0_qds_spec_1[4] = 
+	  nxt_f_r_s_1[0][(F32_REM_W-1)-2 -: 9]
+	+ nxt_f_r_c_1[0][(F32_REM_W-1)-2 -: 9]
+	+ sqrt_csa_val_neg_2_1[1][(F32_REM_W-1) -: 9];
+
+	assign adder_9b_for_nxt_cycle_s0_qds_spec_1[3] = 
+	  nxt_f_r_s_1[0][(F32_REM_W-1)-2 -: 9]
+	+ nxt_f_r_c_1[0][(F32_REM_W-1)-2 -: 9]
+	+ sqrt_csa_val_neg_1_1[1][(F32_REM_W-1) -: 9];
+
+	assign adder_9b_for_nxt_cycle_s0_qds_spec_1[2] = 
+	  nxt_f_r_s_1[0][(F32_REM_W-1)-2 -: 9]
+	+ nxt_f_r_c_1[0][(F32_REM_W-1)-2 -: 9];
+
+	assign adder_9b_for_nxt_cycle_s0_qds_spec_1[1] = 
+	  nxt_f_r_s_1[0][(F32_REM_W-1)-2 -: 9]
+	+ nxt_f_r_c_1[0][(F32_REM_W-1)-2 -: 9]
+	+ sqrt_csa_val_pos_1_1[1][(F32_REM_W-1) -: 9];
+
+	assign adder_9b_for_nxt_cycle_s0_qds_spec_1[0] = 
+	  nxt_f_r_s_1[0][(F32_REM_W-1)-2 -: 9]
+	+ nxt_f_r_c_1[0][(F32_REM_W-1)-2 -: 9]
+	+ sqrt_csa_val_pos_2_1[1][(F32_REM_W-1) -: 9];
+
+
+	assign adder_10b_for_nxt_cycle_s1_qds_spec_1[4] = 
+	  nxt_f_r_s_1[0][(F32_REM_W-1)-2-2 -: 10]
+	+ nxt_f_r_c_1[0][(F32_REM_W-1)-2-2 -: 10]
+	+ sqrt_csa_val_neg_2_1[1][(F32_REM_W-1)-2 -: 10];
+
+	assign adder_10b_for_nxt_cycle_s1_qds_spec_1[3] = 
+	  nxt_f_r_s_1[0][(F32_REM_W-1)-2-2 -: 10]
+	+ nxt_f_r_c_1[0][(F32_REM_W-1)-2-2 -: 10]
+	+ sqrt_csa_val_neg_1_1[1][(F32_REM_W-1)-2 -: 10];
+
+	assign adder_10b_for_nxt_cycle_s1_qds_spec_1[2] = 
+	  nxt_f_r_s_1[0][(F32_REM_W-1)-2-2 -: 10]
+	+ nxt_f_r_c_1[0][(F32_REM_W-1)-2-2 -: 10];
+
+	assign adder_10b_for_nxt_cycle_s1_qds_spec_1[1] = 
+	  nxt_f_r_s_1[0][(F32_REM_W-1)-2-2 -: 10]
+	+ nxt_f_r_c_1[0][(F32_REM_W-1)-2-2 -: 10]
+	+ sqrt_csa_val_pos_1_1[1][(F32_REM_W-1)-2 -: 10];
+
+	assign adder_10b_for_nxt_cycle_s1_qds_spec_1[0] = 
+	  nxt_f_r_s_1[0][(F32_REM_W-1)-2-2 -: 10]
+	+ nxt_f_r_c_1[0][(F32_REM_W-1)-2-2 -: 10]
+	+ sqrt_csa_val_pos_2_1[1][(F32_REM_W-1)-2 -: 10];
+
+	// ================================================================================================================================================
+	// stage[1].fa for *_2
+	// ================================================================================================================================================
+	assign adder_9b_for_nxt_cycle_s0_qds_spec_2[4] = 
+	  nxt_f_r_s_2[0][(F16_REM_W-1)-2 -: 9]
+	+ nxt_f_r_c_2[0][(F16_REM_W-1)-2 -: 9]
+	+ sqrt_csa_val_neg_2_2[1][(F16_REM_W-1) -: 9];
+
+	assign adder_9b_for_nxt_cycle_s0_qds_spec_2[3] = 
+	  nxt_f_r_s_2[0][(F16_REM_W-1)-2 -: 9]
+	+ nxt_f_r_c_2[0][(F16_REM_W-1)-2 -: 9]
+	+ sqrt_csa_val_neg_1_2[1][(F16_REM_W-1) -: 9];
+
+	assign adder_9b_for_nxt_cycle_s0_qds_spec_2[2] = 
+	  nxt_f_r_s_2[0][(F16_REM_W-1)-2 -: 9]
+	+ nxt_f_r_c_2[0][(F16_REM_W-1)-2 -: 9];
+
+	assign adder_9b_for_nxt_cycle_s0_qds_spec_2[1] = 
+	  nxt_f_r_s_2[0][(F16_REM_W-1)-2 -: 9]
+	+ nxt_f_r_c_2[0][(F16_REM_W-1)-2 -: 9]
+	+ sqrt_csa_val_pos_1_2[1][(F16_REM_W-1) -: 9];
+
+	assign adder_9b_for_nxt_cycle_s0_qds_spec_2[0] = 
+	  nxt_f_r_s_2[0][(F16_REM_W-1)-2 -: 9]
+	+ nxt_f_r_c_2[0][(F16_REM_W-1)-2 -: 9]
+	+ sqrt_csa_val_pos_2_2[1][(F16_REM_W-1) -: 9];
+
+
+	assign adder_10b_for_nxt_cycle_s1_qds_spec_2[4] = 
+	  nxt_f_r_s_2[0][(F16_REM_W-1)-2-2 -: 10]
+	+ nxt_f_r_c_2[0][(F16_REM_W-1)-2-2 -: 10]
+	+ sqrt_csa_val_neg_2_2[1][(F16_REM_W-1)-2 -: 10];
+
+	assign adder_10b_for_nxt_cycle_s1_qds_spec_2[3] = 
+	  nxt_f_r_s_2[0][(F16_REM_W-1)-2-2 -: 10]
+	+ nxt_f_r_c_2[0][(F16_REM_W-1)-2-2 -: 10]
+	+ sqrt_csa_val_neg_1_2[1][(F16_REM_W-1)-2 -: 10];
+
+	assign adder_10b_for_nxt_cycle_s1_qds_spec_2[2] = 
+	  nxt_f_r_s_2[0][(F16_REM_W-1)-2-2 -: 10]
+	+ nxt_f_r_c_2[0][(F16_REM_W-1)-2-2 -: 10];
+
+	assign adder_10b_for_nxt_cycle_s1_qds_spec_2[1] = 
+	  nxt_f_r_s_2[0][(F16_REM_W-1)-2-2 -: 10]
+	+ nxt_f_r_c_2[0][(F16_REM_W-1)-2-2 -: 10]
+	+ sqrt_csa_val_pos_1_2[1][(F16_REM_W-1)-2 -: 10];
+
+	assign adder_10b_for_nxt_cycle_s1_qds_spec_2[0] = 
+	  nxt_f_r_s_2[0][(F16_REM_W-1)-2-2 -: 10]
+	+ nxt_f_r_c_2[0][(F16_REM_W-1)-2-2 -: 10]
+	+ sqrt_csa_val_pos_2_2[1][(F16_REM_W-1)-2 -: 10];
+
+	// ================================================================================================================================================
+	// stage[1].fa for *_3
+	// ================================================================================================================================================
+	assign adder_9b_for_nxt_cycle_s0_qds_spec_3[4] = 
+	  nxt_f_r_s_3[0][(F16_REM_W-1)-2 -: 9]
+	+ nxt_f_r_c_3[0][(F16_REM_W-1)-2 -: 9]
+	+ sqrt_csa_val_neg_2_3[1][(F16_REM_W-1) -: 9];
+
+	assign adder_9b_for_nxt_cycle_s0_qds_spec_3[3] = 
+	  nxt_f_r_s_3[0][(F16_REM_W-1)-2 -: 9]
+	+ nxt_f_r_c_3[0][(F16_REM_W-1)-2 -: 9]
+	+ sqrt_csa_val_neg_1_3[1][(F16_REM_W-1) -: 9];
+
+	assign adder_9b_for_nxt_cycle_s0_qds_spec_3[2] = 
+	  nxt_f_r_s_3[0][(F16_REM_W-1)-2 -: 9]
+	+ nxt_f_r_c_3[0][(F16_REM_W-1)-2 -: 9];
+
+	assign adder_9b_for_nxt_cycle_s0_qds_spec_3[1] = 
+	  nxt_f_r_s_3[0][(F16_REM_W-1)-2 -: 9]
+	+ nxt_f_r_c_3[0][(F16_REM_W-1)-2 -: 9]
+	+ sqrt_csa_val_pos_1_3[1][(F16_REM_W-1) -: 9];
+
+	assign adder_9b_for_nxt_cycle_s0_qds_spec_3[0] = 
+	  nxt_f_r_s_3[0][(F16_REM_W-1)-2 -: 9]
+	+ nxt_f_r_c_3[0][(F16_REM_W-1)-2 -: 9]
+	+ sqrt_csa_val_pos_2_3[1][(F16_REM_W-1) -: 9];
+
+
+	assign adder_10b_for_nxt_cycle_s1_qds_spec_3[4] = 
+	  nxt_f_r_s_3[0][(F16_REM_W-1)-2-2 -: 10]
+	+ nxt_f_r_c_3[0][(F16_REM_W-1)-2-2 -: 10]
+	+ sqrt_csa_val_neg_2_3[1][(F16_REM_W-1)-2 -: 10];
+
+	assign adder_10b_for_nxt_cycle_s1_qds_spec_3[3] = 
+	  nxt_f_r_s_3[0][(F16_REM_W-1)-2-2 -: 10]
+	+ nxt_f_r_c_3[0][(F16_REM_W-1)-2-2 -: 10]
+	+ sqrt_csa_val_neg_1_3[1][(F16_REM_W-1)-2 -: 10];
+
+	assign adder_10b_for_nxt_cycle_s1_qds_spec_3[2] = 
+	  nxt_f_r_s_3[0][(F16_REM_W-1)-2-2 -: 10]
+	+ nxt_f_r_c_3[0][(F16_REM_W-1)-2-2 -: 10];
+
+	assign adder_10b_for_nxt_cycle_s1_qds_spec_3[1] = 
+	  nxt_f_r_s_3[0][(F16_REM_W-1)-2-2 -: 10]
+	+ nxt_f_r_c_3[0][(F16_REM_W-1)-2-2 -: 10]
+	+ sqrt_csa_val_pos_1_3[1][(F16_REM_W-1)-2 -: 10];
+
+	assign adder_10b_for_nxt_cycle_s1_qds_spec_3[0] = 
+	  nxt_f_r_s_3[0][(F16_REM_W-1)-2-2 -: 10]
+	+ nxt_f_r_c_3[0][(F16_REM_W-1)-2-2 -: 10]
+	+ sqrt_csa_val_pos_2_3[1][(F16_REM_W-1)-2 -: 10];
+
+end
+endgenerate
+
 
 // ================================================================================================================================================
 // stage[1].cg for *_0
@@ -3258,64 +3606,159 @@ assign nxt_rt_m1_o =
 | ({(53){fp_fmt_i[1]}} & {nxt_rt_m1_0[1][52:28], 1'b0, nxt_rt_m1_1[1][24:0], 2'b0})
 | ({(53){fp_fmt_i[2]}} & {nxt_rt_m1_0[1][52:0]});
 
+generate
+if(S1_CSA_SPECULATIVE == 1) begin
+
+	assign nxt_f_r_s_0[1] = 
+	  ({(F64_REM_W){nxt_rt_dig_0[1][4]}} & nxt_f_r_s_spec_s1_0[4])
+	| ({(F64_REM_W){nxt_rt_dig_0[1][3]}} & nxt_f_r_s_spec_s1_0[3])
+	| ({(F64_REM_W){nxt_rt_dig_0[1][2]}} & nxt_f_r_s_spec_s1_0[2])
+	| ({(F64_REM_W){nxt_rt_dig_0[1][1]}} & nxt_f_r_s_spec_s1_0[1])
+	| ({(F64_REM_W){nxt_rt_dig_0[1][0]}} & nxt_f_r_s_spec_s1_0[0]);
+
+	assign nxt_f_r_s_1[1] = 
+	  ({(F32_REM_W){nxt_rt_dig_1[1][4]}} & nxt_f_r_s_spec_s1_1[4])
+	| ({(F32_REM_W){nxt_rt_dig_1[1][3]}} & nxt_f_r_s_spec_s1_1[3])
+	| ({(F32_REM_W){nxt_rt_dig_1[1][2]}} & nxt_f_r_s_spec_s1_1[2])
+	| ({(F32_REM_W){nxt_rt_dig_1[1][1]}} & nxt_f_r_s_spec_s1_1[1])
+	| ({(F32_REM_W){nxt_rt_dig_1[1][0]}} & nxt_f_r_s_spec_s1_1[0]);
+
+	assign nxt_f_r_s_2[1] = 
+	  ({(F16_REM_W){nxt_rt_dig_2[1][4]}} & nxt_f_r_s_spec_s1_2[4])
+	| ({(F16_REM_W){nxt_rt_dig_2[1][3]}} & nxt_f_r_s_spec_s1_2[3])
+	| ({(F16_REM_W){nxt_rt_dig_2[1][2]}} & nxt_f_r_s_spec_s1_2[2])
+	| ({(F16_REM_W){nxt_rt_dig_2[1][1]}} & nxt_f_r_s_spec_s1_2[1])
+	| ({(F16_REM_W){nxt_rt_dig_2[1][0]}} & nxt_f_r_s_spec_s1_2[0]);
+
+	assign nxt_f_r_s_3[1] = 
+	  ({(F16_REM_W){nxt_rt_dig_3[1][4]}} & nxt_f_r_s_spec_s1_3[4])
+	| ({(F16_REM_W){nxt_rt_dig_3[1][3]}} & nxt_f_r_s_spec_s1_3[3])
+	| ({(F16_REM_W){nxt_rt_dig_3[1][2]}} & nxt_f_r_s_spec_s1_3[2])
+	| ({(F16_REM_W){nxt_rt_dig_3[1][1]}} & nxt_f_r_s_spec_s1_3[1])
+	| ({(F16_REM_W){nxt_rt_dig_3[1][0]}} & nxt_f_r_s_spec_s1_3[0]);
 
 
-assign nxt_f_r_s_0[1] = 
-  ({(F64_REM_W){nxt_rt_dig_0[1][4]}} & nxt_f_r_s_spec_s1_0[4])
-| ({(F64_REM_W){nxt_rt_dig_0[1][3]}} & nxt_f_r_s_spec_s1_0[3])
-| ({(F64_REM_W){nxt_rt_dig_0[1][2]}} & nxt_f_r_s_spec_s1_0[2])
-| ({(F64_REM_W){nxt_rt_dig_0[1][1]}} & nxt_f_r_s_spec_s1_0[1])
-| ({(F64_REM_W){nxt_rt_dig_0[1][0]}} & nxt_f_r_s_spec_s1_0[0]);
+	assign nxt_f_r_c_0[1] = 
+	  ({(F64_REM_W){nxt_rt_dig_0[1][4]}} & nxt_f_r_c_spec_s1_0[4])
+	| ({(F64_REM_W){nxt_rt_dig_0[1][3]}} & nxt_f_r_c_spec_s1_0[3])
+	| ({(F64_REM_W){nxt_rt_dig_0[1][2]}} & nxt_f_r_c_spec_s1_0[2])
+	| ({(F64_REM_W){nxt_rt_dig_0[1][1]}} & nxt_f_r_c_spec_s1_0[1])
+	| ({(F64_REM_W){nxt_rt_dig_0[1][0]}} & nxt_f_r_c_spec_s1_0[0]);
 
-assign nxt_f_r_s_1[1] = 
-  ({(F32_REM_W){nxt_rt_dig_1[1][4]}} & nxt_f_r_s_spec_s1_1[4])
-| ({(F32_REM_W){nxt_rt_dig_1[1][3]}} & nxt_f_r_s_spec_s1_1[3])
-| ({(F32_REM_W){nxt_rt_dig_1[1][2]}} & nxt_f_r_s_spec_s1_1[2])
-| ({(F32_REM_W){nxt_rt_dig_1[1][1]}} & nxt_f_r_s_spec_s1_1[1])
-| ({(F32_REM_W){nxt_rt_dig_1[1][0]}} & nxt_f_r_s_spec_s1_1[0]);
+	assign nxt_f_r_c_1[1] = 
+	  ({(F32_REM_W){nxt_rt_dig_1[1][4]}} & nxt_f_r_c_spec_s1_1[4])
+	| ({(F32_REM_W){nxt_rt_dig_1[1][3]}} & nxt_f_r_c_spec_s1_1[3])
+	| ({(F32_REM_W){nxt_rt_dig_1[1][2]}} & nxt_f_r_c_spec_s1_1[2])
+	| ({(F32_REM_W){nxt_rt_dig_1[1][1]}} & nxt_f_r_c_spec_s1_1[1])
+	| ({(F32_REM_W){nxt_rt_dig_1[1][0]}} & nxt_f_r_c_spec_s1_1[0]);
 
-assign nxt_f_r_s_2[1] = 
-  ({(F16_REM_W){nxt_rt_dig_2[1][4]}} & nxt_f_r_s_spec_s1_2[4])
-| ({(F16_REM_W){nxt_rt_dig_2[1][3]}} & nxt_f_r_s_spec_s1_2[3])
-| ({(F16_REM_W){nxt_rt_dig_2[1][2]}} & nxt_f_r_s_spec_s1_2[2])
-| ({(F16_REM_W){nxt_rt_dig_2[1][1]}} & nxt_f_r_s_spec_s1_2[1])
-| ({(F16_REM_W){nxt_rt_dig_2[1][0]}} & nxt_f_r_s_spec_s1_2[0]);
+	assign nxt_f_r_c_2[1] = 
+	  ({(F16_REM_W){nxt_rt_dig_2[1][4]}} & nxt_f_r_c_spec_s1_2[4])
+	| ({(F16_REM_W){nxt_rt_dig_2[1][3]}} & nxt_f_r_c_spec_s1_2[3])
+	| ({(F16_REM_W){nxt_rt_dig_2[1][2]}} & nxt_f_r_c_spec_s1_2[2])
+	| ({(F16_REM_W){nxt_rt_dig_2[1][1]}} & nxt_f_r_c_spec_s1_2[1])
+	| ({(F16_REM_W){nxt_rt_dig_2[1][0]}} & nxt_f_r_c_spec_s1_2[0]);
 
-assign nxt_f_r_s_3[1] = 
-  ({(F16_REM_W){nxt_rt_dig_3[1][4]}} & nxt_f_r_s_spec_s1_3[4])
-| ({(F16_REM_W){nxt_rt_dig_3[1][3]}} & nxt_f_r_s_spec_s1_3[3])
-| ({(F16_REM_W){nxt_rt_dig_3[1][2]}} & nxt_f_r_s_spec_s1_3[2])
-| ({(F16_REM_W){nxt_rt_dig_3[1][1]}} & nxt_f_r_s_spec_s1_3[1])
-| ({(F16_REM_W){nxt_rt_dig_3[1][0]}} & nxt_f_r_s_spec_s1_3[0]);
+	assign nxt_f_r_c_3[1] = 
+	  ({(F16_REM_W){nxt_rt_dig_3[1][4]}} & nxt_f_r_c_spec_s1_3[4])
+	| ({(F16_REM_W){nxt_rt_dig_3[1][3]}} & nxt_f_r_c_spec_s1_3[3])
+	| ({(F16_REM_W){nxt_rt_dig_3[1][2]}} & nxt_f_r_c_spec_s1_3[2])
+	| ({(F16_REM_W){nxt_rt_dig_3[1][1]}} & nxt_f_r_c_spec_s1_3[1])
+	| ({(F16_REM_W){nxt_rt_dig_3[1][0]}} & nxt_f_r_c_spec_s1_3[0]);
 
+end else if(S1_CSA_MERGED == 0) begin
 
-assign nxt_f_r_c_0[1] = 
-  ({(F64_REM_W){nxt_rt_dig_0[1][4]}} & nxt_f_r_c_spec_s1_0[4])
-| ({(F64_REM_W){nxt_rt_dig_0[1][3]}} & nxt_f_r_c_spec_s1_0[3])
-| ({(F64_REM_W){nxt_rt_dig_0[1][2]}} & nxt_f_r_c_spec_s1_0[2])
-| ({(F64_REM_W){nxt_rt_dig_0[1][1]}} & nxt_f_r_c_spec_s1_0[1])
-| ({(F64_REM_W){nxt_rt_dig_0[1][0]}} & nxt_f_r_c_spec_s1_0[0]);
+	// DO CSA after nxt_rt_dig_x[1] is available
+	assign nxt_f_r_s_0[1] = 
+	  f_r_s_for_csa_0[1]
+	^ f_r_c_for_csa_0[1]
+	^ sqrt_csa_val_0[1];
+	assign nxt_f_r_c_pre_0[1] = {
+		  (f_r_s_for_csa_0[1][(F64_REM_W-1)-1:0] & f_r_c_for_csa_0[1][(F64_REM_W-1)-1:0])
+		| (f_r_s_for_csa_0[1][(F64_REM_W-1)-1:0] & sqrt_csa_val_0[1][(F64_REM_W-1)-1:0])
+		| (f_r_c_for_csa_0[1][(F64_REM_W-1)-1:0] & sqrt_csa_val_0[1][(F64_REM_W-1)-1:0]),
+		nxt_rt_dig_0[1][0] | nxt_rt_dig_0[1][1]
+	};
+	assign nxt_f_r_c_0[1] = {
+		nxt_f_r_c_pre_0[1][55:41],
+		fp_fmt_i[0] ? (nxt_rt_dig_0[1][0] | nxt_rt_dig_0[1][1]) : nxt_f_r_c_pre_0[1][40],
+		nxt_f_r_c_pre_0[1][39:29],
+		fp_fmt_i[1] ? (nxt_rt_dig_0[1][0] | nxt_rt_dig_0[1][1]) : nxt_f_r_c_pre_0[1][28],
+		nxt_f_r_c_pre_0[1][27:0]
+	};
 
-assign nxt_f_r_c_1[1] = 
-  ({(F32_REM_W){nxt_rt_dig_1[1][4]}} & nxt_f_r_c_spec_s1_1[4])
-| ({(F32_REM_W){nxt_rt_dig_1[1][3]}} & nxt_f_r_c_spec_s1_1[3])
-| ({(F32_REM_W){nxt_rt_dig_1[1][2]}} & nxt_f_r_c_spec_s1_1[2])
-| ({(F32_REM_W){nxt_rt_dig_1[1][1]}} & nxt_f_r_c_spec_s1_1[1])
-| ({(F32_REM_W){nxt_rt_dig_1[1][0]}} & nxt_f_r_c_spec_s1_1[0]);
+	assign nxt_f_r_s_1[1] = 
+	  f_r_s_for_csa_1[1]
+	^ f_r_c_for_csa_1[1]
+	^ sqrt_csa_val_1[1];
+	assign nxt_f_r_c_pre_1[1] = {
+		  (f_r_s_for_csa_1[1][(F32_REM_W-1)-1:0] & f_r_c_for_csa_1[1][(F32_REM_W-1)-1:0])
+		| (f_r_s_for_csa_1[1][(F32_REM_W-1)-1:0] & sqrt_csa_val_1[1][(F32_REM_W-1)-1:0])
+		| (f_r_c_for_csa_1[1][(F32_REM_W-1)-1:0] & sqrt_csa_val_1[1][(F32_REM_W-1)-1:0]),
+		nxt_rt_dig_1[1][0] | nxt_rt_dig_1[1][1]
+	};
+	assign nxt_f_r_c_1[1] = {
+		nxt_f_r_c_pre_1[1][27:13],
+		fp_fmt_i[0] ? (nxt_rt_dig_1[1][0] | nxt_rt_dig_1[1][1]) : nxt_f_r_c_pre_1[1][12],
+		nxt_f_r_c_pre_1[1][11:0]
+	};
 
-assign nxt_f_r_c_2[1] = 
-  ({(F16_REM_W){nxt_rt_dig_2[1][4]}} & nxt_f_r_c_spec_s1_2[4])
-| ({(F16_REM_W){nxt_rt_dig_2[1][3]}} & nxt_f_r_c_spec_s1_2[3])
-| ({(F16_REM_W){nxt_rt_dig_2[1][2]}} & nxt_f_r_c_spec_s1_2[2])
-| ({(F16_REM_W){nxt_rt_dig_2[1][1]}} & nxt_f_r_c_spec_s1_2[1])
-| ({(F16_REM_W){nxt_rt_dig_2[1][0]}} & nxt_f_r_c_spec_s1_2[0]);
+	assign nxt_f_r_s_2[1] = 
+	  f_r_s_for_csa_2[1]
+	^ f_r_c_for_csa_2[1]
+	^ sqrt_csa_val_2[1];
+	assign nxt_f_r_c_pre_2[1] = {
+		  (f_r_s_for_csa_2[1][(F16_REM_W-1)-1:0] & f_r_c_for_csa_2[1][(F16_REM_W-1)-1:0])
+		| (f_r_s_for_csa_2[1][(F16_REM_W-1)-1:0] & sqrt_csa_val_2[1][(F16_REM_W-1)-1:0])
+		| (f_r_c_for_csa_2[1][(F16_REM_W-1)-1:0] & sqrt_csa_val_2[1][(F16_REM_W-1)-1:0]),
+		nxt_rt_dig_2[1][0] | nxt_rt_dig_2[1][1]
+	};
+	assign nxt_f_r_c_2[1] = nxt_f_r_c_pre_2[1];
 
-assign nxt_f_r_c_3[1] = 
-  ({(F16_REM_W){nxt_rt_dig_3[1][4]}} & nxt_f_r_c_spec_s1_3[4])
-| ({(F16_REM_W){nxt_rt_dig_3[1][3]}} & nxt_f_r_c_spec_s1_3[3])
-| ({(F16_REM_W){nxt_rt_dig_3[1][2]}} & nxt_f_r_c_spec_s1_3[2])
-| ({(F16_REM_W){nxt_rt_dig_3[1][1]}} & nxt_f_r_c_spec_s1_3[1])
-| ({(F16_REM_W){nxt_rt_dig_3[1][0]}} & nxt_f_r_c_spec_s1_3[0]);
+	assign nxt_f_r_s_3[1] = 
+	  f_r_s_for_csa_3[1]
+	^ f_r_c_for_csa_3[1]
+	^ sqrt_csa_val_3[1];
+	assign nxt_f_r_c_pre_3[1] = {
+		  (f_r_s_for_csa_3[1][(F16_REM_W-1)-1:0] & f_r_c_for_csa_3[1][(F16_REM_W-1)-1:0])
+		| (f_r_s_for_csa_3[1][(F16_REM_W-1)-1:0] & sqrt_csa_val_3[1][(F16_REM_W-1)-1:0])
+		| (f_r_c_for_csa_3[1][(F16_REM_W-1)-1:0] & sqrt_csa_val_3[1][(F16_REM_W-1)-1:0]),
+		nxt_rt_dig_3[1][0] | nxt_rt_dig_3[1][1]
+	};
+	assign nxt_f_r_c_3[1] = nxt_f_r_c_pre_3[1];
+	
+end
+endgenerate
+
+// For MERGED REM, the width is 70, the meaning of different positions:
+// [69:54]
+// f16: f16_0.rem[15: 0]
+// f32: f32_0.rem[27:12]
+// f64: f64_0.rem[55:40]
+// [53:52]
+// f16: 2'b0
+// f32: f32_0.rem[11:10]
+// f64: f64_0.rem[39:38]
+// [51:36]
+// f16: f16_2.rem[15: 0]
+// f32: f32_0.rem[ 9: 0], 6'b0
+// f64: f64_0.rem[37:22]
+// [35:34]
+// f16: 2'b0
+// f32: 2'b0
+// f64: f64_0.rem[21:20]
+// [33:18]
+// f16: f16_1.rem[15: 0]
+// f32: f32_1.rem[27:12]
+// f64: f64_0.rem[19: 4]
+// [17:16]
+// f16: 2'b0
+// f32: f32_1.rem[11:10]
+// f64: f64_0.rem[ 3: 2]
+// [15: 0]
+// f16: f16_3.rem[15: 0]
+// f32: f32_1.rem[ 9: 0], 6'b0
+// f64: f64_0.rem[ 1: 0], 14'b0
 
 // For NOT_MERGED REM, the width is 64, the meaning of different positions:
 // [63:48]
@@ -3335,25 +3778,61 @@ assign nxt_f_r_c_3[1] =
 // f32: f32_1.rem[11: 0], 4'b0
 // f64: f64_0.rem[ 7: 0], 8'b0
 
-assign nxt_f_r_s_o = 
-  ({(REM_W){fp_fmt_i[0]}} & {
-	nxt_f_r_s_0[1][F64_REM_W-1 -: F16_REM_W],
-	nxt_f_r_s_2[1],
-	nxt_f_r_s_1[1][F32_REM_W-1 -: F16_REM_W],
-	nxt_f_r_s_3[1]
-})
-| ({(REM_W){fp_fmt_i[1]}} & {nxt_f_r_s_0[1][F64_REM_W-1 -: F32_REM_W], 4'b0, nxt_f_r_s_1[1], 4'b0})
-| ({(REM_W){fp_fmt_i[2]}} & {nxt_f_r_s_0[1], 8'b0});
+generate
+if(S0_CSA_IS_MERGED == 1) begin
 
-assign nxt_f_r_c_o = 
-  ({(REM_W){fp_fmt_i[0]}} & {
-	nxt_f_r_c_0[1][F64_REM_W-1 -: F16_REM_W],
-	nxt_f_r_c_2[1],
-	nxt_f_r_c_1[1][F32_REM_W-1 -: F16_REM_W],
-	nxt_f_r_c_3[1]
-})
-| ({(REM_W){fp_fmt_i[1]}} & {nxt_f_r_c_0[1][F64_REM_W-1 -: F32_REM_W], 4'b0, nxt_f_r_c_1[1], 4'b0})
-| ({(REM_W){fp_fmt_i[2]}} & {nxt_f_r_c_0[1], 8'b0});
+	assign nxt_f_r_s_o = 
+	  ({(REM_W){fp_fmt_i[0]}} & {
+		nxt_f_r_s_0[1][F64_REM_W-1 -: F16_REM_W],
+		2'b0,
+		nxt_f_r_s_2[1],
+		2'b0,
+		nxt_f_r_s_1[1][F32_REM_W-1 -: F16_REM_W],
+		2'b0,
+		nxt_f_r_s_3[1]
+	})
+	| ({(REM_W){fp_fmt_i[1]}} & {nxt_f_r_s_0[1][F64_REM_W-1 -: F32_REM_W], 6'b0, 2'b0, nxt_f_r_s_1[1], 6'b0})
+	| ({(REM_W){fp_fmt_i[2]}} & {nxt_f_r_s_0[1], 14'b0});
+
+	assign nxt_f_r_c_o = 
+	  ({(REM_W){fp_fmt_i[0]}} & {
+		nxt_f_r_c_0[1][F64_REM_W-1 -: F16_REM_W],
+		2'b0,
+		nxt_f_r_c_2[1],
+		2'b0,
+		nxt_f_r_c_1[1][F32_REM_W-1 -: F16_REM_W],
+		2'b0,
+		nxt_f_r_c_3[1]
+	})
+	| ({(REM_W){fp_fmt_i[1]}} & {nxt_f_r_c_0[1][F64_REM_W-1 -: F32_REM_W], 6'b0, 2'b0, nxt_f_r_c_1[1], 6'b0})
+	| ({(REM_W){fp_fmt_i[2]}} & {nxt_f_r_c_0[1], 14'b0});
+
+end else begin
+
+	assign nxt_f_r_s_o = 
+	  ({(REM_W){fp_fmt_i[0]}} & {
+		nxt_f_r_s_0[1][F64_REM_W-1 -: F16_REM_W],
+		nxt_f_r_s_2[1],
+		nxt_f_r_s_1[1][F32_REM_W-1 -: F16_REM_W],
+		nxt_f_r_s_3[1]
+	})
+	| ({(REM_W){fp_fmt_i[1]}} & {nxt_f_r_s_0[1][F64_REM_W-1 -: F32_REM_W], 4'b0, nxt_f_r_s_1[1], 4'b0})
+	| ({(REM_W){fp_fmt_i[2]}} & {nxt_f_r_s_0[1], 8'b0});
+
+	assign nxt_f_r_c_o = 
+	  ({(REM_W){fp_fmt_i[0]}} & {
+		nxt_f_r_c_0[1][F64_REM_W-1 -: F16_REM_W],
+		nxt_f_r_c_2[1],
+		nxt_f_r_c_1[1][F32_REM_W-1 -: F16_REM_W],
+		nxt_f_r_c_3[1]
+	})
+	| ({(REM_W){fp_fmt_i[1]}} & {nxt_f_r_c_0[1][F64_REM_W-1 -: F32_REM_W], 4'b0, nxt_f_r_c_1[1], 4'b0})
+	| ({(REM_W){fp_fmt_i[2]}} & {nxt_f_r_c_0[1], 8'b0});
+
+end
+endgenerate
+
+
 
 
 

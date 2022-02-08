@@ -14,9 +14,9 @@ vmap work ./lib/work
 set RAND_SEED [expr {int(rand() * 999999999)}]
 set TEST_LEVEL 1
 set MAX_ERROR_COUNT 10
-set FP64_TEST_NUM [expr {int(pow(2, 17))}]
-set FP32_TEST_NUM [expr {int(pow(2, 17))}]
-set FP16_TEST_NUM [expr {int(pow(2, 17))}]
+set FP64_TEST_NUM [expr {int(pow(2, 18))}]
+set FP32_TEST_NUM [expr {int(pow(2, 18))}]
+set FP16_TEST_NUM [expr {int(pow(2, 18))}]
 
 # Add this definition to test "res_is_sqrt_2" function
 # TEST_OP_IS_POWER_OF_2
@@ -37,7 +37,10 @@ configure wave -signalnamewidth 1
 configure wave -timelineunits ns
 
 # Display waves ??
+# Use this when S1_QDS_SPECULATIVE = 0
 # do wave.do
+# Use this when S1_QDS_SPECULATIVE = 1
+# do wave_s1_spec_qds.do
 
 run -all
 

@@ -3,7 +3,7 @@
 // Author				: HYF
 // How to Contact		: hyf_sysu@qq.com
 // Created Time    		: 2022-02-01 19:52:28
-// Last Modified Time   : 2022-02-07 20:22:49
+// Last Modified Time   : 2022-02-08 09:27:25
 // ========================================================================================================
 // Description	:
 // A high performance Vector Floating Point Square-Root module, based on Radix-16 SRT algorithm.
@@ -651,8 +651,10 @@ logic [7-1:0] m_pos_2_to_nxt_cycle_1;
 logic [7-1:0] m_pos_2_to_nxt_cycle_2;
 logic [7-1:0] m_pos_2_to_nxt_cycle_3;
 
+logic [REM_W-1:0] nr_f_r_merged;
 logic [(((F16_REM_W + 1) * 3) + F16_REM_W)-1:0] nr_f_r;
 logic [(((F16_REM_W + 1) * 3) + F16_REM_W)-1:0] nr_f_r_adder_in [2-1:0];
+
 // 64 - 2 = 62
 // 70 - 2 = 68
 logic [(REM_W-2)-1:0] f_r_xor;
@@ -668,9 +670,9 @@ logic select_rt_m1_1;
 logic select_rt_m1_2;
 logic select_rt_m1_3;
 
-logic res_is_sqrt_2_f64;
-logic res_is_sqrt_2_f32;
-logic res_is_sqrt_2_f16;
+logic f64_res_is_sqrt_2;
+logic f32_res_is_sqrt_2;
+logic f16_res_is_sqrt_2;
 logic [56-1:0] rt_for_inc;
 logic [F64_FRAC_W-1:0] rt_before_round;
 logic [F64_FRAC_W-1:0] rt_m1_before_round;
@@ -1015,7 +1017,6 @@ assign early_finish =
 	(fp_format_i == 2'd0) ? (res_is_nan_3_d | res_is_inf_3_d | res_is_exact_zero_3_d | op_frac_is_zero_3) : 
 	(res_is_nan_1_d | res_is_inf_1_d | res_is_exact_zero_1_d | op_frac_is_zero_1)
 ));
-// assign early_finish = '0;
 
 // v_mode: Always use 2 cycles for init operation.
 // s_mode: Use 2 cycles for init operation when the input operand is a denormal number.
@@ -1415,12 +1416,11 @@ fsm_q[FSM_PRE_1_BIT] ? {1'b1, 12'b0} :
 // f64: f64_0.rem[ 7: 0], 8'b0
 
 generate
-if(S0_CSA_IS_MERGED) begin: g_merged_rem_init
+if(S0_CSA_IS_MERGED == 1) begin: g_merged_rem_init
 
 	assign f_r_s_iter_init[69:54] = f_r_s_iter_init_0[55:40];
 
 	// When(f16), f_r_s_iter_init_0[39:38] must be 2'b00 -> So we don't need a MUX logic here
-	// assign f_r_s_iter_init[53:52] = (fsm_q[FSM_PRE_0_BIT] | fp_fmt_q[2] | fp_fmt_q[1]) ? f_r_s_iter_init_0[39:38] : 2'b00;
 	assign f_r_s_iter_init[53:52] = f_r_s_iter_init_0[39:38];
 
 	// When(f32), f_r_s_iter_init_0[27:22] must be 6'b0 -> So we don't need a MUX logic here
@@ -1858,7 +1858,6 @@ fpsqrt_r16_block #(
 // The algorithm we use is "Minimally Redundant Radix 4", and its redundnat factor is 2/3.
 // So we must have "|rem| <= D * (2/3)" -> when (nr_f_r < 0), the "positive rem" must be NON_ZERO
 // Which means we don't have to calculate "nr_f_r_plus_d"
-
 assign nr_f_r_adder_in[0] = {
 	f_r_s_q[63:48],
 	~fp_fmt_q[0],
@@ -1879,6 +1878,56 @@ assign nr_f_r_adder_in[1] = {
 };
 assign nr_f_r = nr_f_r_adder_in[0] + nr_f_r_adder_in[1];
 
+assign nr_f_r_merged = f_r_s_q + f_r_c_q;
+
+// For MERGED REM, the width is 70, the meaning of different positions:
+// [69:54]
+// f16: f16_0.rem[15: 0]
+// f32: f32_0.rem[27:12]
+// f64: f64_0.rem[55:40]
+// [53:52]
+// f16: 2'b0
+// f32: f32_0.rem[11:10]
+// f64: f64_0.rem[39:38]
+// [51:36]
+// f16: f16_2.rem[15: 0]
+// f32: f32_0.rem[ 9: 0], 6'b0
+// f64: f64_0.rem[37:22]
+// [35:34]
+// f16: 2'b0
+// f32: 2'b0
+// f64: f64_0.rem[21:20]
+// [33:18]
+// f16: f16_1.rem[15: 0]
+// f32: f32_1.rem[27:12]
+// f64: f64_0.rem[19: 4]
+// [17:16]
+// f16: 2'b0
+// f32: f32_1.rem[11:10]
+// f64: f64_0.rem[ 3: 2]
+// [15: 0]
+// f16: f16_3.rem[15: 0]
+// f32: f32_1.rem[ 9: 0], 6'b0
+// f64: f64_0.rem[ 1: 0], 14'b0
+
+// For xor/or[67:0], the fields that are used to tell whether "nr_f_r == 0" for different fp_fmts:
+// f16
+// [67:54]: f16_0
+// [53:50]: Not used when(f16)
+// [49:36]: f16_2
+// [35:32]: Not used when(f16)
+// [31:18]: f16_1
+// [17:14]: Not used when(f16)
+// [13: 0]: f16_3
+// f32
+// [67:42]: f32_0
+// [41:32]: Not used when(f32)
+// [31: 6]: f32_1
+// [ 5: 0]: Not used when(f32)
+// f64
+// [67:14]: f64_0
+// [13: 0]: Not used when(f64)
+
 // For NOT_MERGED REM, the width is 64, the meaning of different positions:
 // [63:48]
 // f16: f16_0.rem[15: 0]
@@ -1897,7 +1946,7 @@ assign nr_f_r = nr_f_r_adder_in[0] + nr_f_r_adder_in[1];
 // f32: f32_1.rem[11: 0], 4'b0
 // f64: f64_0.rem[ 7: 0], 8'b0
 
-// For xor_or[61:0], the fields that are used to tell whether "nr_f_r == 0" for different fp_fmts:
+// For xor/or[61:0], the fields that are used to tell whether "nr_f_r == 0" for different fp_fmts:
 // f16
 // [61:48]: f16_0
 // [47:46]: Not used when(f16)
@@ -1917,35 +1966,63 @@ assign nr_f_r = nr_f_r_adder_in[0] + nr_f_r_adder_in[1];
 assign f_r_xor = f_r_s_q[(REM_W-1)-1:1] ^ f_r_c_q[(REM_W-1)-1:1];
 assign f_r_or  = f_r_s_q[(REM_W-1)-2:0] | f_r_c_q[(REM_W-1)-2:0];
 
-// I hope the EDA could extract the common part of "!=" calculation and do some area reduction work...
-assign rem_is_not_zero_0 = nr_f_r[66] | (
-	  (f_r_xor[61:48] != f_r_or[61:48])
-	| (fp_fmt_q[1] & (f_r_xor[47:36] != f_r_or[47:36]))
-	| (fp_fmt_q[2] & (f_r_xor[35: 8] != f_r_or[35: 8]))
-);
-assign rem_is_not_zero_1 = nr_f_r[32] | (
-	  (f_r_xor[29:16] != f_r_or[29:16])
-	| (fp_fmt_q[1] & (f_r_xor[15:4] != f_r_or[15:4]))
-);
-assign rem_is_not_zero_2 = nr_f_r[49] | (f_r_xor[45:32] != f_r_or[45:32]);
-assign rem_is_not_zero_3 = nr_f_r[15] | (f_r_xor[13: 0] != f_r_or[13: 0]);
+generate
+if(S0_CSA_IS_MERGED == 1) begin
 
-// *_2 is only used in vector_mode, so it has nothing to do with "res_is_sqrt_2"
-assign select_rt_m1_0 = nr_f_r[66] & ~res_is_sqrt_2_q;
-assign select_rt_m1_1 = nr_f_r[32] & ~res_is_sqrt_2_q;
-assign select_rt_m1_2 = nr_f_r[49];
-assign select_rt_m1_3 = nr_f_r[15] & ~res_is_sqrt_2_q;
+	// I hope the EDA could extract the common part of "!=" calculation and do some area reduction work...
+	assign rem_is_not_zero_0 = nr_f_r_merged[69] | (
+		  (f_r_xor[67:54] != f_r_or[67:54])
+		| (fp_fmt_q[1] & (f_r_xor[53:42] != f_r_or[53:42]))
+		| (fp_fmt_q[2] & (f_r_xor[41:14] != f_r_or[41:14]))
+	);
+	assign rem_is_not_zero_1 = nr_f_r_merged[33] | (
+		  (f_r_xor[31:18] != f_r_or[31:18])
+		| (fp_fmt_q[1] & (f_r_xor[17:6] != f_r_or[17:6]))
+	);
+	assign rem_is_not_zero_2 = nr_f_r_merged[51] | (f_r_xor[49:36] != f_r_or[49:36]);
+	assign rem_is_not_zero_3 = nr_f_r_merged[15] | (f_r_xor[13: 0] != f_r_or[13: 0]);
 
-assign res_is_sqrt_2_f64 = res_is_sqrt_2_q & fp_fmt_q[2];
-assign res_is_sqrt_2_f32 = res_is_sqrt_2_q & fp_fmt_q[1];
-assign res_is_sqrt_2_f16 = res_is_sqrt_2_q & fp_fmt_q[0];
+	// *_2 is only used in vector_mode, so it has nothing to do with "res_is_sqrt_2"
+	assign select_rt_m1_0 = nr_f_r_merged[69] & ~res_is_sqrt_2_q;
+	assign select_rt_m1_1 = nr_f_r_merged[33] & ~res_is_sqrt_2_q;
+	assign select_rt_m1_2 = nr_f_r_merged[51];
+	assign select_rt_m1_3 = nr_f_r_merged[15] & ~res_is_sqrt_2_q;
+
+end else begin
+
+	// I hope the EDA could extract the common part of "!=" calculation and do some area reduction work...
+	assign rem_is_not_zero_0 = nr_f_r[66] | (
+		  (f_r_xor[61:48] != f_r_or[61:48])
+		| (fp_fmt_q[1] & (f_r_xor[47:36] != f_r_or[47:36]))
+		| (fp_fmt_q[2] & (f_r_xor[35: 8] != f_r_or[35: 8]))
+	);
+	assign rem_is_not_zero_1 = nr_f_r[32] | (
+		  (f_r_xor[29:16] != f_r_or[29:16])
+		| (fp_fmt_q[1] & (f_r_xor[15:4] != f_r_or[15:4]))
+	);
+	assign rem_is_not_zero_2 = nr_f_r[49] | (f_r_xor[45:32] != f_r_or[45:32]);
+	assign rem_is_not_zero_3 = nr_f_r[15] | (f_r_xor[13: 0] != f_r_or[13: 0]);
+
+	// *_2 is only used in vector_mode, so it has nothing to do with "res_is_sqrt_2"
+	assign select_rt_m1_0 = nr_f_r[66] & ~res_is_sqrt_2_q;
+	assign select_rt_m1_1 = nr_f_r[32] & ~res_is_sqrt_2_q;
+	assign select_rt_m1_2 = nr_f_r[49];
+	assign select_rt_m1_3 = nr_f_r[15] & ~res_is_sqrt_2_q;
+
+end
+endgenerate
+
+
+
+assign f64_res_is_sqrt_2 = res_is_sqrt_2_q & fp_fmt_q[2];
+assign f32_res_is_sqrt_2 = res_is_sqrt_2_q & fp_fmt_q[1];
+assign f16_res_is_sqrt_2 = res_is_sqrt_2_q & fp_fmt_q[0];
 
 assign rt_for_inc = res_is_sqrt_2_q ? (
-	  ({(56){res_is_sqrt_2_f64}} & {SQRT_2_WITH_ROUND_BIT, rt_q[1:0]})
-	| ({(56){res_is_sqrt_2_f32}} & {rt_q[55:28], SQRT_2_WITH_ROUND_BIT[53 -: 25], rt_q[2:0]})
-	| ({(56){res_is_sqrt_2_f16}} & {rt_q[55:14], SQRT_2_WITH_ROUND_BIT[53 -: 12], rt_q[1:0]})
+	  ({(56){f64_res_is_sqrt_2}} & {SQRT_2_WITH_ROUND_BIT, rt_q[1:0]})
+	| ({(56){f32_res_is_sqrt_2}} & {rt_q[55:28], SQRT_2_WITH_ROUND_BIT[53 -: 25], rt_q[2:0]})
+	| ({(56){f16_res_is_sqrt_2}} & {rt_q[55:14], SQRT_2_WITH_ROUND_BIT[53 -: 12], rt_q[1:0]})
 ) : rt_q;
-
 
 
 // f64
@@ -2028,18 +2105,6 @@ assign guard_bit_rt_m1_1 =
 assign guard_bit_rt_m1_2 = rt_m1_q[30];
 assign guard_bit_rt_m1_3 = rt_m1_q[4];
 
-
-// assign rt_m1_inc_res_0 = 
-//   ({(53){fp_fmt_q[0]}} & ((rt_m1_pre_inc_0[42] == rt_pre_inc[42]) ? rt_inc_res : {1'b0, rt_pre_inc}))
-// | ({(53){fp_fmt_q[1]}} & ((rt_m1_pre_inc_0[29] == rt_pre_inc[29]) ? rt_inc_res : {1'b0, rt_pre_inc}))
-// | ({(53){fp_fmt_q[2]}} & ((rt_m1_pre_inc_0[ 0] == rt_pre_inc[ 0]) ? rt_inc_res : {1'b0, rt_pre_inc}));
-
-// assign rt_m1_inc_res_1 = 
-//   ({(53){fp_fmt_q[0]}} & ((rt_m1_pre_inc_1[13] == rt_pre_inc[14]) ? rt_inc_res[24:1] : {1'b0, rt_pre_inc[23:1]}))
-// | ({(53){fp_fmt_q[1]}} & ((rt_m1_pre_inc_1[ 0] == rt_pre_inc[ 1]) ? rt_inc_res[24:1] : {1'b0, rt_pre_inc[23:1]}));
-
-// assign rt_m1_inc_res_2 = (rt_m1_pre_inc_2[0] == rt_pre_inc[28]) ? rt_inc_res[38:28] : {1'b0, rt_pre_inc[37:28]};
-// assign rt_m1_inc_res_3 = (rt_m1_pre_inc_3[0] == rt_pre_inc[ 0]) ? rt_inc_res[10: 0] : {1'b0, rt_pre_inc[ 9: 0]};
 
 assign rt_m1_inc_res_0 = (guard_bit_rt_0 == guard_bit_rt_m1_0) ? rt_inc_res        : {1'b0, rt_pre_inc};
 assign rt_m1_inc_res_1 = (guard_bit_rt_1 == guard_bit_rt_m1_1) ? rt_inc_res[24: 1] : {1'b0, rt_pre_inc[23: 1]};

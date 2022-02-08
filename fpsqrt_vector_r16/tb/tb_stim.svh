@@ -3,7 +3,7 @@
 // Author				: HYF
 // How to Contact		: hyf_sysu@qq.com
 // Created Time    		: 2022-02-01 19:52:28
-// Last Modified Time   : 2022-02-07 20:22:25
+// Last Modified Time   : 2022-02-08 15:17:52
 // ========================================================================================================
 // Description	:
 // 
@@ -107,6 +107,33 @@ vector_mode = 1;
 // fpsqrt_op[62:52] = 1023 + 1;
 // fpsqrt_op[51:0] = 52'b1101100111000000000000000000000000000000000000000000;
 // `SINGLE_STIM
+
+
+// fp_format = 2'd2;
+// rm = 4;
+// fpsqrt_op[63:0] = 64'h157E8B472EBEEBF0;
+// `SINGLE_STIM
+
+// rm = 3;
+// fpsqrt_op[63:0] = 64'h0B4606D004C6808C;
+// `SINGLE_STIM
+
+// rm = 2;
+// fpsqrt_op[63:0] = 64'h53D92DF27EECE5A3;
+// `SINGLE_STIM
+
+// rm = 2;
+// fpsqrt_op[63:0] = 64'h4971967D28D405A2;
+// `SINGLE_STIM
+
+// rm = 4;
+// fpsqrt_op[63:0] = 64'h70C9709246C5A015;
+// `SINGLE_STIM
+
+// rm = 4;
+// fpsqrt_op[63:0] = 64'h0C474BAE0EDC389F;
+// `SINGLE_STIM
+
 
 
 

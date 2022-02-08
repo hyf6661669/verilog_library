@@ -57,14 +57,14 @@ add wave -position insertpoint -group DECODE sim:/tb_top/u_dut/op_frac_is_zero_3
 add wave -position insertpoint -group DECODE sim:/tb_top/u_dut/res_is_sqrt_2_d
 
 
-add wave -position insertpoint -expand -group Normalization sim:/tb_top/u_dut/op_frac_pre_shifted_0
-add wave -position insertpoint -expand -group Normalization -radix unsigned sim:/tb_top/u_dut/op_l_shift_num_0
-add wave -position insertpoint -expand -group Normalization sim:/tb_top/u_dut/op_frac_pre_shifted_1
-add wave -position insertpoint -expand -group Normalization -radix unsigned sim:/tb_top/u_dut/op_l_shift_num_1
-add wave -position insertpoint -expand -group Normalization sim:/tb_top/u_dut/op_frac_pre_shifted_2
-add wave -position insertpoint -expand -group Normalization -radix unsigned sim:/tb_top/u_dut/op_l_shift_num_2
-add wave -position insertpoint -expand -group Normalization sim:/tb_top/u_dut/op_frac_pre_shifted_3
-add wave -position insertpoint -expand -group Normalization -radix unsigned sim:/tb_top/u_dut/op_l_shift_num_3
+add wave -position insertpoint -group Normalization sim:/tb_top/u_dut/op_frac_pre_shifted_0
+add wave -position insertpoint -group Normalization -radix unsigned sim:/tb_top/u_dut/op_l_shift_num_0
+add wave -position insertpoint -group Normalization sim:/tb_top/u_dut/op_frac_pre_shifted_1
+add wave -position insertpoint -group Normalization -radix unsigned sim:/tb_top/u_dut/op_l_shift_num_1
+add wave -position insertpoint -group Normalization sim:/tb_top/u_dut/op_frac_pre_shifted_2
+add wave -position insertpoint -group Normalization -radix unsigned sim:/tb_top/u_dut/op_l_shift_num_2
+add wave -position insertpoint -group Normalization sim:/tb_top/u_dut/op_frac_pre_shifted_3
+add wave -position insertpoint -group Normalization -radix unsigned sim:/tb_top/u_dut/op_l_shift_num_3
 
 
 add wave -position insertpoint -expand -group ROOT_1ST sim:/tb_top/u_dut/exp_is_odd_pre_0_0
@@ -104,22 +104,22 @@ add wave -position insertpoint -expand -group NR_F_R -radix binary sim:/tb_top/u
 add wave -position insertpoint -expand -group NR_F_R -radix binary sim:/tb_top/u_dut/nr_f_r_9b_for_nxt_cycle_s1_qds_2_q
 add wave -position insertpoint -expand -group NR_F_R -radix binary sim:/tb_top/u_dut/nr_f_r_9b_for_nxt_cycle_s1_qds_3_q
 
-add wave -position insertpoint -expand -group NXT_CYCLE_CONSTANTS -radix binary sim:/tb_top/u_dut/m_neg_1_for_nxt_cycle_s0_qds_0_q
-add wave -position insertpoint -expand -group NXT_CYCLE_CONSTANTS -radix binary sim:/tb_top/u_dut/m_neg_1_for_nxt_cycle_s0_qds_1_q
-add wave -position insertpoint -expand -group NXT_CYCLE_CONSTANTS -radix binary sim:/tb_top/u_dut/m_neg_1_for_nxt_cycle_s0_qds_2_q
-add wave -position insertpoint -expand -group NXT_CYCLE_CONSTANTS -radix binary sim:/tb_top/u_dut/m_neg_1_for_nxt_cycle_s0_qds_3_q
-add wave -position insertpoint -expand -group NXT_CYCLE_CONSTANTS -radix binary sim:/tb_top/u_dut/m_neg_0_for_nxt_cycle_s0_qds_0_q
-add wave -position insertpoint -expand -group NXT_CYCLE_CONSTANTS -radix binary sim:/tb_top/u_dut/m_neg_0_for_nxt_cycle_s0_qds_1_q
-add wave -position insertpoint -expand -group NXT_CYCLE_CONSTANTS -radix binary sim:/tb_top/u_dut/m_neg_0_for_nxt_cycle_s0_qds_2_q
-add wave -position insertpoint -expand -group NXT_CYCLE_CONSTANTS -radix binary sim:/tb_top/u_dut/m_neg_0_for_nxt_cycle_s0_qds_3_q
-add wave -position insertpoint -expand -group NXT_CYCLE_CONSTANTS -radix binary sim:/tb_top/u_dut/m_pos_1_for_nxt_cycle_s0_qds_0_q
-add wave -position insertpoint -expand -group NXT_CYCLE_CONSTANTS -radix binary sim:/tb_top/u_dut/m_pos_1_for_nxt_cycle_s0_qds_1_q
-add wave -position insertpoint -expand -group NXT_CYCLE_CONSTANTS -radix binary sim:/tb_top/u_dut/m_pos_1_for_nxt_cycle_s0_qds_2_q
-add wave -position insertpoint -expand -group NXT_CYCLE_CONSTANTS -radix binary sim:/tb_top/u_dut/m_pos_1_for_nxt_cycle_s0_qds_3_q
-add wave -position insertpoint -expand -group NXT_CYCLE_CONSTANTS -radix binary sim:/tb_top/u_dut/m_pos_2_for_nxt_cycle_s0_qds_0_q
-add wave -position insertpoint -expand -group NXT_CYCLE_CONSTANTS -radix binary sim:/tb_top/u_dut/m_pos_2_for_nxt_cycle_s0_qds_1_q
-add wave -position insertpoint -expand -group NXT_CYCLE_CONSTANTS -radix binary sim:/tb_top/u_dut/m_pos_2_for_nxt_cycle_s0_qds_2_q
-add wave -position insertpoint -expand -group NXT_CYCLE_CONSTANTS -radix binary sim:/tb_top/u_dut/m_pos_2_for_nxt_cycle_s0_qds_3_q
+add wave -position insertpoint -group NXT_CYCLE_CONSTANTS -radix binary sim:/tb_top/u_dut/m_neg_1_for_nxt_cycle_s0_qds_0_q
+add wave -position insertpoint -group NXT_CYCLE_CONSTANTS -radix binary sim:/tb_top/u_dut/m_neg_1_for_nxt_cycle_s0_qds_1_q
+add wave -position insertpoint -group NXT_CYCLE_CONSTANTS -radix binary sim:/tb_top/u_dut/m_neg_1_for_nxt_cycle_s0_qds_2_q
+add wave -position insertpoint -group NXT_CYCLE_CONSTANTS -radix binary sim:/tb_top/u_dut/m_neg_1_for_nxt_cycle_s0_qds_3_q
+add wave -position insertpoint -group NXT_CYCLE_CONSTANTS -radix binary sim:/tb_top/u_dut/m_neg_0_for_nxt_cycle_s0_qds_0_q
+add wave -position insertpoint -group NXT_CYCLE_CONSTANTS -radix binary sim:/tb_top/u_dut/m_neg_0_for_nxt_cycle_s0_qds_1_q
+add wave -position insertpoint -group NXT_CYCLE_CONSTANTS -radix binary sim:/tb_top/u_dut/m_neg_0_for_nxt_cycle_s0_qds_2_q
+add wave -position insertpoint -group NXT_CYCLE_CONSTANTS -radix binary sim:/tb_top/u_dut/m_neg_0_for_nxt_cycle_s0_qds_3_q
+add wave -position insertpoint -group NXT_CYCLE_CONSTANTS -radix binary sim:/tb_top/u_dut/m_pos_1_for_nxt_cycle_s0_qds_0_q
+add wave -position insertpoint -group NXT_CYCLE_CONSTANTS -radix binary sim:/tb_top/u_dut/m_pos_1_for_nxt_cycle_s0_qds_1_q
+add wave -position insertpoint -group NXT_CYCLE_CONSTANTS -radix binary sim:/tb_top/u_dut/m_pos_1_for_nxt_cycle_s0_qds_2_q
+add wave -position insertpoint -group NXT_CYCLE_CONSTANTS -radix binary sim:/tb_top/u_dut/m_pos_1_for_nxt_cycle_s0_qds_3_q
+add wave -position insertpoint -group NXT_CYCLE_CONSTANTS -radix binary sim:/tb_top/u_dut/m_pos_2_for_nxt_cycle_s0_qds_0_q
+add wave -position insertpoint -group NXT_CYCLE_CONSTANTS -radix binary sim:/tb_top/u_dut/m_pos_2_for_nxt_cycle_s0_qds_1_q
+add wave -position insertpoint -group NXT_CYCLE_CONSTANTS -radix binary sim:/tb_top/u_dut/m_pos_2_for_nxt_cycle_s0_qds_2_q
+add wave -position insertpoint -group NXT_CYCLE_CONSTANTS -radix binary sim:/tb_top/u_dut/m_pos_2_for_nxt_cycle_s0_qds_3_q
 
 add wave -position insertpoint -expand -group ROOT_PATH -radix binary sim:/tb_top/u_dut/mask_q
 add wave -position insertpoint -expand -group ROOT_PATH sim:/tb_top/u_dut/rt_iter_init
@@ -135,6 +135,14 @@ add wave -position insertpoint -expand -group REM_PATH sim:/tb_top/u_dut/f_r_s_q
 add wave -position insertpoint -expand -group REM_PATH sim:/tb_top/u_dut/f_r_c_q
 add wave -position insertpoint -expand -group REM_PATH sim:/tb_top/u_dut/nxt_f_r_s
 add wave -position insertpoint -expand -group REM_PATH sim:/tb_top/u_dut/nxt_f_r_c
+
+
+add wave -position insertpoint -group S0_MERGED_ITER sim:/tb_top/u_dut/u_fpsqrt_r16_block/f_r_s_for_csa_merged[0]
+add wave -position insertpoint -group S0_MERGED_ITER sim:/tb_top/u_dut/u_fpsqrt_r16_block/f_r_c_for_csa_merged[0]
+add wave -position insertpoint -group S0_MERGED_ITER sim:/tb_top/u_dut/u_fpsqrt_r16_block/sqrt_csa_val_merged[0]
+add wave -position insertpoint -group S0_MERGED_ITER sim:/tb_top/u_dut/u_fpsqrt_r16_block/nxt_f_r_s_merged[0]
+add wave -position insertpoint -group S0_MERGED_ITER sim:/tb_top/u_dut/u_fpsqrt_r16_block/nxt_f_r_c_merged_pre[0]
+add wave -position insertpoint -group S0_MERGED_ITER sim:/tb_top/u_dut/u_fpsqrt_r16_block/nxt_f_r_c_merged[0]
 
 
 add wave -position insertpoint -group S0_ITER sim:/tb_top/u_dut/u_fpsqrt_r16_block/mask_csa_ext[0]
@@ -233,7 +241,6 @@ add wave -position insertpoint -group S0_ITER sim:/tb_top/u_dut/u_fpsqrt_r16_blo
 add wave -position insertpoint -group S0_ITER sim:/tb_top/u_dut/u_fpsqrt_r16_block/nxt_rt_m1_3[0]
 
 
-
 add wave -position insertpoint -group S1_ITER -radix binary sim:/tb_top/u_dut/u_fpsqrt_r16_block/m_neg_1_0[1]
 add wave -position insertpoint -group S1_ITER -radix binary sim:/tb_top/u_dut/u_fpsqrt_r16_block/m_neg_0_0[1]
 add wave -position insertpoint -group S1_ITER -radix binary sim:/tb_top/u_dut/u_fpsqrt_r16_block/m_pos_1_0[1]
@@ -323,6 +330,9 @@ add wave -position insertpoint -group S1_ITER sim:/tb_top/u_dut/u_fpsqrt_r16_blo
 add wave -position insertpoint -expand -group POST sim:/tb_top/u_dut/nr_f_r_adder_in[0]
 add wave -position insertpoint -expand -group POST sim:/tb_top/u_dut/nr_f_r_adder_in[1]
 add wave -position insertpoint -expand -group POST sim:/tb_top/u_dut/nr_f_r
+add wave -position insertpoint -expand -group POST sim:/tb_top/u_dut/nr_f_r_merged
+add wave -position insertpoint -expand -group POST sim:/tb_top/u_dut/f_r_xor
+add wave -position insertpoint -expand -group POST sim:/tb_top/u_dut/f_r_or
 add wave -position insertpoint -expand -group POST sim:/tb_top/u_dut/rem_is_not_zero_0
 add wave -position insertpoint -expand -group POST sim:/tb_top/u_dut/rem_is_not_zero_1
 add wave -position insertpoint -expand -group POST sim:/tb_top/u_dut/rem_is_not_zero_2
@@ -331,9 +341,9 @@ add wave -position insertpoint -expand -group POST sim:/tb_top/u_dut/select_rt_m
 add wave -position insertpoint -expand -group POST sim:/tb_top/u_dut/select_rt_m1_1
 add wave -position insertpoint -expand -group POST sim:/tb_top/u_dut/select_rt_m1_2
 add wave -position insertpoint -expand -group POST sim:/tb_top/u_dut/select_rt_m1_3
-add wave -position insertpoint -expand -group POST sim:/tb_top/u_dut/res_is_sqrt_2_f64
-add wave -position insertpoint -expand -group POST sim:/tb_top/u_dut/res_is_sqrt_2_f32
-add wave -position insertpoint -expand -group POST sim:/tb_top/u_dut/res_is_sqrt_2_f16
+add wave -position insertpoint -expand -group POST sim:/tb_top/u_dut/f64_res_is_sqrt_2
+add wave -position insertpoint -expand -group POST sim:/tb_top/u_dut/f32_res_is_sqrt_2
+add wave -position insertpoint -expand -group POST sim:/tb_top/u_dut/f16_res_is_sqrt_2
 add wave -position insertpoint -expand -group POST sim:/tb_top/u_dut/rt_pre_inc
 add wave -position insertpoint -expand -group POST sim:/tb_top/u_dut/rt_inc_lane
 add wave -position insertpoint -expand -group POST sim:/tb_top/u_dut/rt_inc_res
