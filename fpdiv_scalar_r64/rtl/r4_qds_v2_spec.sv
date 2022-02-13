@@ -1,9 +1,9 @@
 // ========================================================================================================
-// File Name			: r4_qds_v2_with_speculation.sv
+// File Name			: r4_qds_v2_spec.sv
 // Author				: HYF
 // How to Contact		: hyf_sysu@qq.com
 // Created Time    		: 2022-01-01 21:15:32
-// Last Modified Time   : 2022-01-11 22:03:09
+// Last Modified Time   : 2022-02-09 16:01:03
 // ========================================================================================================
 // Description	:
 // Modifed from r4_qds_v2. This is used to calculate the q[i+2].
@@ -41,7 +41,7 @@
 
 // include some definitions here
 
-module r4_qds_v2_with_speculation #(
+module r4_qds_v2_spec #(
 	// Put some parameters here, which can be changed by other modules.
 
 	// You should try which config could lead to best PPA.

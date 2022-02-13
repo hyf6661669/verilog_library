@@ -3,7 +3,7 @@
 // Author				: HYF
 // How to Contact		: hyf_sysu@qq.com
 // Created Time    		: 2021-07-23 10:08:49
-// Last Modified Time   : 2022-01-11 22:03:09
+// Last Modified Time   : 2022-02-13 20:02:15
 // ========================================================================================================
 // Description	:
 // TB for FPDIV.
@@ -288,7 +288,8 @@ end
 
 fpdiv_scalar_r64 # (
 	.QDS_ARCH(2),
-	.S1_SPECULATIVE_QDS(1)
+	.S1_SPECULATIVE_QDS(1),
+	.S2_SPECULATIVE_QDS(0)
 ) u_dut (
 	.start_valid_i(dut_start_valid),
 	.start_ready_o(dut_start_ready),

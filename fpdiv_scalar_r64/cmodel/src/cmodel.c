@@ -100,7 +100,7 @@ void cmodel_check_result(
 
 	// The same as RTL....
 	softfloat_detectTininess = softfloat_tininess_afterRounding;
-	// clean fflags before computation?
+	// clean fflags before every computation
 	softfloat_exceptionFlags = 0;
 	softfloat_roundingMode = *rm;
 	uint32_t dut_fflags_invalid_operation 	= *dut_fflags & 0x10;
@@ -213,15 +213,15 @@ void print_error(const svBitVecVal *err_count) {
 	fptr = fopen("result.log", "w+");
 	for(uint32_t i = 0; i < *err_count; i++) {
 		fprintf(fptr, "[%d]:\n", i);
-		fprintf(fptr, "recorded_stim_idx	= %d\n", recorded_stim_idx[i]);
-		fprintf(fptr, "recorded_opa 		= %016llX\n", recorded_opa[i]);
-		fprintf(fptr, "recorded_opb 		= %016llX\n", recorded_opb[i]);
-		fprintf(fptr, "recorded_fp_format 	= %16X\n", recorded_fp_format[i]);
-		fprintf(fptr, "recorded_rm 			= %16X\n", recorded_rm[i]);
-		fprintf(fptr, "recorded_dut_res 	= %016llX\n", recorded_dut_res[i]);
-		fprintf(fptr, "recorded_dut_fflags 	= %16X\n", recorded_dut_fflags[i]);
-		fprintf(fptr, "recorded_ref_res 	= %016llX\n", recorded_ref_res[i]);
-		fprintf(fptr, "recorded_ref_fflags 	= %16X\n", recorded_ref_fflags[i]);
+		fprintf(fptr, "stim_idx   = %d\n", recorded_stim_idx[i]);
+		fprintf(fptr, "opa        = %016llX\n", recorded_opa[i]);
+		fprintf(fptr, "opb        = %016llX\n", recorded_opb[i]);
+		fprintf(fptr, "fp_format  = %16X\n", recorded_fp_format[i]);
+		fprintf(fptr, "rm         = %16X\n", recorded_rm[i]);
+		fprintf(fptr, "dut_res    = %016llX\n", recorded_dut_res[i]);
+		fprintf(fptr, "ref_res    = %016llX\n", recorded_ref_res[i]);
+		fprintf(fptr, "dut_fflags = %16X\n", recorded_dut_fflags[i]);
+		fprintf(fptr, "ref_fflags = %16X\n", recorded_ref_fflags[i]);
 	}
 	fclose(fptr);
 }

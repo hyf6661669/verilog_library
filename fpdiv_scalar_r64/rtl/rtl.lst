@@ -5,7 +5,7 @@
 ../rtl/r4_qds_v0.sv
 ../rtl/r4_qds_v1.sv
 ../rtl/r4_qds_v2.sv
-../rtl/r4_qds_v2_with_speculation.sv
+../rtl/r4_qds_v2_spec.sv
 ../rtl/fpdiv_r64_block.sv
 
 

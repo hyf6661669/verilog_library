@@ -3,7 +3,7 @@
 // Author				: HYF
 // How to Contact		: hyf_sysu@qq.com
 // Created Time    		: 2022-01-11 09:01:28
-// Last Modified Time   : 2022-01-11 22:03:09
+// Last Modified Time   : 2022-02-13 20:01:53
 // ========================================================================================================
 // Description	:
 // Please look at the reference paper for its original architecture.
@@ -51,7 +51,9 @@ module fpdiv_r64_block #(
 	parameter QDS_ARCH = 2,
 	// 0: Larger delay, smaller area
 	// 1: Smaller delay, larger area
+	parameter S0_SPECULATIVE_CSA = 0,
 	parameter S1_SPECULATIVE_QDS = 1,
+	parameter S2_SPECULATIVE_QDS = 0,
 	
 	// Don't change the following value
 	parameter REM_W = 3 + 53 + 3 + 1,
@@ -193,7 +195,7 @@ assign nxt_f_r_c_spec_s0[0] = {
 	1'b1
 };
 
-generate if(S1_SPECULATIVE_QDS) begin: g_n_adder_7b_for_s1_qds
+generate if(S1_SPECULATIVE_QDS) begin
 
 	assign adder_7b_for_s1_qds_spec[4] = '0;
 	assign adder_7b_for_s1_qds_spec[3] = '0;
@@ -201,7 +203,7 @@ generate if(S1_SPECULATIVE_QDS) begin: g_n_adder_7b_for_s1_qds
 	assign adder_7b_for_s1_qds_spec[1] = '0;
 	assign adder_7b_for_s1_qds_spec[0] = '0;
 	
-end else begin: g_adder_7b_for_s1_qds
+end else begin
 
 	assign adder_7b_for_s1_qds_spec[4] = nr_f_r_7b_for_nxt_cycle_s1_qds_i + divisor_mul_pos_2[(REM_W-1)-2 -: 7];
 	assign adder_7b_for_s1_qds_spec[3] = nr_f_r_7b_for_nxt_cycle_s1_qds_i + divisor_mul_pos_1[(REM_W-1)-2 -: 7];
@@ -248,11 +250,11 @@ assign adder_7b_res_for_s2_qds_in_s0 =
 | ({(7){nxt_quo_dig[0][1]}} & adder_7b_for_s2_qds_in_s0_spec[1])
 | ({(7){nxt_quo_dig[0][0]}} & adder_7b_for_s2_qds_in_s0_spec[0]);
 
-generate if(S1_SPECULATIVE_QDS) begin: g_n_adder_6b_res_for_s1_qds
+generate if(S1_SPECULATIVE_QDS) begin
 
 	assign adder_6b_res_for_s1_qds = '0;
 	
-end else begin: g_adder_6b_res_for_s1_qds
+end else begin
 
 	assign adder_6b_res_for_s1_qds = 
 	  ({(6){nxt_quo_dig[0][4]}} & adder_7b_for_s1_qds_spec[4][6:1])
@@ -320,18 +322,31 @@ assign nxt_f_r_c_spec_s1[0] = {
 	1'b1
 };
 
-assign adder_7b_for_s2_qds_in_s1_spec[4] = adder_7b_res_for_s2_qds_in_s0 + divisor_mul_pos_2[(REM_W-1)-2 -: 7];
-assign adder_7b_for_s2_qds_in_s1_spec[3] = adder_7b_res_for_s2_qds_in_s0 + divisor_mul_pos_1[(REM_W-1)-2 -: 7];
-assign adder_7b_for_s2_qds_in_s1_spec[2] = adder_7b_res_for_s2_qds_in_s0;
-assign adder_7b_for_s2_qds_in_s1_spec[1] = adder_7b_res_for_s2_qds_in_s0 + divisor_mul_neg_1[(REM_W-1)-2 -: 7];
-assign adder_7b_for_s2_qds_in_s1_spec[0] = adder_7b_res_for_s2_qds_in_s0 + divisor_mul_neg_2[(REM_W-1)-2 -: 7];
+generate if(S2_SPECULATIVE_QDS) begin
+
+	assign adder_7b_for_s2_qds_in_s1_spec[4] = '0;
+	assign adder_7b_for_s2_qds_in_s1_spec[3] = '0;
+	assign adder_7b_for_s2_qds_in_s1_spec[2] = '0;
+	assign adder_7b_for_s2_qds_in_s1_spec[1] = '0;
+	assign adder_7b_for_s2_qds_in_s1_spec[0] = '0;
+
+end else begin
+
+	assign adder_7b_for_s2_qds_in_s1_spec[4] = adder_7b_res_for_s2_qds_in_s0 + divisor_mul_pos_2[(REM_W-1)-2 -: 7];
+	assign adder_7b_for_s2_qds_in_s1_spec[3] = adder_7b_res_for_s2_qds_in_s0 + divisor_mul_pos_1[(REM_W-1)-2 -: 7];
+	assign adder_7b_for_s2_qds_in_s1_spec[2] = adder_7b_res_for_s2_qds_in_s0;
+	assign adder_7b_for_s2_qds_in_s1_spec[1] = adder_7b_res_for_s2_qds_in_s0 + divisor_mul_neg_1[(REM_W-1)-2 -: 7];
+	assign adder_7b_for_s2_qds_in_s1_spec[0] = adder_7b_res_for_s2_qds_in_s0 + divisor_mul_neg_2[(REM_W-1)-2 -: 7];
+
+end
+endgenerate
 
 // ================================================================================================================================================
 // stage[1].qds
 // ================================================================================================================================================
-generate if(S1_SPECULATIVE_QDS) begin: g_speculative_s1_qds
+generate if(S1_SPECULATIVE_QDS) begin: g_s1_spec_qds
 
-	r4_qds_v2_with_speculation #(
+	r4_qds_v2_spec #(
 		.QDS_ARCH(QDS_ARCH)
 	) u_r4_qds_s1 (
 		.rem_i(nr_f_r_7b_for_nxt_cycle_s1_qds_i),
@@ -343,7 +358,7 @@ generate if(S1_SPECULATIVE_QDS) begin: g_speculative_s1_qds
 		.quo_dig_o(nxt_quo_dig[1])
 	);
 
-end else begin: g_normal_s1_qds
+end else begin: g_s1_n_spec_qds
 
 	r4_qds_v2 #(
 		.QDS_ARCH(QDS_ARCH)
@@ -368,12 +383,21 @@ assign nxt_f_r_c[1] =
 | ({(REM_W){nxt_quo_dig[1][1]}} & nxt_f_r_c_spec_s1[1])
 | ({(REM_W){nxt_quo_dig[1][0]}} & nxt_f_r_c_spec_s1[0]);
 
-assign adder_6b_res_for_s2_qds_in_s1 = 
-  ({(6){nxt_quo_dig[1][4]}} & adder_7b_for_s2_qds_in_s1_spec[4][6:1])
-| ({(6){nxt_quo_dig[1][3]}} & adder_7b_for_s2_qds_in_s1_spec[3][6:1])
-| ({(6){nxt_quo_dig[1][2]}} & adder_7b_for_s2_qds_in_s1_spec[2][6:1])
-| ({(6){nxt_quo_dig[1][1]}} & adder_7b_for_s2_qds_in_s1_spec[1][6:1])
-| ({(6){nxt_quo_dig[1][0]}} & adder_7b_for_s2_qds_in_s1_spec[0][6:1]);
+generate if(S2_SPECULATIVE_QDS) begin
+
+	assign adder_6b_res_for_s2_qds_in_s1 = '0;
+
+end else begin
+
+	assign adder_6b_res_for_s2_qds_in_s1 = 
+	  ({(6){nxt_quo_dig[1][4]}} & adder_7b_for_s2_qds_in_s1_spec[4][6:1])
+	| ({(6){nxt_quo_dig[1][3]}} & adder_7b_for_s2_qds_in_s1_spec[3][6:1])
+	| ({(6){nxt_quo_dig[1][2]}} & adder_7b_for_s2_qds_in_s1_spec[2][6:1])
+	| ({(6){nxt_quo_dig[1][1]}} & adder_7b_for_s2_qds_in_s1_spec[1][6:1])
+	| ({(6){nxt_quo_dig[1][0]}} & adder_7b_for_s2_qds_in_s1_spec[0][6:1]);
+
+end
+endgenerate
 
 // ================================================================================================================================================
 // stage[2].csa + "adders for nxt cycle"
@@ -487,12 +511,31 @@ assign adder_8b_for_nxt_cycle_s1_qds_spec[0] =
 // ================================================================================================================================================
 // stage[2].qds
 // ================================================================================================================================================
-r4_qds_v2 #(
-	.QDS_ARCH(QDS_ARCH)
-) u_r4_qds_s2 (
-	.rem_i(adder_6b_res_for_s2_qds_in_s1),
-	.quo_dig_o(nxt_quo_dig[2])
-);
+generate if(S2_SPECULATIVE_QDS) begin: g_s2_spec_qds
+
+	r4_qds_v2_spec #(
+		.QDS_ARCH(QDS_ARCH)
+	) u_r4_qds_s2 (
+		.rem_i(adder_7b_res_for_s2_qds_in_s0),
+		.divisor_mul_pos_2_i(divisor_mul_pos_2[(REM_W-1)-2 -: 7]),
+		.divisor_mul_pos_1_i(divisor_mul_pos_1[(REM_W-1)-2 -: 7]),
+		.divisor_mul_neg_1_i(divisor_mul_neg_1[(REM_W-1)-2 -: 7]),
+		.divisor_mul_neg_2_i(divisor_mul_neg_2[(REM_W-1)-2 -: 7]),
+		.prev_quo_dig_i(nxt_quo_dig[1]),
+		.quo_dig_o(nxt_quo_dig[2])
+	);
+
+end else begin: g_s2_n_spec_qds
+
+	r4_qds_v2 #(
+		.QDS_ARCH(QDS_ARCH)
+	) u_r4_qds_s2 (
+		.rem_i(adder_6b_res_for_s2_qds_in_s1),
+		.quo_dig_o(nxt_quo_dig[2])
+	);
+
+end
+endgenerate
 
 assign nxt_f_r_s[2] = 
   ({(REM_W){nxt_quo_dig[2][4]}} & nxt_f_r_s_spec_s2[4])
@@ -532,14 +575,5 @@ assign nxt_f_r_c_o[0] = nxt_f_r_c[0];
 assign nxt_f_r_c_o[1] = nxt_f_r_c[1];
 assign nxt_f_r_c_o[2] = nxt_f_r_c[2];
 
-
-// ================================================================================================================================================
-// TEST SIGNALS
-// ================================================================================================================================================
-logic [REM_W-1:0] nxt_nr_f_r [3-1:0];
-
-assign nxt_nr_f_r[0] = nxt_f_r_s[0] + nxt_f_r_c[0];
-assign nxt_nr_f_r[1] = nxt_f_r_s[1] + nxt_f_r_c[1];
-assign nxt_nr_f_r[2] = nxt_f_r_s[2] + nxt_f_r_c[2];
 
 endmodule
