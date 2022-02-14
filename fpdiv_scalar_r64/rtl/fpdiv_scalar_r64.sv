@@ -3,7 +3,7 @@
 // Author				: HYF
 // How to Contact		: hyf_sysu@qq.com
 // Created Time    		: 2022-01-04 09:09:21
-// Last Modified Time   : 2022-02-13 21:26:39
+// Last Modified Time   : 2022-02-14 08:22:23
 // ========================================================================================================
 // Description	:
 // A Scalar Floating Point Divider based on Minimally Redundant Radix-4 SRT Algorithm.
@@ -202,7 +202,6 @@ logic opb_is_nan;
 logic res_is_nan;
 logic res_is_inf;
 logic res_is_exact_zero;
-logic opb_is_power_of_2;
 logic op_invalid_div;
 logic divided_by_zero;
 
@@ -212,6 +211,7 @@ logic res_is_inf_d;
 logic res_is_inf_q;
 logic res_is_exact_zero_d;
 logic res_is_exact_zero_q;
+logic opb_is_power_of_2_en;
 logic opb_is_power_of_2_d;
 logic opb_is_power_of_2_q;
 logic op_invalid_div_d;
@@ -232,6 +232,7 @@ logic [3-1:0] rm_q;
 
 logic [F64_FRAC_W-1:0] opa_frac_pre_shifted;
 logic [F64_FRAC_W-1:0] opb_frac_pre_shifted;
+logic [F64_FRAC_W-1:0] opb_lzc_data_in;
 logic [$clog2(F64_FRAC_W)-1:0] opa_l_shift_num;
 logic [$clog2(F64_FRAC_W)-1:0] opb_l_shift_num;
 logic [$clog2(F64_FRAC_W)-1:0] opa_l_shift_num_pre;
@@ -434,7 +435,7 @@ always_comb begin
 		FSM_PRE_1:
 			fsm_d = FSM_PRE_2;
 		FSM_PRE_2:
-			fsm_d = opb_is_power_of_2_q ? FSM_POST_0 : FSM_ITER;
+			fsm_d = (opb_is_power_of_2_q | (~res_exp_is_denormal & res_exp_is_overflow)) ? FSM_POST_0 : FSM_ITER;
 		FSM_ITER:
 			fsm_d = final_iter ? FSM_POST_0 : FSM_ITER;
 		FSM_POST_0:
@@ -500,13 +501,9 @@ assign op_invalid_div = (opa_is_inf & opb_is_inf) | (opa_is_zero & opb_is_zero) 
 assign res_is_nan = opa_is_nan | opb_is_nan | op_invalid_div;
 assign res_is_inf = opa_is_inf | opb_is_zero;
 assign res_is_exact_zero = opa_is_zero | opb_is_inf;
-// For this signal, don't consider the value of exp, and don't consider denormal number.
-assign opb_is_power_of_2 = opb_frac_is_zero;
 // When result is not nan, and dividend is not inf, "dividend / 0" should lead to "DIV_BY_ZERO" exception.
 assign divided_by_zero = ~res_is_nan & ~opa_is_inf & opb_is_zero;
-
 assign has_denormal_input = opa_exp_is_zero | opb_exp_is_zero;
-
 assign opa_exp_plus_biased = {1'b0, opa_exp_biased[10:0]} + ((fp_format_i == 2'd0) ? 12'd15 : (fp_format_i == 2'd1) ? 12'd127 : 12'd1023);
 
 // Follow the rule in riscv-spec, just produce default NaN.
@@ -517,7 +514,7 @@ assign rm_d = rm_i;
 assign res_is_nan_d = res_is_nan;
 assign res_is_inf_d = res_is_inf;
 assign res_is_exact_zero_d = res_is_exact_zero;
-assign opb_is_power_of_2_d = opb_is_power_of_2;
+
 assign op_invalid_div_d = op_invalid_div;
 assign divided_by_zero_d = divided_by_zero;
 always_ff @(posedge clk) begin
@@ -529,11 +526,18 @@ always_ff @(posedge clk) begin
 		res_is_nan_q <= res_is_nan_d;
 		res_is_inf_q <= res_is_inf_d;
 		res_is_exact_zero_q <= res_is_exact_zero_d;
-		opb_is_power_of_2_q <= opb_is_power_of_2_d;
 		op_invalid_div_q <= op_invalid_div_d;
 		divided_by_zero_q <= divided_by_zero_d;
 	end
 end
+
+
+assign opb_is_power_of_2_en = start_handshaked | fsm_q[FSM_PRE_1_BIT];
+assign opb_is_power_of_2_d  = opb_frac_is_zero;
+always_ff @(posedge clk)
+	if(opb_is_power_of_2_en)
+		opb_is_power_of_2_q <= opb_is_power_of_2_d;
+	
 
 assign early_finish = res_is_nan | res_is_inf | res_is_exact_zero;
 // ================================================================================================================================================
@@ -603,13 +607,16 @@ lzc #(
 	// The hiddend bit of frac is not considered here
 	.empty_o(opa_frac_is_zero)
 );
+
+// Check whether opb is a denormal number and a power of 2 in pre_1
+assign opb_lzc_data_in = fsm_q[FSM_PRE_0_BIT] ? opb_frac_pre_shifted : {1'b0, opb_frac_l_shifted};
 lzc #(
 	.WIDTH(F64_FRAC_W),
 	// 0: trailing zero.
 	// 1: leading zero.
 	.MODE(1'b1)
 ) u_lzc_opb (
-	.in_i(opb_frac_pre_shifted),
+	.in_i(opb_lzc_data_in),
 	.cnt_o(opb_l_shift_num_pre),
 	// The hiddend bit of frac is not considered here
 	.empty_o(opb_frac_is_zero)
@@ -1183,7 +1190,7 @@ assign carry_after_round =
 | ({(1){fp_fmt_q[2]}} & quo_rounded[52]);
 
 // In post_0, the result must be a normal/overflow number
-// overflow could only happen in post_0
+// overflow could only happen in post_0. And it is impossible to generate a overflow result by rounding up -> Easy to prove.
 assign overflow = res_exp_q[11];
 assign overflow_to_inf = 
   (rm_q == RM_RNE) 
