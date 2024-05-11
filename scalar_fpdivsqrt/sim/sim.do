@@ -1,0 +1,45 @@
+quit -sim
+
+file mkdir ./lib
+file mkdir ./lib/work
+file mkdir ./log
+file mkdir ./wave
+
+vlib ./lib
+vlib ./lib/work
+
+vmap work ./lib/work
+
+#set RAND_SEED 1
+set RAND_SEED [expr {int(rand() * 999999999)}]
+set TEST_LEVEL 2
+# set FP16_TEST_NUM [expr {int(pow(2, 19))}]
+# set FP32_TEST_NUM [expr {int(pow(2, 19))}]
+# set FP64_TEST_NUM [expr {int(pow(2, 19))}]
+set FP16_TEST_NUM 99900
+set FP32_TEST_NUM 99900
+set FP64_TEST_NUM 99900
+
+# Add this definition, if you don't want to test all the 5 rounding modes for each pair of {dividend, divisor}
+# +define+RANDOM_RM \
+
+vlog -work work -incr -lint \
++define+RAND_SEED=$RAND_SEED+TEST_LEVEL=$TEST_LEVEL \
++define+FP64_TEST_NUM=$FP64_TEST_NUM+FP32_TEST_NUM=$FP32_TEST_NUM+FP16_TEST_NUM=$FP16_TEST_NUM \
+-f ../tb/tb.lst
+
+vsim \
+-sv_lib ../cmodel/lib/softfloat -sv_lib ../cmodel/lib/testfloat_gencases -sv_lib ../cmodel/lib/cmodel \
+-c -l ./log/run_$RAND_SEED.log -wlf ./wave/run_$RAND_SEED.wlf -voptargs=+acc -sv_seed $RAND_SEED work.tb_top
+
+
+# 0: full names
+# 1: leaf names
+configure wave -signalnamewidth 1
+configure wave -timelineunits ns
+
+# Display waves ??
+#do wave.do
+
+run -all
+
