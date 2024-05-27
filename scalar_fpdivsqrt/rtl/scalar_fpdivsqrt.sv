@@ -2,8 +2,8 @@
 // File Name			: scalar_fpdivsqrt.sv
 // Author				: HYF
 // How to Contact		: hyf_sysu@qq.com
-// Created Time    		: 24-04-21 17:27:11
-// Last Modified Time   : 24-05-11 15:30:43
+// Created Time    		: May 11th 2024, 09:35:44
+// Last Modified Time   : 2024-05-27 @ 09:36:06
 // ========================================================================================================
 // Description	:
 // A Scalar Floating Point Divider/Sqrt based on Minimally Redundant Radix-4 SRT Algorithm.
@@ -45,15 +45,16 @@
 module scalar_fpdivsqrt #(
 	// Put some parameters here, which can be changed by other modules
 	parameter FDIV_QDS_ARCH = 2,
-	parameter UF_BEFORE_ROUNDING = 0
+	// TODO: Now we only support "UF_BEFORE_ROUNDING"
+	parameter UF_AFTER_ROUNDING = 0
 )(
 	input  logic 			start_valid_i,
 	output logic 			start_ready_o,
 	input  logic 			flush_i,
-	// 2'd0: f16
-	// 2'd1: f32
-	// 2'd2: f64
-	input  logic [ 2-1:0] 	fp_format_i,
+	// [0]: f16
+	// [1]: f32
+	// [2]: f64
+	input  logic [ 3-1:0] 	fp_format_i,
 	input  logic 			is_fdiv_i,
 	// f16: src should be put in opa[15:0]/opb[15:0], opa[63:16]/opb[63:16] will be ignored
 	// f32: src should be put in opa[31:0]/opb[31:0], opa[63:32]/opb[63:32] will be ignored
@@ -246,8 +247,10 @@ logic opb_exp_is_max;
 logic opa_is_zero;
 logic opb_is_zero;
 
-logic opa_frac_is_zero;
-logic opb_frac_is_zero;
+logic opa_frac_is_zero_pre_0;
+logic opa_frac_is_zero_pre_1;
+logic opb_frac_is_zero_pre_0;
+logic opb_frac_is_zero_pre_1;
 
 logic opa_is_inf;
 logic opb_is_inf;
@@ -327,11 +330,56 @@ logic quot_1st_is_p2_opa_frac_ge_opb_frac;
 logic quot_1st_is_p2_opa_frac_lt_opb_frac;
 logic quot_1st_is_p2;
 
-logic [GLOBAL_REM_W - 1:0] f_r_s_before_iter;
-logic [GLOBAL_REM_W - 1:0] f_r_c_before_iter;
+logic exp_is_odd_fsqrt;
+logic [(F64_FRAC_W - 1) - 1:0] frac_fsqrt;
+logic root_dig_n2_1st;
+logic root_dig_n1_1st;
+logic root_dig_z0_1st;
 
-logic [QUOT_ROOT_W - 1:0] quot_root_before_iter;
-logic [QUOT_ROOT_W - 1:0] quot_root_m1_before_iter;
+logic rem_msb_nxt_cycle_1st_srt_en;
+logic [7 - 1:0] rem_msb_nxt_cycle_1st_srt_d;
+logic [7 - 1:0] rem_msb_nxt_cycle_1st_srt_q;
+logic [8 - 1:0] rem_msb_nxt_cycle_1st_srt_before_iter;
+logic [7 - 1:0] rem_msb_nxt_cycle_1st_srt_after_iter;
+
+logic a0_before_iter;
+logic a2_before_iter;
+logic a3_before_iter;
+logic a4_before_iter;
+
+logic m_common_en;
+logic [5 - 1:0] m_n1_nxt_cycle_1st_srt_d;
+logic [5 - 1:0] m_n1_nxt_cycle_1st_srt_q;
+logic [4 - 1:0] m_z0_nxt_cycle_1st_srt_d;
+logic [4 - 1:0] m_z0_nxt_cycle_1st_srt_q;
+logic [3 - 1:0] m_p1_nxt_cycle_1st_srt_d;
+logic [3 - 1:0] m_p1_nxt_cycle_1st_srt_q;
+logic [4 - 1:0] m_p2_nxt_cycle_1st_srt_d;
+logic [4 - 1:0] m_p2_nxt_cycle_1st_srt_q;
+
+logic [7 - 1:0] m_n1_nxt_cycle_1st_srt_before_iter;
+logic [7 - 1:0] m_z0_nxt_cycle_1st_srt_before_iter;
+logic [7 - 1:0] m_p1_nxt_cycle_1st_srt_before_iter;
+logic [7 - 1:0] m_p2_nxt_cycle_1st_srt_before_iter;
+logic [7 - 1:0] m_n1_nxt_cycle_1st_srt_after_iter;
+logic [7 - 1:0] m_z0_nxt_cycle_1st_srt_after_iter;
+logic [7 - 1:0] m_p1_nxt_cycle_1st_srt_after_iter;
+logic [7 - 1:0] m_p2_nxt_cycle_1st_srt_after_iter;
+
+logic [GLOBAL_REM_W - 1:0] f_r_s_before_iter_fdiv;
+logic [GLOBAL_REM_W - 1:0] f_r_c_before_iter_fdiv;
+
+logic [QUOT_ROOT_W - 1:0] quot_before_iter;
+logic [QUOT_ROOT_W - 1:0] quot_m1_before_iter;
+logic [QUOT_ROOT_W - 1:0] quot_before_iter_opb_frac_is_zero_pre_0;
+logic [QUOT_ROOT_W - 1:0] quot_before_iter_opb_frac_is_zero_pre_1;
+
+logic [F64_FULL_ROOT_W - 1:0] root_before_iter;
+logic [F64_FULL_ROOT_W - 1:0] root_m1_before_iter;
+
+logic [FSQRT_F64_REM_W - 1:0] f_r_s_before_iter_pre_fsqrt;
+logic [FSQRT_F64_REM_W - 1:0] f_r_s_before_iter_fsqrt;
+logic [FSQRT_F64_REM_W - 1:0] f_r_c_before_iter_fsqrt;
 
 
 logic quot_dig_p2_1st;
@@ -350,12 +398,17 @@ logic quot_dig_z0_3rd;
 logic quot_dig_n1_3rd;
 logic quot_dig_n2_3rd;
 
-logic [GLOBAL_REM_W - 1:0] f_r_s_1st;
-logic [GLOBAL_REM_W - 1:0] f_r_s_2nd;
-logic [GLOBAL_REM_W - 1:0] f_r_s_3rd;
-logic [GLOBAL_REM_W - 1:0] f_r_c_1st;
-logic [GLOBAL_REM_W - 1:0] f_r_c_2nd;
-logic [GLOBAL_REM_W - 1:0] f_r_c_3rd;
+logic [GLOBAL_REM_W - 1:0] f_r_s_1st_fdiv;
+logic [GLOBAL_REM_W - 1:0] f_r_s_2nd_fdiv;
+logic [GLOBAL_REM_W - 1:0] f_r_s_3rd_fdiv;
+logic [GLOBAL_REM_W - 1:0] f_r_c_1st_fdiv;
+logic [GLOBAL_REM_W - 1:0] f_r_c_2nd_fdiv;
+logic [GLOBAL_REM_W - 1:0] f_r_c_3rd_fdiv;
+
+logic [FSQRT_F64_REM_W - 1:0] f_r_s_1st_fsqrt;
+logic [FSQRT_F64_REM_W - 1:0] f_r_c_1st_fsqrt;
+logic [FSQRT_F64_REM_W - 1:0] f_r_s_2nd_fsqrt;
+logic [FSQRT_F64_REM_W - 1:0] f_r_c_2nd_fsqrt;
 
 logic [56 - 1:0] quot_1st;
 logic [56 - 1:0] quot_2nd;
@@ -363,6 +416,11 @@ logic [56 - 1:0] quot_3rd;
 logic [56 - 1:0] quot_m1_1st;
 logic [56 - 1:0] quot_m1_2nd;
 logic [56 - 1:0] quot_m1_3rd;
+
+logic [54 - 1:0] root_1st;
+logic [53 - 1:0] root_m1_1st;
+logic [54 - 1:0] root_2nd;
+logic [53 - 1:0] root_m1_2nd;
 
 
 // ================================================================================================================================================
@@ -441,7 +499,9 @@ logic frac_D_en;
 logic [57 - 1:0] frac_D_d;
 logic [57 - 1:0] frac_D_q;
 
-logic [57 - 1:0] nxt_frac_D_before_iter;
+logic [57 - 1:0] nxt_frac_D_before_iter_fdiv;
+logic [57 - 1:0] nxt_frac_D_before_iter_fsqrt;
+logic [57 - 1:0] nxt_frac_D_iter;
 logic [57 - 1:0] nxt_frac_D_post_0;
 
 logic quot_root_iter_en;
@@ -459,6 +519,13 @@ logic iter_num_en;
 // So a 4-bit counter is enough.
 logic [4 - 1:0] iter_num_d;
 logic [4 - 1:0] iter_num_q;
+
+logic [4 - 1:0] iter_num_fdiv_pre_0;
+logic [4 - 1:0] iter_num_fdiv_pre_1;
+logic [4 - 1:0] iter_num_fsqrt_pre_0;
+logic [4 - 1:0] iter_num_fsqrt_pre_1;
+logic [4 - 1:0] iter_num_fdiv;
+logic [4 - 1:0] iter_num_fsqrt;
 logic final_iter;
 
 logic [GLOBAL_REM_W - 1:0] nr_f_r;
@@ -478,32 +545,59 @@ logic select_root_m1;
 logic [53 - 1:0] correct_quot_frac_shifted;
 logic [54 - 1:0] sticky_without_rem;
 
-logic [52 - 1:0] quot_root_before_inc;
-logic [52 - 1:0] quot_root_m1_before_inc;
 logic [53 - 1:0] quot_root_inc_res;
-logic [52 - 1:0] quot_root_m1_inc_res;
+
+logic [52 - 1:0] quot_before_inc;
+logic [52 - 1:0] quot_m1_before_inc;
+logic [52 - 1:0] quot_m1_inc_res;
+logic [53 - 1:0] root_m1_inc_res;
+logic [53 - 1:0] root_before_inc;
+logic [52 - 1:0] quot_root_before_inc;
+logic [52 - 1:0] inc_poisition_fsqrt;
+logic [52 - 1:0] inc_poisition_fdiv;
+logic [52 - 1:0] inc_poisition;
 
 
-logic carry_after_round;
+logic carry_after_round_fdiv;
+logic carry_after_round_fsqrt;
+logic [11 - 1:0] exp_rounded_fsqrt;
 logic of;
 logic of_to_inf;
 
+
 logic inexact;
+logic inexact_fdiv;
+logic inexact_fsqrt;
 
-logic quot_root_l;
-logic quot_root_g;
-logic quot_root_s;
-logic quot_root_m1_l;
-logic quot_root_m1_g;
-logic quot_root_m1_s;
-logic quot_root_need_rup;
-logic quot_root_m1_need_rup;
-logic quot_root_inexact;
-logic quot_root_m1_inexact;
+logic quot_l;
+logic quot_g;
+logic quot_s;
+logic quot_m1_l;
+logic quot_m1_g;
+logic quot_m1_s;
+logic quot_need_rup;
+logic quot_m1_need_rup;
+logic quot_inexact;
+logic quot_m1_inexact;
 
-logic [53 - 1:0] quot_root_rounded;
-logic [52 - 1:0] quot_root_m1_rounded;
+logic [53 - 1:0] quot_rounded;
+logic [52 - 1:0] quot_m1_rounded;
+logic [53 - 1:0] root_rounded;
+logic [53 - 1:0] root_m1_rounded;
 
+logic root_l;
+logic root_g;
+logic root_s;
+logic root_need_rup;
+logic root_inexact;
+logic root_m1_l;
+logic root_m1_g;
+logic root_m1_s;
+logic root_m1_need_rup;
+logic root_m1_inexact;
+
+logic [52 - 1:0] frac_rounded_post_0_fsqrt;
+logic [52 - 1:0] frac_rounded_post_0_fdiv;
 logic [52 - 1:0] frac_rounded_post_0;
 
 logic [F16_EXP_W - 1:0] exp_res_post_0_f16;
@@ -522,16 +616,16 @@ logic [10 - 1:0] frac_res_post_1_f16;
 logic [23 - 1:0] frac_res_post_1_f32;
 logic [52 - 1:0] frac_res_post_1_f64;
 
-logic [16 - 1:0] fdiv_res_post_0_f16;
-logic [32 - 1:0] fdiv_res_post_0_f32;
-logic [64 - 1:0] fdiv_res_post_0_f64;
+logic [16 - 1:0] final_res_post_0_f16;
+logic [32 - 1:0] final_res_post_0_f32;
+logic [64 - 1:0] final_res_post_0_f64;
 
-logic [16 - 1:0] fdiv_res_post_1_f16;
-logic [32 - 1:0] fdiv_res_post_1_f32;
-logic [64 - 1:0] fdiv_res_post_1_f64;
+logic [16 - 1:0] final_res_post_1_f16;
+logic [32 - 1:0] final_res_post_1_f32;
+logic [64 - 1:0] final_res_post_1_f64;
 
-logic [64 - 1:0] fdiv_res_post_0;
-logic [64 - 1:0] fdiv_res_post_1;
+logic [64 - 1:0] final_res_post_0;
+logic [64 - 1:0] final_res_post_1;
 
 
 logic fflags_invalid_operation;
@@ -588,9 +682,9 @@ assign finish_valid_o = fsm_q[FSM_POST_1_BIT] | (fsm_q[FSM_POST_0_BIT] & ~need_d
 // When we are doing fsqrt, res_exp_q[12] MUST be 1'b0
 assign need_denormalization = res_exp_q[12];
 
-assign f16_pre_0 = (fp_format_i == 2'd0);
-assign f32_pre_0 = (fp_format_i == 2'd1);
-assign f64_pre_0 = (fp_format_i == 2'd2);
+assign f16_pre_0 = fp_format_i[0];
+assign f32_pre_0 = fp_format_i[1];
+assign f64_pre_0 = fp_format_i[2];
 assign f16_after_pre_0 = fp_format_q[0];
 assign f32_after_pre_0 = fp_format_q[1];
 assign f64_after_pre_0 = fp_format_q[2];
@@ -618,22 +712,22 @@ assign opa_exp_is_zero = (opa_exp == 11'b0);
 assign opb_exp_is_zero = (opb_exp == 11'b0);
 assign opa_exp_is_max = (opa_exp == (f16_pre_0 ? 11'd31 : f32_pre_0 ? 11'd255 : 11'd2047));
 assign opb_exp_is_max = (opb_exp == (f16_pre_0 ? 11'd31 : f32_pre_0 ? 11'd255 : 11'd2047));
-assign opa_is_zero = opa_exp_is_zero & opa_frac_is_zero;
-assign opb_is_zero = opb_exp_is_zero & opb_frac_is_zero;
-assign opa_is_dn = opa_exp_is_zero & ~opa_frac_is_zero;
-assign opb_is_dn = opb_exp_is_zero & ~opb_frac_is_zero;
+assign opa_is_zero = opa_exp_is_zero & opa_frac_is_zero_pre_0;
+assign opb_is_zero = opb_exp_is_zero & opb_frac_is_zero_pre_0;
+assign opa_is_dn = opa_exp_is_zero & ~opa_frac_is_zero_pre_0;
+assign opb_is_dn = opb_exp_is_zero & ~opb_frac_is_zero_pre_0;
 
-assign opa_is_inf = opa_exp_is_max & opa_frac_is_zero;
-assign opb_is_inf = opb_exp_is_max & opb_frac_is_zero;
+assign opa_is_inf = opa_exp_is_max & opa_frac_is_zero_pre_0;
+assign opb_is_inf = opb_exp_is_max & opb_frac_is_zero_pre_0;
 assign opa_is_qnan = opa_exp_is_max & (f16_pre_0 ? opa_i[9] : f32_pre_0 ? opa_i[22] : opa_i[51]);
 assign opb_is_qnan = opb_exp_is_max & (f16_pre_0 ? opb_i[9] : f32_pre_0 ? opb_i[22] : opb_i[51]);
-assign opa_is_snan = opa_exp_is_max & ~opa_frac_is_zero & (f16_pre_0 ? ~opa_i[9] : f32_pre_0 ? ~opa_i[22] : ~opa_i[51]);
-assign opb_is_snan = opb_exp_is_max & ~opb_frac_is_zero & (f16_pre_0 ? ~opb_i[9] : f32_pre_0 ? ~opb_i[22] : ~opb_i[51]);
+assign opa_is_snan = opa_exp_is_max & ~opa_frac_is_zero_pre_0 & (f16_pre_0 ? ~opa_i[9] : f32_pre_0 ? ~opa_i[22] : ~opa_i[51]);
+assign opb_is_snan = opb_exp_is_max & ~opb_frac_is_zero_pre_0 & (f16_pre_0 ? ~opb_i[9] : f32_pre_0 ? ~opb_i[22] : ~opb_i[51]);
 assign opa_is_nan = (opa_is_qnan | opa_is_snan);
 assign opb_is_nan = (opb_is_qnan | opb_is_snan);
 
 assign op_invalid_fdiv = (opa_is_inf & opb_is_inf) | (opa_is_zero & opb_is_zero) | opa_is_snan | opb_is_snan;
-assign op_invalid_fsqrt = (opa_sign & ~opa_is_zero) | opa_is_snan;
+assign op_invalid_fsqrt = (opa_sign & ~opa_is_zero & ~opa_is_qnan) | opa_is_snan;
 
 assign res_is_nan_fdiv = opa_is_nan | opb_is_nan | op_invalid_fdiv;
 assign res_is_inf_fdiv = (opa_is_inf & ~opb_is_nan) | (~opa_is_nan & opb_is_zero);
@@ -645,29 +739,33 @@ assign res_is_inf_fsqrt = opa_is_inf;
 assign res_is_exact_zero_fsqrt = opa_is_zero;
 
 // {opa_is_dn, res_is_sqrt2_pre_0} can't be 2'b11 in PRE_0
-assign res_is_sqrt2_pre_0 = opa_frac_is_zero & ~opa_exp[0];
+assign res_is_sqrt2_pre_0 = opa_frac_is_zero_pre_0 & ~opa_exp[0];
 // In PRE_1, opa has already been a nm number
-assign res_is_sqrt2_pre_1 = opa_frac_is_zero & res_exp_q[0];
+assign opa_frac_is_zero_pre_1 = (quot_root_iter_q[0 +: (F64_FRAC_W - 1)] == '0);
+assign res_is_sqrt2_pre_1 = opa_frac_is_zero_pre_1 & iter_num_q[0];
 
 assign early_finish_to_post_1_fdiv_pre_0 = 
   res_is_nan_fdiv
 | res_is_inf_fdiv
 | res_is_exact_zero_fdiv;
-assign early_finish_to_post_0_fdiv_pre_0 = (opb_frac_is_zero & ~opb_exp_is_zero & ~opb_exp_is_max) & (~opa_exp_is_zero & ~opa_exp_is_max);
+assign early_finish_to_post_0_fdiv_pre_0 = (opb_frac_is_zero_pre_0 & ~opb_exp_is_zero & ~opb_exp_is_max) & (~opa_exp_is_zero & ~opa_exp_is_max);
 
 assign early_finish_to_post_1_fsqrt_pre_0 = 
   res_is_nan_fsqrt
 | res_is_inf_fsqrt
 | res_is_exact_zero_fsqrt;
-assign early_finish_to_post_0_fsqrt_pre_0 = res_is_sqrt2_pre_0 & ~opa_exp_is_zero;
+// assign early_finish_to_post_0_fsqrt_pre_0 = res_is_sqrt2_pre_0 & ~opa_exp_is_zero;
+assign early_finish_to_post_0_fsqrt_pre_0 = opa_frac_is_zero_pre_0 & ~opa_exp_is_zero;
 
 assign early_finish_to_post_1_pre_0 = (early_finish_to_post_1_fdiv_pre_0 & is_fdiv_i) | (early_finish_to_post_1_fsqrt_pre_0 & ~is_fdiv_i);
 assign early_finish_to_post_0_pre_0 = (early_finish_to_post_0_fdiv_pre_0 & is_fdiv_i) | (early_finish_to_post_0_fsqrt_pre_0 & ~is_fdiv_i);
 
 
 // In PRE_1, opa and opb have already been 2 nm numbers
-assign early_finish_fdiv_pre_1 = opb_frac_is_zero;
-assign early_finish_fsqrt_pre_1 = res_is_sqrt2_pre_1;
+assign opb_frac_is_zero_pre_1 = (quot_root_m1_iter_q[0 +: (F64_FRAC_W - 1)] == '0);
+assign early_finish_fdiv_pre_1 = opb_frac_is_zero_pre_1;
+assign early_finish_fsqrt_pre_1 = opa_frac_is_zero_pre_1;
+// assign early_finish_fsqrt_pre_1 = res_is_sqrt2_pre_1;
 
 // In PRE_1, we always "early_finish to POST_0"
 assign early_finish_pre_1 = (early_finish_fdiv_pre_1 & is_fdiv_q) | (early_finish_fsqrt_pre_1 & ~is_fdiv_q);
@@ -678,7 +776,7 @@ assign divided_by_zero = ~res_is_nan_fdiv & ~opa_is_inf & opb_is_zero & is_fdiv_
 assign has_dn_in = opa_is_dn | (opb_is_dn & is_fdiv_i);
 
 // Follow the rule in riscv-spec, just produce default NaN.
-assign res_sign_d = ((res_is_nan_fdiv & is_fdiv_i) | (res_is_nan_fsqrt & ~is_fdiv_i) | ~is_fdiv_i) ? 1'b0 : (opa_sign ^ opb_sign);
+assign res_sign_d = (res_is_nan_fdiv & is_fdiv_i) | (res_is_nan_fsqrt & ~is_fdiv_i) ? 1'b0 : ~is_fdiv_i ? opa_sign : (opa_sign ^ opb_sign);
 assign fp_format_d = {f64_pre_0, f32_pre_0, f16_pre_0};
 assign rm_d = rm_i;
 
@@ -706,7 +804,7 @@ end
 
 // Don't use "is_fdiv" here to simplify "en" signal
 assign opb_is_power_of_2_en = start_handshaked | fsm_q[FSM_PRE_1_BIT];
-assign opb_is_power_of_2_d  = opb_frac_is_zero;
+assign opb_is_power_of_2_d  = fsm_q[FSM_PRE_0_BIT] ? opb_frac_is_zero_pre_0 : opb_frac_is_zero_pre_1;
 always_ff @(posedge clk)
 	if(opb_is_power_of_2_en)
 		opb_is_power_of_2_q <= opb_is_power_of_2_d;
@@ -834,9 +932,9 @@ assign nxt_res_exp_pre_1 = {
 // 2) A 6-bit 3-to-1 MUX
 // What if you use a native method to calculate "res_exp_fsqrt" ?
 // If we only consider nm number:
-// x.E = x.exp - ((fp_format_i == 2'd0) ? 15 : (fp_format_i == 2'd1) ? 127 : 1023);
+// x.E = x.exp - (fp_format_i[0] ? 15 : fp_format_i[1] ? 127 : 1023);
 // sqrt.E = x.E / 2;
-// sqrt.exp = sqrt.E + ((fp_format_i == 2'd0) ? 15 : (fp_format_i == 2'd1) ? 127 : 1023);
+// sqrt.exp = sqrt.E + (fp_format_i[0] ? 15 : fp_format_i[1] ? 127 : 1023);
 // I think the design used here should lead to better PPA.
 assign res_exp_mul_2_fsqrt[11:0] = {1'b0, opa_exp[10:1], opa_exp[0] | opa_exp_is_zero} + {
 	2'b0,
@@ -854,6 +952,109 @@ always_ff @(posedge clk)
 	if(res_exp_en)
 		res_exp_q <= res_exp_d;
 
+
+
+// ================================================================================================================================================
+// Skipping the First iteration for FSQRT
+// ================================================================================================================================================
+assign exp_is_odd_fsqrt = fsm_q[FSM_PRE_0_BIT] ? ~opa_exp[0] : iter_num_q[0];
+assign frac_fsqrt = fsm_q[FSM_PRE_0_BIT] ? opa_frac_unshifted[0 +: (F64_FRAC_W - 1)] : quot_root_iter_q[0 +: (F64_FRAC_W - 1)];
+// Look at the REF paper for more details.
+// even_exp, digit in (2 ^ -1) is 0: s[1] = -2, root = {0}.{1, 53'b0} , root_m1 = {0}.{01, 52'b0}
+// even_exp, digit in (2 ^ -1) is 1: s[1] = -1, root = {0}.{11, 52'b0}, root_m1 = {0}.{10, 52'b0}
+// odd_exp, digit in (2 ^ -1) is 0 : s[1] = -1, root = {0}.{11, 52'b0}, root_m1 = {0}.{10, 52'b0}
+// odd_exp, digit in (2 ^ -1) is 1 : s[1] =  0, root = {1}.{00, 52'b0}, root_m1 = {0}.{11, 52'b0}
+assign root_dig_n2_1st = ({exp_is_odd_fsqrt, frac_fsqrt[F64_FRAC_W - 2]} == 2'b00);
+assign root_dig_n1_1st = ({exp_is_odd_fsqrt, frac_fsqrt[F64_FRAC_W - 2]} == 2'b01) | ({exp_is_odd_fsqrt, frac_fsqrt[F64_FRAC_W - 2]} == 2'b10);
+assign root_dig_z0_1st = ({exp_is_odd_fsqrt, frac_fsqrt[F64_FRAC_W - 2]} == 2'b11);
+
+// When (opa_is_power_of_2) and odd_exp: 
+// f_r_s_before_iter_fsqrt = {1, 55'b0}
+// f_r_c_before_iter_fsqrt = {0111, 52'b0}
+// In the nxt cycle, we would have "nr_f_r != 0" and "nr_f_r[REM_W-1] == 1". This is what we need, to get the correct rounded result for sqrt(2)
+// When (opa_is_power_of_2) and even_exp: 
+// f_r_s_before_iter_fsqrt = {01, 54'b0}
+// f_r_c_before_iter_fsqrt = {11, 54'b0}
+// In the nxt cycle, we would have "nr_f_r == 0". This is what we need, to get the correct rounded result for sqrt(1)
+// In conclusion, when (opa_is_power_of_2), the ITER step could be skipped, and we only need to use 1-bit reg to store "opa_is_power_of_2 & exp_is_odd", 
+// instead of using 2-bit reg to store "{opa_is_power_of_2, exp_is_odd}"
+assign root_before_iter = 
+  ({(F64_FULL_ROOT_W){root_dig_n2_1st}} & {3'b010, {(F64_FULL_ROOT_W - 3){1'b0}}})
+| ({(F64_FULL_ROOT_W){root_dig_n1_1st}} & {3'b011, {(F64_FULL_ROOT_W - 3){1'b0}}})
+| ({(F64_FULL_ROOT_W){root_dig_z0_1st}} & {3'b100, {(F64_FULL_ROOT_W - 3){1'b0}}});
+// In the following expression,
+// when s[1] = -2, the MSB of root_m1 is not 1, which doesn't follow my assumption of root_m1. But you should easily find that in the later ITER stpes,
+// the QDS "MUST" select "0/+1/+2" before the next "-1/-2" is selected. Therefore, root_m1 will not be used until the next "-1/-2" is selected.
+assign root_m1_before_iter = 
+  ({(F64_FULL_ROOT_W){root_dig_n2_1st}} & {3'b001, {(F64_FULL_ROOT_W - 3){1'b0}}})
+| ({(F64_FULL_ROOT_W){root_dig_n1_1st}} & {3'b010, {(F64_FULL_ROOT_W - 3){1'b0}}})
+| ({(F64_FULL_ROOT_W){root_dig_z0_1st}} & {3'b011, {(F64_FULL_ROOT_W - 3){1'b0}}});
+
+assign f_r_s_before_iter_pre_fsqrt[FSQRT_F64_REM_W - 1:0] = {2'b11, exp_is_odd_fsqrt ? {1'b1, frac_fsqrt, 1'b0} : {1'b0, 1'b1, frac_fsqrt}};
+assign f_r_s_before_iter_fsqrt[FSQRT_F64_REM_W - 1:0] = {f_r_s_before_iter_pre_fsqrt[(FSQRT_F64_REM_W - 1) - 2:0], 2'b0};
+assign f_r_c_before_iter_fsqrt = 
+  ({(FSQRT_F64_REM_W){root_dig_n2_1st}} & {2'b11  , {(FSQRT_F64_REM_W - 2){1'b0}}})
+| ({(FSQRT_F64_REM_W){root_dig_n1_1st}} & {4'b0111, {(FSQRT_F64_REM_W - 4){1'b0}}})
+| ({(FSQRT_F64_REM_W){root_dig_z0_1st}} & {			{(FSQRT_F64_REM_W - 0){1'b0}}});
+
+// "f_r_c_before_iter_fsqrt" would only have 4-bit non-zero value, so a 4-bit FA is enough here
+assign rem_msb_nxt_cycle_1st_srt_before_iter[7:0] = {f_r_s_before_iter_fsqrt[(FSQRT_F64_REM_W - 1) -: 4] + f_r_c_before_iter_fsqrt[(FSQRT_F64_REM_W - 1) -: 4], f_r_s_before_iter_fsqrt[(FSQRT_F64_REM_W - 1) - 4 -: 4]};
+
+assign rem_msb_nxt_cycle_1st_srt_en = (start_handshaked & ~has_dn_in) | fsm_q[FSM_PRE_1_BIT] | fsm_q[FSM_ITER_BIT];
+assign rem_msb_nxt_cycle_1st_srt_d  = 
+  ({(7){fsm_q[FSM_PRE_0_BIT] | fsm_q[FSM_PRE_1_BIT]	}} & rem_msb_nxt_cycle_1st_srt_before_iter[7:1])
+| ({(7){fsm_q[FSM_ITER_BIT]							}} & rem_msb_nxt_cycle_1st_srt_after_iter[6:0]);
+
+assign a0_before_iter = root_before_iter[F64_FULL_ROOT_W - 1];
+assign a2_before_iter = root_before_iter[F64_FULL_ROOT_W - 3];
+assign a3_before_iter = root_before_iter[F64_FULL_ROOT_W - 4];
+assign a4_before_iter = root_before_iter[F64_FULL_ROOT_W - 5];
+
+fpsqrt_r4_qds_constants_generator u_fpsqrt_r4_qds_constants_generator_before_iter (
+	.a0_i           (a0_before_iter),
+	.a2_i           (a2_before_iter),
+	.a3_i           (a3_before_iter),
+	.a4_i           (a4_before_iter),
+	.m_n1_o         (m_n1_nxt_cycle_1st_srt_before_iter),
+	.m_z0_o         (m_z0_nxt_cycle_1st_srt_before_iter),
+	.m_p1_o         (m_p1_nxt_cycle_1st_srt_before_iter),
+	.m_p2_o         (m_p2_nxt_cycle_1st_srt_before_iter)
+);
+
+assign m_common_en = (start_handshaked & ~has_dn_in) | fsm_q[FSM_PRE_1_BIT] | fsm_q[FSM_ITER_BIT];
+
+// [6:5] = 00 -> don't need to store it
+assign m_n1_nxt_cycle_1st_srt_d = 
+  ({(5){fsm_q[FSM_PRE_0_BIT] | fsm_q[FSM_PRE_1_BIT]	}} & m_n1_nxt_cycle_1st_srt_before_iter[4:0])
+| ({(5){fsm_q[FSM_ITER_BIT]							}} & m_n1_nxt_cycle_1st_srt_after_iter[4:0]);
+
+// [6:4] = 000 -> don't need to store it
+assign m_z0_nxt_cycle_1st_srt_d = 
+  ({(4){fsm_q[FSM_PRE_0_BIT] | fsm_q[FSM_PRE_1_BIT]	}} & m_z0_nxt_cycle_1st_srt_before_iter[3:0])
+| ({(4){fsm_q[FSM_ITER_BIT]							}} & m_z0_nxt_cycle_1st_srt_after_iter[3:0]);
+
+// [6:3] = 1111 -> don't need to store it
+assign m_p1_nxt_cycle_1st_srt_d = 
+  ({(3){fsm_q[FSM_PRE_0_BIT] | fsm_q[FSM_PRE_1_BIT]	}} & m_p1_nxt_cycle_1st_srt_before_iter[2:0])
+| ({(3){fsm_q[FSM_ITER_BIT]							}} & m_p1_nxt_cycle_1st_srt_after_iter[2:0]);
+
+// [6:5] = 11, [0] = 0 -> don't need to store it
+assign m_p2_nxt_cycle_1st_srt_d = 
+  ({(4){fsm_q[FSM_PRE_0_BIT] | fsm_q[FSM_PRE_1_BIT]	}} & m_p2_nxt_cycle_1st_srt_before_iter[4:1])
+| ({(4){fsm_q[FSM_ITER_BIT]							}} & m_p2_nxt_cycle_1st_srt_after_iter[4:1]);
+
+always_ff @(posedge clk) begin
+	if(rem_msb_nxt_cycle_1st_srt_en)
+		rem_msb_nxt_cycle_1st_srt_q <= rem_msb_nxt_cycle_1st_srt_d;
+	if(m_common_en) begin
+		m_n1_nxt_cycle_1st_srt_q <= m_n1_nxt_cycle_1st_srt_d;
+		m_z0_nxt_cycle_1st_srt_q <= m_z0_nxt_cycle_1st_srt_d;
+		m_p1_nxt_cycle_1st_srt_q <= m_p1_nxt_cycle_1st_srt_d;
+		m_p2_nxt_cycle_1st_srt_q <= m_p2_nxt_cycle_1st_srt_d;
+	end
+end
+
+
 // ================================================================================================================================================
 // Normalization
 // ================================================================================================================================================
@@ -868,7 +1069,7 @@ assign opb_frac_unshifted =
 
 // PRE_0: Normalize opa
 // PRE_1: Check whether opa is "power of 2" after normalization, to make fsqrt faster
-assign opa_frac_lzc_data_in = fsm_q[FSM_PRE_0_BIT] ? opa_frac_unshifted : {1'b0, f_r_s_q[0 +: (F64_FRAC_W - 1)]};
+assign opa_frac_lzc_data_in = opa_frac_unshifted;
 lzc #(
 	.WIDTH(F64_FRAC_W),
 	// 0: trailing zero.
@@ -878,12 +1079,12 @@ lzc #(
 	.in_i		(opa_frac_lzc_data_in),
 	.cnt_o		(opa_frac_l_shift_num_temp),
 	// The hidden bit of frac is not considered here
-	.empty_o	(opa_frac_is_zero)
+	.empty_o	(opa_frac_is_zero_pre_0)
 );
 
 // PRE_0: Normalize opb
 // PRE_1: Check whether opb is "power of 2" after normalization, to make fdiv faster
-assign opb_frac_lzc_data_in = fsm_q[FSM_PRE_0_BIT] ? opb_frac_unshifted : {1'b0, f_r_c_q[0 +: (F64_FRAC_W - 1)]};
+assign opb_frac_lzc_data_in = opb_frac_unshifted;
 lzc #(
 	.WIDTH(F64_FRAC_W),
 	// 0: trailing zero.
@@ -893,14 +1094,22 @@ lzc #(
 	.in_i		(opb_frac_lzc_data_in),
 	.cnt_o		(opb_frac_l_shift_num_temp),
 	// The hidden bit of frac is not considered here
-	.empty_o	(opb_frac_is_zero)
+	.empty_o	(opb_frac_is_zero_pre_0)
 );
 assign opa_frac_l_shift_num = {(6){opa_exp_is_zero}} & opa_frac_l_shift_num_temp;
 assign opb_frac_l_shift_num = {(6){opb_exp_is_zero}} & opb_frac_l_shift_num_temp;
 
-// 53-bit "LZC + l_shift" in a single cycle should be possible
-assign opa_frac_l_shifted = opa_frac_unshifted[0 +: (F64_FRAC_W - 1)] << opa_frac_l_shift_num;
-assign opb_frac_l_shifted = opb_frac_unshifted[0 +: (F64_FRAC_W - 1)] << opb_frac_l_shift_num;
+
+frac_lsh u_frac_lsh_opa (
+	.lsh_i				(opa_frac_l_shift_num_temp),
+	.frac_unshifted		(opa_frac_unshifted[0 +: (F64_FRAC_W - 1)]),
+	.frac_shifted		(opa_frac_l_shifted)
+);
+frac_lsh u_frac_lsh_opb (
+	.lsh_i				(opb_frac_l_shift_num_temp),
+	.frac_unshifted		(opb_frac_unshifted[0 +: (F64_FRAC_W - 1)]),
+	.frac_shifted		(opb_frac_l_shifted)
+);
 
 assign opa_frac_lt_opb_frac =
   (fsm_q[FSM_PRE_0_BIT] ? opa_frac_prescaled_pre_0[0 +: (F64_FRAC_W - 1)] : opa_frac_prescaled_pre_1[0 +: (F64_FRAC_W - 1)])
@@ -912,9 +1121,9 @@ assign opa_frac_lt_opb_frac =
 
 assign opa_frac_prescaled_pre_0 = {1'b1, opa_frac_unshifted[0 +: (F64_FRAC_W - 1)]};
 assign opb_frac_prescaled_pre_0 = {1'b1, opb_frac_unshifted[0 +: (F64_FRAC_W - 1)]};
-// In PRE_1, f_r_s_q = opa_frac_l_shifted, f_r_c_q = opb_frac_l_shifted
-assign opa_frac_prescaled_pre_1 = {1'b1, f_r_s_q[0 +: (F64_FRAC_W - 1)]};
-assign opb_frac_prescaled_pre_1 = {1'b1, f_r_c_q[0 +: (F64_FRAC_W - 1)]};
+// In PRE_1, quot_root_iter_q = opa_frac_l_shifted, quot_root_m1_iter_q = opb_frac_l_shifted
+assign opa_frac_prescaled_pre_1 = {1'b1, quot_root_iter_q[0 +: (F64_FRAC_W - 1)]};
+assign opb_frac_prescaled_pre_1 = {1'b1, quot_root_m1_iter_q[0 +: (F64_FRAC_W - 1)]};
 assign opa_frac_prescaled = fsm_q[FSM_PRE_0_BIT] ? opa_frac_prescaled_pre_0 : opa_frac_prescaled_pre_1;
 assign opb_frac_prescaled = fsm_q[FSM_PRE_0_BIT] ? opb_frac_prescaled_pre_0 : opb_frac_prescaled_pre_1;
 
@@ -1013,70 +1222,109 @@ assign quot_1st_is_p2 = opa_frac_lt_opb_frac ? quot_1st_is_p2_opa_frac_lt_opb_fr
 // {a, 1} = 0_11011, {~b, 1} = 1_01101
 // 0_11011 + 1_01101 = 0_01000: (0_01000)[5:1] = 0_0100 = +4
 // So, we should initialize "sum/carry" using the following value.
-
-assign f_r_s_before_iter[GLOBAL_REM_W - 1:0] = {1'b0, opa_frac_lt_opb_frac ? {opa_frac_scaled[56:0], 1'b0} : {1'b0, opa_frac_scaled[56:0]}, 1'b1};
+assign f_r_s_before_iter_fdiv = {1'b0, opa_frac_lt_opb_frac ? {opa_frac_scaled[56:0], 1'b0} : {1'b0, opa_frac_scaled[56:0]}, 1'b1};
 
 assign opb_frac_scaled_ext[GLOBAL_REM_W - 1:0] = {2'b0, opb_frac_scaled[56:0], 1'b0};
 assign opb_frac_scaled_ext_mul_neg_1 = ~opb_frac_scaled_ext;
 assign opb_frac_scaled_ext_mul_neg_2 = ~{opb_frac_scaled_ext[(GLOBAL_REM_W - 1) - 1:0], 1'b0};
 
-assign f_r_c_before_iter = quot_1st_is_p2 ? opb_frac_scaled_ext_mul_neg_2 : opb_frac_scaled_ext_mul_neg_1;
+assign f_r_c_before_iter_fdiv = quot_1st_is_p2 ? opb_frac_scaled_ext_mul_neg_2 : opb_frac_scaled_ext_mul_neg_1;
 
-assign f_r_s_en = start_handshaked | fsm_q[FSM_PRE_1_BIT] | fsm_q[FSM_ITER_BIT];
-assign f_r_c_en = start_handshaked | fsm_q[FSM_PRE_1_BIT] | fsm_q[FSM_ITER_BIT];
+assign f_r_s_en = (start_handshaked & ~has_dn_in) | fsm_q[FSM_PRE_1_BIT] | fsm_q[FSM_ITER_BIT];
+assign f_r_c_en = (start_handshaked & ~has_dn_in) | fsm_q[FSM_PRE_1_BIT] | fsm_q[FSM_ITER_BIT];
+
+
 
 assign f_r_s_d = 
-  ({(GLOBAL_REM_W){fsm_q[FSM_PRE_0_BIT] & has_dn_in}} & {{(GLOBAL_REM_W - (F64_FRAC_W - 1)){1'b0}}, opa_frac_l_shifted})
-| ({(GLOBAL_REM_W){(fsm_q[FSM_PRE_0_BIT] & ~has_dn_in) | fsm_q[FSM_PRE_1_BIT]}} & f_r_s_before_iter)
-| ({(GLOBAL_REM_W){fsm_q[FSM_ITER_BIT]}} & f_r_s_3rd);
+  ({(GLOBAL_REM_W){fsm_q[FSM_PRE_0_BIT]}} & (is_fdiv_i ? f_r_s_before_iter_fdiv : {{(GLOBAL_REM_W - FSQRT_F64_REM_W){1'b0}}, f_r_s_before_iter_fsqrt[0 +: FSQRT_F64_REM_W]}))
+| ({(GLOBAL_REM_W){fsm_q[FSM_PRE_1_BIT]}} & (is_fdiv_q ? f_r_s_before_iter_fdiv : {{(GLOBAL_REM_W - FSQRT_F64_REM_W){1'b0}}, f_r_s_before_iter_fsqrt[0 +: FSQRT_F64_REM_W]}))
+| ({(GLOBAL_REM_W){fsm_q[FSM_ITER_BIT]}} & (is_fdiv_q ? f_r_s_3rd_fdiv : {{(GLOBAL_REM_W - FSQRT_F64_REM_W){1'b0}}, f_r_s_2nd_fsqrt[0 +: FSQRT_F64_REM_W]}));
 
 assign f_r_c_d = 
-  ({(GLOBAL_REM_W){fsm_q[FSM_PRE_0_BIT] & has_dn_in}} & {{(GLOBAL_REM_W - (F64_FRAC_W - 1)){1'b0}}, opb_frac_l_shifted})
-| ({(GLOBAL_REM_W){(fsm_q[FSM_PRE_0_BIT] & ~has_dn_in) | fsm_q[FSM_PRE_1_BIT]}} & f_r_c_before_iter)
-| ({(GLOBAL_REM_W){fsm_q[FSM_ITER_BIT]}} & f_r_c_3rd);
+  ({(GLOBAL_REM_W){fsm_q[FSM_PRE_0_BIT]}} & (is_fdiv_i ? f_r_c_before_iter_fdiv : {{(GLOBAL_REM_W - FSQRT_F64_REM_W){1'b0}}, f_r_c_before_iter_fsqrt[0 +: FSQRT_F64_REM_W]}))
+| ({(GLOBAL_REM_W){fsm_q[FSM_PRE_1_BIT]}} & (is_fdiv_q ? f_r_c_before_iter_fdiv : {{(GLOBAL_REM_W - FSQRT_F64_REM_W){1'b0}}, f_r_c_before_iter_fsqrt[0 +: FSQRT_F64_REM_W]}))
+| ({(GLOBAL_REM_W){fsm_q[FSM_ITER_BIT]}} & (is_fdiv_q ? f_r_c_3rd_fdiv : {{(GLOBAL_REM_W - FSQRT_F64_REM_W){1'b0}}, f_r_c_2nd_fsqrt[0 +: FSQRT_F64_REM_W]}));
 
 
+// For fdiv, when "opb_frac_is_zero_xxx = 1" , we need to remember "opa_frac_prescaled". Otherwise, we coult just set "quot = quot_m1 = 0"
+assign quot_before_iter_opb_frac_is_zero_pre_0 = 
+  ({(54){f16_pre_0}} & {{(54 - 10 - 2){1'b0}}, opa_frac_prescaled[51 -: 10], 2'b0})
+| ({(54){f32_pre_0}} & {{(54 - 23 - 1){1'b0}}, opa_frac_prescaled[51 -: 23], 1'b0})
+| ({(54){f64_pre_0}} & {{(54 - 52 - 2){1'b0}}, opa_frac_prescaled[51 -: 52], 2'b0});
+assign quot_before_iter_opb_frac_is_zero_pre_1 = 
+  ({(54){f16_after_pre_0}} & {{(54 - 10 - 2){1'b0}}, opa_frac_prescaled[51 -: 10], 2'b0})
+| ({(54){f32_after_pre_0}} & {{(54 - 23 - 1){1'b0}}, opa_frac_prescaled[51 -: 23], 1'b0})
+| ({(54){f64_after_pre_0}} & {{(54 - 52 - 2){1'b0}}, opa_frac_prescaled[51 -: 52], 2'b0});
 
-// For fdiv, when "opb_frac_is_zero = 1" , we need to remember "opa_frac_prescaled". Otherwise, we coult just set "quot = quot_m1 = 0"
+assign quot_before_iter = 
+  ({(54){fsm_q[FSM_PRE_0_BIT] & opb_frac_is_zero_pre_0}} & quot_before_iter_opb_frac_is_zero_pre_0)
+| ({(54){fsm_q[FSM_PRE_1_BIT] & opb_frac_is_zero_pre_1}} & quot_before_iter_opb_frac_is_zero_pre_1);
 
-assign quot_root_before_iter = opb_frac_is_zero ? (
-	  ({(54){f16_pre_0 | f16_after_pre_0}} & {{(54 - 10 - 2){1'b0}}, opa_frac_prescaled[51 -: 10], 2'b0})
-	| ({(54){f32_pre_0 | f32_after_pre_0}} & {{(54 - 23 - 1){1'b0}}, opa_frac_prescaled[51 -: 23], 1'b0})
-	| ({(54){f64_pre_0 | f64_after_pre_0}} & {{(54 - 52 - 2){1'b0}}, opa_frac_prescaled[51 -: 52], 2'b0})
-) : '0;
+// TODO: What would happen if we don't CLEAR "quot_m1" before iter starts ?
+assign quot_m1_before_iter = '0;
 
-// TODO: What would happen if we don't CLEAR "quot_root_m1" before iter starts ?
-assign quot_root_m1_before_iter = '0;
+assign quot_root_iter_en = (start_handshaked) | fsm_q[FSM_PRE_1_BIT] | fsm_q[FSM_ITER_BIT];
+assign quot_root_m1_iter_en = (start_handshaked) | fsm_q[FSM_PRE_1_BIT] | fsm_q[FSM_ITER_BIT] | (fsm_q[FSM_POST_0_BIT] & need_denormalization);
 
-assign quot_root_iter_en = (start_handshaked & ~has_dn_in) | fsm_q[FSM_PRE_1_BIT] | fsm_q[FSM_ITER_BIT];
-assign quot_root_m1_iter_en = (start_handshaked & ~has_dn_in) | fsm_q[FSM_PRE_1_BIT] | fsm_q[FSM_ITER_BIT] | (fsm_q[FSM_POST_0_BIT] & need_denormalization);
-
+// f_r_s_q/f_r_c_q is in the critial path, to optimize timing, we should:
+// Use quot_root_iter_q to store opa_frac_l_shifted
+// Use quot_root_m1_iter_q to store opb_frac_l_shifted
+// QUOT_ROOT_W = 54
 assign quot_root_iter_d = 
-  ({(QUOT_ROOT_W){fsm_q[FSM_PRE_0_BIT] | fsm_q[FSM_PRE_1_BIT]}} & quot_root_before_iter)
-| ({(QUOT_ROOT_W){fsm_q[FSM_ITER_BIT]}} & quot_3rd[0 +: QUOT_ROOT_W]);
+  ({(QUOT_ROOT_W){fsm_q[FSM_PRE_0_BIT] &  has_dn_in	&  opa_is_dn}} & {{(QUOT_ROOT_W - (F64_FRAC_W - 1)){1'b0}}, opa_frac_l_shifted[0 +: (F64_FRAC_W - 1)]})
+| ({(QUOT_ROOT_W){fsm_q[FSM_PRE_0_BIT] &  has_dn_in	& ~opa_is_dn}} & {{(QUOT_ROOT_W - (F64_FRAC_W - 1)){1'b0}}, opa_frac_unshifted[0 +: (F64_FRAC_W - 1)]})
+| ({(QUOT_ROOT_W){fsm_q[FSM_PRE_0_BIT] & ~has_dn_in				}} & (is_fdiv_i ? quot_before_iter : root_before_iter[0 +: 54]))
+| ({(QUOT_ROOT_W){fsm_q[FSM_PRE_1_BIT]							}} & (is_fdiv_q ? quot_before_iter : root_before_iter[0 +: 54]))
+| ({(QUOT_ROOT_W){fsm_q[FSM_ITER_BIT]							}} & (is_fdiv_q ? quot_3rd[0 +: QUOT_ROOT_W] : root_2nd[0 +: 54]));
 // When "need_denormalization = 1", use "quot_root_m1_iter_q" to store the rshifted QUOT we got in PRE_0
 assign quot_root_m1_iter_d = 
-  ({(QUOT_ROOT_W){fsm_q[FSM_PRE_0_BIT] | fsm_q[FSM_PRE_1_BIT]}} & quot_root_m1_before_iter)
-| ({(QUOT_ROOT_W){fsm_q[FSM_ITER_BIT]}} & quot_m1_3rd[0 +: QUOT_ROOT_W])
-| ({(QUOT_ROOT_W){fsm_q[FSM_POST_0_BIT]}} & {rem_is_not_zero_post_0, correct_quot_frac_shifted[52:0]});
+  ({(QUOT_ROOT_W){fsm_q[FSM_PRE_0_BIT] &  has_dn_in	&  opb_is_dn}} & {{(QUOT_ROOT_W - (F64_FRAC_W - 1)){1'b0}}, opb_frac_l_shifted[0 +: (F64_FRAC_W - 1)]})
+| ({(QUOT_ROOT_W){fsm_q[FSM_PRE_0_BIT] &  has_dn_in	& ~opb_is_dn}} & {{(QUOT_ROOT_W - (F64_FRAC_W - 1)){1'b0}}, opb_frac_unshifted[0 +: (F64_FRAC_W - 1)]})
+| ({(QUOT_ROOT_W){fsm_q[FSM_PRE_0_BIT] & ~has_dn_in				}} & (is_fdiv_i ? quot_m1_before_iter : {1'b0, root_m1_before_iter[0 +: 53]}))
+| ({(QUOT_ROOT_W){fsm_q[FSM_PRE_1_BIT]							}} & (is_fdiv_q ? quot_m1_before_iter : {1'b0, root_m1_before_iter[0 +: 53]}))
+| ({(QUOT_ROOT_W){fsm_q[FSM_ITER_BIT]							}} & (is_fdiv_q ? quot_m1_3rd[0 +: QUOT_ROOT_W] : {1'b0, root_m1_2nd[0 +: 53]}))
+| ({(QUOT_ROOT_W){fsm_q[FSM_POST_0_BIT]							}} & {rem_is_not_zero_post_0, correct_quot_frac_shifted[52:0]});
 
 // How to use "frac_D_q"
+// FDIV
 // PRE_0/PRE_1: opb_frac_scaled
 // POST_0: 54-bit sticky_without_rem
+// FSQRT
+// Use [12:0] to store "MASK"
 assign frac_D_en =
   (start_handshaked & ~has_dn_in)
 | fsm_q[FSM_PRE_1_BIT]
+| (fsm_q[FSM_ITER_BIT] & ~is_fdiv_q)
 | (fsm_q[FSM_POST_0_BIT] & need_denormalization);
-assign nxt_frac_D_before_iter = opb_frac_scaled;
+
+assign nxt_frac_D_before_iter_fdiv = opb_frac_scaled;
+assign nxt_frac_D_before_iter_fsqrt = {{(57 - 13){1'b0}}, 1'b1, 12'b0};
+assign nxt_frac_D_iter = frac_D_q >> 1;
 assign nxt_frac_D_post_0 = {frac_D_q[56:54], sticky_without_rem[53:0]};
-assign frac_D_d = (fsm_q[FSM_PRE_0_BIT] | fsm_q[FSM_PRE_1_BIT]) ? nxt_frac_D_before_iter : nxt_frac_D_post_0;
+
+assign frac_D_d = 
+  ({(57){fsm_q[FSM_PRE_0_BIT]}} & (is_fdiv_i ? nxt_frac_D_before_iter_fdiv : nxt_frac_D_before_iter_fsqrt))
+| ({(57){fsm_q[FSM_PRE_1_BIT]}} & (is_fdiv_q ? nxt_frac_D_before_iter_fdiv : nxt_frac_D_before_iter_fsqrt))
+| ({(57){fsm_q[FSM_ITER_BIT] }} & nxt_frac_D_iter)
+| ({(57){fsm_q[FSM_POST_0_BIT]}} & nxt_frac_D_post_0);
+
 
 assign final_iter = (iter_num_q == '0);
 assign iter_num_en = start_handshaked | fsm_q[FSM_PRE_1_BIT] | fsm_q[FSM_ITER_BIT];
-// TODO: Use this reg to store some special situations to save regs.
+assign iter_num_fdiv_pre_0 = f16_pre_0 ? 4'd1 : f32_pre_0 ? 4'd3 : 4'd8;
+assign iter_num_fdiv_pre_1 = f16_after_pre_0 ? 4'd1 : f32_after_pre_0 ? 4'd3 : 4'd8;
+assign iter_num_fsqrt_pre_0 = f16_pre_0 ? 4'd2 : f32_pre_0 ? 4'd5 : 4'd12;
+assign iter_num_fsqrt_pre_1 = f16_after_pre_0 ? 4'd2 : f32_after_pre_0 ? 4'd5 : 4'd12;
+
+assign iter_num_fdiv = fsm_q[FSM_PRE_0_BIT] ? iter_num_fdiv_pre_0 : iter_num_fdiv_pre_1;
+assign iter_num_fsqrt = fsm_q[FSM_PRE_0_BIT] ? iter_num_fsqrt_pre_0 : iter_num_fsqrt_pre_1;
+
+// TODO: Can we use this reg to store some special situations to save regs ??
+// For FSQRT, when opa is denormal, use iter_num_q[0] to store "opa_frac_l_shift_num[0]", so we can know whether opa_exp is odd in PRE_1
 assign iter_num_d  = 
-  ({(4){fsm_q[FSM_PRE_0_BIT]}} & (f16_pre_0 ? 4'd1 : f32_pre_0 ? 4'd3 : 4'd8))
-| ({(4){fsm_q[FSM_PRE_1_BIT]}} & (f16_after_pre_0 ? 4'd1 : f32_after_pre_0 ? 4'd3 : 4'd8))
+  ({(4){fsm_q[FSM_PRE_0_BIT] &  has_dn_in}} & {iter_num_q[3:1], opa_frac_l_shift_num[0]})
+| ({(4){fsm_q[FSM_PRE_0_BIT] & ~has_dn_in}} & (is_fdiv_i ? iter_num_fdiv_pre_0 : iter_num_fsqrt_pre_0))
+| ({(4){fsm_q[FSM_PRE_1_BIT]}} & (is_fdiv_q ? iter_num_fdiv_pre_1 : iter_num_fsqrt_pre_1))
 | ({(4){fsm_q[FSM_ITER_BIT]}} & (iter_num_q - 4'd1));
 
 always_ff @(posedge clk) begin
@@ -1120,30 +1368,61 @@ fpdiv_r64_block #(
 	.quot_dig_n1_3rd_o	(quot_dig_n1_3rd),
 	.quot_dig_n2_3rd_o	(quot_dig_n2_3rd),
 
-	.f_r_s_1st_o		(f_r_s_1st),
-	.f_r_s_2nd_o		(f_r_s_2nd),
-	.f_r_s_3rd_o		(f_r_s_3rd),
-	.f_r_c_1st_o		(f_r_c_1st),
-	.f_r_c_2nd_o		(f_r_c_2nd),
-	.f_r_c_3rd_o		(f_r_c_3rd)
+	.f_r_s_1st_o		(f_r_s_1st_fdiv),
+	.f_r_s_2nd_o		(f_r_s_2nd_fdiv),
+	.f_r_s_3rd_o		(f_r_s_3rd_fdiv),
+	.f_r_c_1st_o		(f_r_c_1st_fdiv),
+	.f_r_c_2nd_o		(f_r_c_2nd_fdiv),
+	.f_r_c_3rd_o		(f_r_c_3rd_fdiv)
+);
+
+fpsqrt_r16_block #(
+	.REM_W			(FSQRT_F64_REM_W)
+) u_fpsqrt_r16_block (
+	.f_r_s_i						(f_r_s_q[0 +: FSQRT_F64_REM_W]),
+	.f_r_c_i						(f_r_c_q[0 +: FSQRT_F64_REM_W]),
+	.root_i							(quot_root_iter_q[0 +: 54]),
+	.root_m1_i						(quot_root_m1_iter_q[0 +: 53]),
+	.rem_msb_nxt_cycle_1st_srt_i	(rem_msb_nxt_cycle_1st_srt_q),
+	.m_n1_last_cycle_i				(m_n1_nxt_cycle_1st_srt_q),
+	.m_z0_last_cycle_i				(m_z0_nxt_cycle_1st_srt_q),
+	.m_p1_last_cycle_i				(m_p1_nxt_cycle_1st_srt_q),
+	.m_p2_last_cycle_i				(m_p2_nxt_cycle_1st_srt_q),
+	.mask_i							(frac_D_q[12:0]),
+	
+	.root_1st_o						(root_1st),
+	.root_m1_1st_o					(root_m1_1st),
+	.root_2nd_o						(root_2nd),
+	.root_m1_2nd_o					(root_m1_2nd),
+
+	.f_r_s_1st_o					(f_r_s_1st_fsqrt),
+	.f_r_c_1st_o					(f_r_c_1st_fsqrt),
+	.f_r_s_2nd_o					(f_r_s_2nd_fsqrt),
+	.f_r_c_2nd_o					(f_r_c_2nd_fsqrt),
+
+	.rem_msb_nxt_cycle_1st_srt_o	(rem_msb_nxt_cycle_1st_srt_after_iter),
+	.m_n1_nxt_cycle_1st_srt_o		(m_n1_nxt_cycle_1st_srt_after_iter),
+	.m_z0_nxt_cycle_1st_srt_o		(m_z0_nxt_cycle_1st_srt_after_iter),
+	.m_p1_nxt_cycle_1st_srt_o		(m_p1_nxt_cycle_1st_srt_after_iter),
+	.m_p2_nxt_cycle_1st_srt_o		(m_p2_nxt_cycle_1st_srt_after_iter)
 );
 
 
 // ================================================================================================================================================
-// On the Fly Conversion (OFC/OTFC)
+// On the Fly Conversion (OFC/OTFC) for FDIV
 // ================================================================================================================================================
 assign quot_1st = 
-  ({(56){quot_dig_p2_1st}} & {quot_root_iter_q   [(56 - 1) - 2:0], 2'b10})
-| ({(56){quot_dig_p1_1st}} & {quot_root_iter_q   [(56 - 1) - 2:0], 2'b01})
-| ({(56){quot_dig_z0_1st}} & {quot_root_iter_q   [(56 - 1) - 2:0], 2'b00})
-| ({(56){quot_dig_n1_1st}} & {quot_root_m1_iter_q[(56 - 1) - 2:0], 2'b11})
-| ({(56){quot_dig_n2_1st}} & {quot_root_m1_iter_q[(56 - 1) - 2:0], 2'b10});
+  ({(56){quot_dig_p2_1st}} & {quot_root_iter_q   [54 - 1:0], 2'b10})
+| ({(56){quot_dig_p1_1st}} & {quot_root_iter_q   [54 - 1:0], 2'b01})
+| ({(56){quot_dig_z0_1st}} & {quot_root_iter_q   [54 - 1:0], 2'b00})
+| ({(56){quot_dig_n1_1st}} & {quot_root_m1_iter_q[54 - 1:0], 2'b11})
+| ({(56){quot_dig_n2_1st}} & {quot_root_m1_iter_q[54 - 1:0], 2'b10});
 assign quot_m1_1st = 
-  ({(56){quot_dig_p2_1st}} & {quot_root_iter_q   [(56 - 1) - 2:0], 2'b01})
-| ({(56){quot_dig_p1_1st}} & {quot_root_iter_q   [(56 - 1) - 2:0], 2'b00})
-| ({(56){quot_dig_z0_1st}} & {quot_root_m1_iter_q[(56 - 1) - 2:0], 2'b11})
-| ({(56){quot_dig_n1_1st}} & {quot_root_m1_iter_q[(56 - 1) - 2:0], 2'b10})
-| ({(56){quot_dig_n2_1st}} & {quot_root_m1_iter_q[(56 - 1) - 2:0], 2'b01});
+  ({(56){quot_dig_p2_1st}} & {quot_root_iter_q   [54 - 1:0], 2'b01})
+| ({(56){quot_dig_p1_1st}} & {quot_root_iter_q   [54 - 1:0], 2'b00})
+| ({(56){quot_dig_z0_1st}} & {quot_root_m1_iter_q[54 - 1:0], 2'b11})
+| ({(56){quot_dig_n1_1st}} & {quot_root_m1_iter_q[54 - 1:0], 2'b10})
+| ({(56){quot_dig_n2_1st}} & {quot_root_m1_iter_q[54 - 1:0], 2'b01});
 
 assign quot_2nd = 
   ({(56){quot_dig_p2_2nd}} & {quot_1st   [(56 - 1) - 2:0], 2'b10})
@@ -1212,9 +1491,13 @@ assign nr_f_r = f_r_s_q + f_r_c_q;
 // For f_r, the MSB is sign, so we only need to know the value of "(f_r_s_q[(GLOBAL_REM_W - 1)-1:0] + f_r_c_q[(GLOBAL_REM_W - 1)-1:0]) == 0"
 assign f_r_xor = f_r_s_q[(GLOBAL_REM_W - 1) - 1:1] ^ f_r_c_q[(GLOBAL_REM_W - 1) - 1:1];
 assign f_r_or  = f_r_s_q[(GLOBAL_REM_W - 1) - 2:0] | f_r_c_q[(GLOBAL_REM_W - 1) - 2:0];
+
 // The algorithm we use is "Minimally Redundant Radix 4", and its redundnat factor is 2/3.
 // So we must have "|rem| <= D * (2/3)" -> When (nr_f_r < 0), "nr_f_r + frac_D" MUST be NON_ZERO
-assign rem_is_not_zero_post_0 = ~opb_is_power_of_2_q & (nr_f_r[GLOBAL_REM_W - 1] | (f_r_xor != f_r_or));
+assign rem_is_not_zero_post_0 =
+  (is_fdiv_q ? ~opb_is_power_of_2_q : 1'b1)
+& ((is_fdiv_q ? nr_f_r[GLOBAL_REM_W - 1] : nr_f_r[FSQRT_F64_REM_W - 1]) | ((f_r_xor[53:0] != f_r_or[53:0]) | (is_fdiv_q & (f_r_xor[57:54] != f_r_or[57:54]))));
+
 // In PRE_1, quot_root_m1_iter_q[53] = rem_is_not_zero_post_0
 assign rem_is_not_zero_post_1 = quot_root_m1_iter_q[53] | (frac_D_q[53:0] != '0);
 // Now, we have already got 55/25/13-bit QUOT for f64/f32/f16
@@ -1237,15 +1520,15 @@ assign quot_shifted    = {quot_unshifted   , 54'b0} >> r_shift_num_post_0;
 assign quot_m1_shifted = {quot_m1_unshifted, 54'b0} >> r_shift_num_post_0;
 
 assign select_quot_m1 = nr_f_r[GLOBAL_REM_W - 1] & ~opb_is_power_of_2_q;
-assign select_root_m1 = nr_f_r[GLOBAL_REM_W - 1] & ~res_is_sqrt2_q;
+assign select_root_m1 = nr_f_r[FSQRT_F64_REM_W - 1] & ~res_is_sqrt2_q;
 // We at most need "(2 ^ -1) ~ (2 ^ -53)" for rounding when "need_denormalization = 1"
 assign correct_quot_frac_shifted = select_quot_m1 ? quot_m1_shifted[54 +: 53] : quot_shifted[54 +: 53];
 assign sticky_without_rem = select_quot_m1 ? quot_m1_shifted[0 +: 54] : quot_shifted[0 +: 54];
 
-// F64: quot_unshifted[53:0] is "2 ^ 0 ~ 2 ^ -53", we only need to increase the "2 ^ -1 ~ 2 ^ -52" part of the QUOT/ROOT -> A 53-bit incrementer is enough
-// F32: quot_unshifted[24:0] is "2 ^ 0 ~ 2 ^ -24", we only need to increase the "2 ^ -1 ~ 2 ^ -23" part of the QUOT/ROOT -> A 24-bit incrementer is enough
-// F16: quot_unshifted[11:0] is "2 ^ 0 ~ 2 ^ -11", we only need to increase the "2 ^ -1 ~ 2 ^ -10" part of the QUOT/ROOT -> A 11-bit incrementer is enough
-assign quot_root_before_inc[51:0] = fsm_q[FSM_POST_0_BIT] ? {
+// F64: quot_unshifted[53:0] is "2 ^ 0 ~ 2 ^ -53", we only need to increase the "2 ^ -1 ~ 2 ^ -52" part of the QUOT/ -> A 53-bit incrementer is enough
+// F32: quot_unshifted[24:0] is "2 ^ 0 ~ 2 ^ -24", we only need to increase the "2 ^ -1 ~ 2 ^ -23" part of the QUOT/ -> A 24-bit incrementer is enough
+// F16: quot_unshifted[11:0] is "2 ^ 0 ~ 2 ^ -11", we only need to increase the "2 ^ -1 ~ 2 ^ -10" part of the QUOT/ -> A 11-bit incrementer is enough
+assign quot_before_inc[51:0] = fsm_q[FSM_POST_0_BIT] ? {
 	quot_unshifted[52:25],
 	f32_after_pre_0 ? 1'b0 : quot_unshifted[24],
 	quot_unshifted[23:12],
@@ -1259,7 +1542,7 @@ assign quot_root_before_inc[51:0] = fsm_q[FSM_POST_0_BIT] ? {
 	quot_root_m1_iter_q[10:1]
 };
 // This is only needed in POST_0
-assign quot_root_m1_before_inc = {
+assign quot_m1_before_inc = {
 	quot_m1_unshifted[52:25],
 	f32_after_pre_0 ? 1'b0 : quot_m1_unshifted[24],
 	quot_m1_unshifted[23:12],
@@ -1267,42 +1550,92 @@ assign quot_root_m1_before_inc = {
 	quot_m1_unshifted[10:1]
 };
 
-assign quot_root_inc_res[52:0] = {1'b0, quot_root_before_inc[51:0]} + {52'b0, 1'b1};
+// root_before_inc[0] is "guard_bit", and it is not used in INC
+assign root_before_inc[52:0] = res_is_sqrt2_q ? SQRT_2_WITH_ROUND_BIT[0 +: 53] : quot_root_iter_q[0 +: 53];
+
+assign quot_root_before_inc[51:0] = is_fdiv_q ? quot_before_inc : root_before_inc[52:1];
+
+assign inc_poisition_fsqrt = 
+  ({(52){f16_after_pre_0}} & { 9'b0, 1'b1, 42'b0})
+| ({(52){f32_after_pre_0}} & {22'b0, 1'b1, 29'b0})
+| ({(52){f64_after_pre_0}} & {51'b0, 1'b1});
+assign inc_poisition_fdiv = {51'b0, 1'b1};
+assign inc_poisition = is_fdiv_q ? inc_poisition_fdiv : inc_poisition_fsqrt;
+
+assign quot_root_inc_res[52:0] = {1'b0, quot_root_before_inc[51:0]} + {1'b0, inc_poisition[51:0]};
+
 // In POST_0, for QUOT_M1, a CARRY into "2 ^ 0" is impossible -> we only need 52-bit to store info
-assign quot_root_m1_inc_res[51:0] = (quot_unshifted[1] == quot_m1_unshifted[1]) ? quot_root_inc_res[51:0] : quot_root_before_inc[51:0];
+assign quot_m1_inc_res[51:0] = (quot_unshifted[1] == quot_m1_unshifted[1]) ? quot_root_inc_res[51:0] : quot_before_inc[51:0];
 
-assign quot_root_l = fsm_q[FSM_POST_0_BIT] ? quot_unshifted[1] : quot_root_m1_iter_q[1];
-assign quot_root_g = fsm_q[FSM_POST_0_BIT] ? quot_unshifted[0] : quot_root_m1_iter_q[0];
-assign quot_root_s = fsm_q[FSM_POST_0_BIT] ? rem_is_not_zero_post_0 : rem_is_not_zero_post_1;
-assign quot_root_need_rup = 
-  ({rm_q == RM_RNE} & ((quot_root_g & quot_root_s) | (quot_root_l & quot_root_g)))
-| ({rm_q == RM_RDN} & ((quot_root_g | quot_root_s) &  res_sign_q))
-| ({rm_q == RM_RUP} & ((quot_root_g | quot_root_s) & ~res_sign_q))
-| ({rm_q == RM_RMM} & quot_root_g);
-assign quot_root_inexact = quot_root_g | quot_root_s;
+assign root_m1_inc_res = (root_l == root_m1_l) ? quot_root_inc_res[52:0] : {1'b0, root_before_inc[52:1]};
 
-assign quot_root_m1_l = quot_m1_unshifted[1];
-assign quot_root_m1_g = quot_m1_unshifted[0];
+assign root_l = f16_after_pre_0 ? root_before_inc[43] : f32_after_pre_0 ? root_before_inc[30] : root_before_inc[1];
+assign root_g = f16_after_pre_0 ? root_before_inc[42] : f32_after_pre_0 ? root_before_inc[29] : root_before_inc[0];
+assign root_s = rem_is_not_zero_post_0;
+// For SQRT, there is no "Midpoint" result, which means, if guard_bit is 1, then sticky_bit MUST be 1 as well. By using this property,
+// We could know that the effect of RNE is totally equal to RMM. So we can save several gates here.
+assign root_need_rup = 
+  ({rm_q == RM_RNE} &  root_g)
+| ({rm_q == RM_RUP} & (root_g | root_s))
+| ({rm_q == RM_RMM} &  root_g);
+assign root_inexact = root_g | root_s;
+
+assign root_m1_l = f16_after_pre_0 ? quot_root_m1_iter_q[43] : f32_after_pre_0 ? quot_root_m1_iter_q[30] : quot_root_m1_iter_q[1];
+assign root_m1_g = f16_after_pre_0 ? quot_root_m1_iter_q[42] : f32_after_pre_0 ? quot_root_m1_iter_q[29] : quot_root_m1_iter_q[0];
+assign root_m1_s = 1'b1;
+assign root_m1_need_rup = 
+  ({rm_q == RM_RNE} &  root_m1_g)
+| ({rm_q == RM_RUP} & (root_m1_g | root_m1_s))
+| ({rm_q == RM_RMM} &  root_m1_g);
+assign root_m1_inexact = 1'b1;
+
+assign root_rounded = root_need_rup ? quot_root_inc_res[52:0] : {1'b0, root_before_inc[52:1]};
+assign root_m1_rounded = root_m1_need_rup ? root_m1_inc_res[52:0] : {1'b0, quot_root_m1_iter_q[52:1]};
+assign inexact_fsqrt = select_root_m1 | root_inexact;
+
+assign frac_rounded_post_0_fsqrt[51:0] = select_root_m1 ? root_m1_rounded[51:0] : root_rounded[51:0];
+assign carry_after_round_fsqrt = select_root_m1 ? root_m1_rounded[52] : root_rounded[52];
+assign exp_rounded_fsqrt = carry_after_round_fsqrt ? (res_exp_q[10:0] + 11'd1) : res_exp_q[10:0];
+
+assign quot_l = fsm_q[FSM_POST_0_BIT] ? quot_unshifted[1] : quot_root_m1_iter_q[1];
+assign quot_g = fsm_q[FSM_POST_0_BIT] ? quot_unshifted[0] : quot_root_m1_iter_q[0];
+assign quot_s = fsm_q[FSM_POST_0_BIT] ? rem_is_not_zero_post_0 : rem_is_not_zero_post_1;
+assign quot_need_rup = 
+  ({rm_q == RM_RNE} & ((quot_g & quot_s) | (quot_l & quot_g)))
+| ({rm_q == RM_RDN} & ((quot_g | quot_s) &  res_sign_q))
+| ({rm_q == RM_RUP} & ((quot_g | quot_s) & ~res_sign_q))
+| ({rm_q == RM_RMM} & quot_g);
+assign quot_inexact = quot_g | quot_s;
+
+assign quot_m1_l = quot_m1_unshifted[1];
+assign quot_m1_g = quot_m1_unshifted[0];
 // When we need to use "QUOT_M1", the sticky_bit must be 1
-assign quot_root_m1_s = 1'b1;
-assign quot_root_m1_need_rup = 
-  ({rm_q == RM_RNE} & ((quot_root_m1_g & quot_root_m1_s) | (quot_root_m1_l & quot_root_m1_g)))
-| ({rm_q == RM_RDN} & ((quot_root_m1_g | quot_root_m1_s) &  res_sign_q))
-| ({rm_q == RM_RUP} & ((quot_root_m1_g | quot_root_m1_s) & ~res_sign_q))
-| ({rm_q == RM_RMM} & quot_root_m1_g);
-assign quot_root_m1_inexact = 1'b1;
+assign quot_m1_s = 1'b1;
+assign quot_m1_need_rup = 
+  ({rm_q == RM_RNE} & ((quot_m1_g & quot_m1_s) | (quot_m1_l & quot_m1_g)))
+| ({rm_q == RM_RDN} & ((quot_m1_g | quot_m1_s) &  res_sign_q))
+| ({rm_q == RM_RUP} & ((quot_m1_g | quot_m1_s) & ~res_sign_q))
+| ({rm_q == RM_RMM} & quot_m1_g);
+assign quot_m1_inexact = 1'b1;
 
-assign quot_root_rounded = quot_root_need_rup ? quot_root_inc_res[52:0] : {1'b0, quot_root_before_inc[51:0]};
-assign quot_root_m1_rounded = quot_root_m1_need_rup ? quot_root_m1_inc_res[51:0] : quot_root_m1_before_inc[51:0];
-assign inexact = fsm_q[FSM_POST_0_BIT] ? (select_quot_m1 | quot_root_inexact) : quot_root_inexact;
+assign quot_rounded = quot_need_rup ? quot_root_inc_res[52:0] : {1'b0, quot_before_inc[51:0]};
+assign quot_m1_rounded = quot_m1_need_rup ? quot_m1_inc_res[51:0] : quot_m1_before_inc[51:0];
+assign inexact_fdiv = fsm_q[FSM_POST_0_BIT] ? (select_quot_m1 | quot_inexact) : quot_inexact;
 
-assign frac_rounded_post_0 = select_quot_m1 ? quot_root_m1_rounded[51:0] : quot_root_rounded[51:0];
-// A CARRY into "2 ^ 0" could only happen in POST_1 (dn situation)
-assign carry_after_round = 
-  (f16_after_pre_0 & quot_root_rounded[10])
-| (f32_after_pre_0 & quot_root_rounded[23])
-| (f64_after_pre_0 & quot_root_rounded[52]);
+assign inexact = is_fdiv_q ? inexact_fdiv : inexact_fsqrt;
 
+assign frac_rounded_post_0_fdiv = select_quot_m1 ? quot_m1_rounded[51:0] : quot_rounded[51:0];
+// A CARRY into "2 ^ 0" could only happen in POST_1 (denormal situation)
+assign carry_after_round_fdiv = 
+  (f16_after_pre_0 & quot_rounded[10])
+| (f32_after_pre_0 & quot_rounded[23])
+| (f64_after_pre_0 & quot_rounded[52]);
+
+
+assign frac_rounded_post_0 = is_fdiv_q ? frac_rounded_post_0_fdiv : frac_rounded_post_0_fsqrt;
+
+
+// OVERFLOW could only happen for FDIV. For FSQRT, res_exp_q[11] MUST be 0
 // In post_0, the result must be a NM/OF number, OF could only happen in post_0
 // It's impossible to generate a OF result by rounding up (Easy to prove)
 assign of = res_exp_q[11];
@@ -1315,99 +1648,99 @@ assign of_to_inf =
 assign exp_res_post_0_f16 = 
 (of &  of_to_inf) ? {(5){1'b1}} : 
 (of & ~of_to_inf) ? {{(4){1'b1}}, 1'b0} : 
-res_exp_q[4:0];
+(is_fdiv_q ? res_exp_q[4:0] : exp_rounded_fsqrt[4:0]);
 
 assign exp_res_post_0_f32 = 
 (of &  of_to_inf) ? {(8){1'b1}} : 
 (of & ~of_to_inf) ? {{(7){1'b1}}, 1'b0} : 
-res_exp_q[7:0];
+(is_fdiv_q ? res_exp_q[7:0] : exp_rounded_fsqrt[7:0]);
 
 assign exp_res_post_0_f64 = 
 (of &  of_to_inf) ? {(11){1'b1}} : 
 (of & ~of_to_inf) ? {{(10){1'b1}}, 1'b0} : 
-res_exp_q[10:0];
+(is_fdiv_q ? res_exp_q[10:0] : exp_rounded_fsqrt[10:0]);
 
 assign frac_res_post_0_f16 = 
 (of &  of_to_inf) ? 10'b0 : 
 (of & ~of_to_inf) ? {(10){1'b1}} : 
-frac_rounded_post_0[9:0];
+(is_fdiv_q ? frac_rounded_post_0_fdiv[9:0] : frac_rounded_post_0_fsqrt[51 -: 10]);
 
 assign frac_res_post_0_f32 = 
 (of &  of_to_inf) ? 23'b0 : 
 (of & ~of_to_inf) ? {(23){1'b1}} : 
-frac_rounded_post_0[22:0];
+(is_fdiv_q ? frac_rounded_post_0_fdiv[22:0] : frac_rounded_post_0_fsqrt[51 -: 23]);
 
 assign frac_res_post_0_f64 = 
 (of &  of_to_inf) ? 52'b0 : 
 (of & ~of_to_inf) ? {(52){1'b1}} : 
-frac_rounded_post_0[51:0];
+(is_fdiv_q ? frac_rounded_post_0_fdiv[51:0] : frac_rounded_post_0_fsqrt[51 -: 52]);
 
-assign fdiv_res_post_0_f16 = {res_sign_q, exp_res_post_0_f16, frac_res_post_0_f16};
-assign fdiv_res_post_0_f32 = {res_sign_q, exp_res_post_0_f32, frac_res_post_0_f32};
-assign fdiv_res_post_0_f64 = {res_sign_q, exp_res_post_0_f64, frac_res_post_0_f64};
 
-assign fdiv_res_post_0 = {
-	fdiv_res_post_0_f64[63:32],
-	  ({(16){f32_after_pre_0}} & fdiv_res_post_0_f32[31:16])
-	| ({(16){f64_after_pre_0}} & fdiv_res_post_0_f64[31:16]),
-	  ({(16){f16_after_pre_0}} & fdiv_res_post_0_f16[15: 0])
-	| ({(16){f32_after_pre_0}} & fdiv_res_post_0_f32[15: 0])
-	| ({(16){f64_after_pre_0}} & fdiv_res_post_0_f64[15: 0])
+assign final_res_post_0_f16 = {res_sign_q, exp_res_post_0_f16, frac_res_post_0_f16};
+assign final_res_post_0_f32 = {res_sign_q, exp_res_post_0_f32, frac_res_post_0_f32};
+assign final_res_post_0_f64 = {res_sign_q, exp_res_post_0_f64, frac_res_post_0_f64};
+
+assign final_res_post_0 = {
+	final_res_post_0_f64[63:32],
+	  ({(16){f32_after_pre_0}} & final_res_post_0_f32[31:16])
+	| ({(16){f64_after_pre_0}} & final_res_post_0_f64[31:16]),
+	  ({(16){f16_after_pre_0}} & final_res_post_0_f16[15: 0])
+	| ({(16){f32_after_pre_0}} & final_res_post_0_f32[15: 0])
+	| ({(16){f64_after_pre_0}} & final_res_post_0_f64[15: 0])
 };
 
-// In post_1, the result before rounding must be a dn number or a special number
+// In POST_1, the result before rounding must be a denormal number or a special number
 assign exp_res_post_1_f16 = 
 (res_is_nan_q | res_is_inf_q) ? {(5){1'b1}} : 
 res_is_exact_zero_q ? 5'b0 : 
-{4'b0, carry_after_round};
+{4'b0, carry_after_round_fdiv};
 
 assign exp_res_post_1_f32 = 
 (res_is_nan_q | res_is_inf_q) ? {(8){1'b1}} : 
 res_is_exact_zero_q ? 8'b0 : 
-{7'b0, carry_after_round};
+{7'b0, carry_after_round_fdiv};
 
 assign exp_res_post_1_f64 = 
 (res_is_nan_q | res_is_inf_q) ? {(11){1'b1}} : 
 res_is_exact_zero_q ? 11'b0 : 
-{10'b0, carry_after_round};
+{10'b0, carry_after_round_fdiv};
 
 assign frac_res_post_1_f16 = 
 res_is_nan_q ? {1'b1, 9'b0} : 
 (res_is_inf_q | res_is_exact_zero_q) ? 10'b0 : 
-quot_root_rounded[9:0];
+quot_rounded[9:0];
 
 assign frac_res_post_1_f32 = 
 res_is_nan_q ? {1'b1, 22'b0} : 
 (res_is_inf_q | res_is_exact_zero_q) ? 23'b0 : 
-quot_root_rounded[22:0];
+quot_rounded[22:0];
 
 assign frac_res_post_1_f64 = 
 res_is_nan_q ? {1'b1, 51'b0} : 
 (res_is_inf_q | res_is_exact_zero_q) ? 52'b0 : 
-quot_root_rounded[51:0];
+quot_rounded[51:0];
 
-assign fdiv_res_post_1_f16 = {res_sign_q, exp_res_post_1_f16, frac_res_post_1_f16};
-assign fdiv_res_post_1_f32 = {res_sign_q, exp_res_post_1_f32, frac_res_post_1_f32};
-assign fdiv_res_post_1_f64 = {res_sign_q, exp_res_post_1_f64, frac_res_post_1_f64};
+assign final_res_post_1_f16 = {res_sign_q, exp_res_post_1_f16, frac_res_post_1_f16};
+assign final_res_post_1_f32 = {res_sign_q, exp_res_post_1_f32, frac_res_post_1_f32};
+assign final_res_post_1_f64 = {res_sign_q, exp_res_post_1_f64, frac_res_post_1_f64};
 
-assign fdiv_res_post_1 = {
-	fdiv_res_post_1_f64[63:32],
-	  ({(16){f32_after_pre_0}} & fdiv_res_post_1_f32[31:16])
-	| ({(16){f64_after_pre_0}} & fdiv_res_post_1_f64[31:16]),
-	  ({(16){f16_after_pre_0}} & fdiv_res_post_1_f16[15: 0])
-	| ({(16){f32_after_pre_0}} & fdiv_res_post_1_f32[15: 0])
-	| ({(16){f64_after_pre_0}} & fdiv_res_post_1_f64[15: 0])
+assign final_res_post_1 = {
+	final_res_post_1_f64[63:32],
+	  ({(16){f32_after_pre_0}} & final_res_post_1_f32[31:16])
+	| ({(16){f64_after_pre_0}} & final_res_post_1_f64[31:16]),
+	  ({(16){f16_after_pre_0}} & final_res_post_1_f16[15: 0])
+	| ({(16){f32_after_pre_0}} & final_res_post_1_f32[15: 0])
+	| ({(16){f64_after_pre_0}} & final_res_post_1_f64[15: 0])
 };
 
-assign fpdivsqrt_res_o = fsm_q[FSM_POST_0_BIT] ? fdiv_res_post_0 : fdiv_res_post_1;
+assign fpdivsqrt_res_o = fsm_q[FSM_POST_0_BIT] ? final_res_post_0 : final_res_post_1;
 
 assign fflags_invalid_operation = op_invalid_q;
 assign fflags_div_by_zero = divided_by_zero_q;
 // of could only happen in post_0
 assign fflags_of = fsm_q[FSM_POST_0_BIT] & of;
 // uf could only happen in post_1
-// TODO: Add support for "UF Before Rounding"
-assign fflags_uf = fsm_q[FSM_POST_1_BIT] & ~carry_after_round & inexact & ~res_is_exact_zero_q & ~res_is_inf_q & ~res_is_nan_q;
+assign fflags_uf = fsm_q[FSM_POST_1_BIT] & ~carry_after_round_fdiv & inexact & ~res_is_exact_zero_q & ~res_is_inf_q & ~res_is_nan_q;
 assign fflags_inexact = ((fsm_q[FSM_POST_0_BIT] & of) | inexact) & ~res_is_inf_q & ~res_is_nan_q & ~res_is_exact_zero_q;
 
 assign fflags_o = {

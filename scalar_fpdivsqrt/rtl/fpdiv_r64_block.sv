@@ -2,8 +2,8 @@
 // File Name			: fpdiv_r64_block.sv
 // Author				: HYF
 // How to Contact		: hyf_sysu@qq.com
-// Created Time    		: 24-04-21 17:27:11
-// Last Modified Time   : 24-05-11 14:16:32
+// Created Time    		: May 11th 2024, 09:35:44
+// Last Modified Time   : 2024-05-14 @ 09:28:08
 // ========================================================================================================
 // Description	:
 // Please look at the reference paper for its original architecture.
@@ -53,7 +53,7 @@ module fpdiv_r64_block #(
 )(
 	input  logic [REM_W - 1:0] f_r_s_i,
 	input  logic [REM_W - 1:0] f_r_c_i,
-	// 57 = FP64_FRAC_W + 4
+	// 57 = 1 + 52 + 4
 	input  logic [57 - 1:0] divisor_i,
 	
 	output logic quot_dig_p2_1st_o,
@@ -264,9 +264,9 @@ assign rem_msb_quot_dig_p2_2nd[6:0] = f_r_s_i[(REM_W - 1) - 2 - 2 -: 7] + f_r_c_
 
 
 assign rem_msb_1st[5:0] = f_r_s_i[(REM_W - 1) - 2 -: 6] + f_r_c_i[(REM_W - 1) - 2 -: 6];
-r4_qds #(
+fdiv_r4_qds #(
 	.QDS_ARCH(QDS_ARCH)
-) u_r4_qds_1st (
+) u_fdiv_r4_qds_1st (
 	.rem_i		(rem_msb_1st),
 	.quo_dig_o	(
 		{
@@ -376,9 +376,9 @@ assign rem_msb_2nd[5:0] =
 | ({(6){quot_dig_z0_1st}} & rem_msb_quot_dig_z0_2nd[6:1])
 | ({(6){quot_dig_n1_1st}} & rem_msb_quot_dig_n1_2nd[6:1])
 | ({(6){quot_dig_n2_1st}} & rem_msb_quot_dig_n2_2nd[6:1]);
-r4_qds #(
+fdiv_r4_qds #(
 	.QDS_ARCH(QDS_ARCH)
-) u_r4_qds_2nd (
+) u_fdiv_r4_qds_2nd (
 	.rem_i		(rem_msb_2nd),
 	.quo_dig_o	(
 		{
@@ -468,9 +468,9 @@ assign rem_msb_3rd[5:0] =
 | ({(6){quot_dig_z0_2nd}} & rem_msb_quot_dig_z0_3rd[6:1])
 | ({(6){quot_dig_n1_2nd}} & rem_msb_quot_dig_n1_3rd[6:1])
 | ({(6){quot_dig_n2_2nd}} & rem_msb_quot_dig_n2_3rd[6:1]);
-r4_qds #(
+fdiv_r4_qds #(
 	.QDS_ARCH(QDS_ARCH)
-) u_r4_qds_3rd (
+) u_fdiv_r4_qds_3rd (
 	.rem_i		(rem_msb_3rd),
 	.quo_dig_o	(
 		{

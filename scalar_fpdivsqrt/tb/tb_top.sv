@@ -2,11 +2,11 @@
 // File Name			: tb_top.sv
 // Author				: HYF
 // How to Contact		: hyf_sysu@qq.com
-// Created Time    		: 24-04-21 17:27:11
-// Last Modified Time   : 24-05-11 09:11:28
+// Created Time    		: May 11th 2024, 09:35:44
+// Last Modified Time   : 2024-05-27 @ 09:36:12
 // ========================================================================================================
 // Description	:
-// TB for FPDIV.
+// 
 // ========================================================================================================
 // ========================================================================================================
 // Copyright (C) 2024, HYF. All Rights Reserved.
@@ -156,7 +156,7 @@ bit [31:0] dut_finish_valid_after_start_handshake_delay;
 
 
 // signals related with DUT.
-bit [ 2-1:0] fp_format;
+bit [ 3-1:0] fp_format;
 bit [64-1:0] dut_opa;
 bit [64-1:0] dut_opb;
 bit [ 3-1:0] dut_rm;
@@ -239,7 +239,7 @@ initial begin
 			.opb_lo				(dut_opb[31: 0]),
 			.fp_format			(fp_format),
 			.rm					(dut_rm),
-			.is_fdiv			(1),
+			.is_fdiv			(dut_is_fdiv),
 			.dut_res_hi			(dut_res[63:32]),
 			.dut_res_lo			(dut_res[31: 0]),
 			.dut_fflags			(dut_fflags),
@@ -292,13 +292,13 @@ end
 
 scalar_fpdivsqrt #(
 	.FDIV_QDS_ARCH				(2),
-	.UF_BEFORE_ROUNDING			(0)
+	.UF_AFTER_ROUNDING			(0)
 ) u_dut (
 	.start_valid_i		(dut_start_valid),
 	.start_ready_o		(dut_start_ready),
 	.flush_i			(1'b0),	
 	.fp_format_i		(fp_format),
-	.is_fdiv_i			(1'b1),
+	.is_fdiv_i			(dut_is_fdiv),
 	.opa_i				(dut_opa),
 	.opb_i				(dut_opb),
 	.rm_i				(dut_rm),

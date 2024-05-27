@@ -18,12 +18,16 @@ add wave -position insertpoint -expand -group FSM_CTRL {sim:/tb_top/dut_rm}
 add wave -position insertpoint -expand -group FSM_CTRL {sim:/tb_top/dut_opa}
 add wave -position insertpoint -expand -group FSM_CTRL {sim:/tb_top/dut_opb}
 add wave -position insertpoint -expand -group FSM_CTRL {sim:/tb_top/dut_res}
-add wave -position insertpoint -expand -group FSM_CTRL {sim:/tb_top/u_dut/fdiv_res_post_0_f16}
-add wave -position insertpoint -expand -group FSM_CTRL {sim:/tb_top/u_dut/fdiv_res_post_0_f32}
-add wave -position insertpoint -expand -group FSM_CTRL {sim:/tb_top/u_dut/fdiv_res_post_0_f64}
-add wave -position insertpoint -expand -group FSM_CTRL {sim:/tb_top/u_dut/fdiv_res_post_1_f16}
-add wave -position insertpoint -expand -group FSM_CTRL {sim:/tb_top/u_dut/fdiv_res_post_1_f32}
-add wave -position insertpoint -expand -group FSM_CTRL {sim:/tb_top/u_dut/fdiv_res_post_1_f64}
+add wave -position insertpoint -expand -group FSM_CTRL {sim:/tb_top/u_dut/final_res_post_0_f16}
+add wave -position insertpoint -expand -group FSM_CTRL {sim:/tb_top/u_dut/final_res_post_0_f32}
+add wave -position insertpoint -expand -group FSM_CTRL {sim:/tb_top/u_dut/final_res_post_0_f64}
+add wave -position insertpoint -expand -group FSM_CTRL {sim:/tb_top/u_dut/final_res_post_1_f16}
+add wave -position insertpoint -expand -group FSM_CTRL {sim:/tb_top/u_dut/final_res_post_1_f32}
+add wave -position insertpoint -expand -group FSM_CTRL {sim:/tb_top/u_dut/final_res_post_1_f64}
+
+
+
+
 
 
 add wave -position insertpoint -expand -group SPECIAL_CASES {sim:/tb_top/u_dut/opa_is_dn}
@@ -34,18 +38,18 @@ add wave -position insertpoint -expand -group SPECIAL_CASES {sim:/tb_top/u_dut/e
 add wave -position insertpoint -expand -group SPECIAL_CASES {sim:/tb_top/u_dut/res_is_nan_fdiv}
 add wave -position insertpoint -expand -group SPECIAL_CASES {sim:/tb_top/u_dut/res_is_inf_fdiv}
 add wave -position insertpoint -expand -group SPECIAL_CASES {sim:/tb_top/u_dut/res_is_exact_zero_fdiv}
-
-add wave -position insertpoint -expand -group SPECIAL_CASES {sim:/tb_top/u_dut/res_is_nan_fsqrt}
-add wave -position insertpoint -expand -group SPECIAL_CASES {sim:/tb_top/u_dut/res_is_inf_fsqrt}
-add wave -position insertpoint -expand -group SPECIAL_CASES {sim:/tb_top/u_dut/res_is_exact_zero_fsqrt}
-add wave -position insertpoint -expand -group SPECIAL_CASES {sim:/tb_top/u_dut/res_is_sqrt2_pre_0}
-
 add wave -position insertpoint -expand -group SPECIAL_CASES {sim:/tb_top/u_dut/early_finish_fdiv_pre_1}
 add wave -position insertpoint -expand -group SPECIAL_CASES {sim:/tb_top/u_dut/early_finish_fsqrt_pre_1}
 add wave -position insertpoint -expand -group SPECIAL_CASES {sim:/tb_top/u_dut/early_finish_pre_1}
-
 add wave -position insertpoint -expand -group SPECIAL_CASES {sim:/tb_top/u_dut/opb_is_power_of_2_q}
-add wave -position insertpoint -expand -group SPECIAL_CASES {sim:/tb_top/u_dut/res_is_sqrt2_q}
+
+
+
+
+
+
+
+
 
 add wave -position insertpoint -expand -group EXP_CALCULATION {sim:/tb_top/u_dut/exp_diff_nm_in}
 add wave -position insertpoint -expand -group EXP_CALCULATION {sim:/tb_top/u_dut/exp_diff_dn_in_pre_0}
@@ -89,9 +93,10 @@ add wave -position insertpoint -expand -group PRESCALING -radix unsigned {sim:/t
 add wave -position insertpoint -expand -group PRESCALING -radix unsigned {sim:/tb_top/u_dut/rem_msb_1st_quot_opa_frac_lt_opb_frac_temp}
 add wave -position insertpoint -expand -group PRESCALING -radix unsigned {sim:/tb_top/u_dut/quot_1st_is_p2}
 
-add wave -position insertpoint -expand -group PRESCALING {sim:/tb_top/u_dut/f_r_s_before_iter}
-add wave -position insertpoint -expand -group PRESCALING {sim:/tb_top/u_dut/f_r_c_before_iter}
-add wave -position insertpoint -expand -group PRESCALING {sim:/tb_top/u_dut/opb_frac_is_zero}
+add wave -position insertpoint -expand -group PRESCALING {sim:/tb_top/u_dut/f_r_s_before_iter_fdiv}
+add wave -position insertpoint -expand -group PRESCALING {sim:/tb_top/u_dut/f_r_c_before_iter_fdiv}
+add wave -position insertpoint -expand -group PRESCALING {sim:/tb_top/u_dut/opb_frac_is_zero_pre_0}
+add wave -position insertpoint -expand -group PRESCALING {sim:/tb_top/u_dut/opb_frac_is_zero_pre_1}
 
 
 add wave -position insertpoint -expand -group 1ST_SRT -radix binary {sim:/tb_top/u_dut/u_fpdiv_r64_block/rem_msb_1st}
@@ -138,6 +143,8 @@ add wave -position insertpoint -expand -group 2ND_SRT {sim:/tb_top/u_dut/u_fpdiv
 
 
 
+
+
 add wave -position insertpoint -expand -group 3RD_SRT -radix binary {sim:/tb_top/u_dut/u_fpdiv_r64_block/rem_msb_3rd}
 add wave -position insertpoint -expand -group 3RD_SRT {sim:/tb_top/u_dut/u_fpdiv_r64_block/f_r_s_3rd}
 add wave -position insertpoint -expand -group 3RD_SRT {sim:/tb_top/u_dut/u_fpdiv_r64_block/f_r_c_3rd}
@@ -163,21 +170,23 @@ add wave -position insertpoint -expand -group POST {sim:/tb_top/u_dut/correct_qu
 add wave -position insertpoint -expand -group POST {sim:/tb_top/u_dut/sticky_without_rem}
 add wave -position insertpoint -expand -group POST {sim:/tb_top/u_dut/rem_is_not_zero_post_0}
 add wave -position insertpoint -expand -group POST {sim:/tb_top/u_dut/rem_is_not_zero_post_1}
+add wave -position insertpoint -expand -group POST {sim:/tb_top/u_dut/quot_before_inc}
 add wave -position insertpoint -expand -group POST {sim:/tb_top/u_dut/quot_root_before_inc}
-add wave -position insertpoint -expand -group POST {sim:/tb_top/u_dut/quot_root_m1_before_inc}
+add wave -position insertpoint -expand -group POST {sim:/tb_top/u_dut/quot_m1_before_inc}
+add wave -position insertpoint -expand -group POST {sim:/tb_top/u_dut/inc_poisition}
 add wave -position insertpoint -expand -group POST {sim:/tb_top/u_dut/quot_root_inc_res}
-add wave -position insertpoint -expand -group POST {sim:/tb_top/u_dut/quot_root_m1_inc_res}
+add wave -position insertpoint -expand -group POST {sim:/tb_top/u_dut/quot_m1_inc_res}
 
-add wave -position insertpoint -expand -group POST {sim:/tb_top/u_dut/quot_root_l}
-add wave -position insertpoint -expand -group POST {sim:/tb_top/u_dut/quot_root_g}
-add wave -position insertpoint -expand -group POST {sim:/tb_top/u_dut/quot_root_s}
-add wave -position insertpoint -expand -group POST {sim:/tb_top/u_dut/quot_root_need_rup}
-add wave -position insertpoint -expand -group POST {sim:/tb_top/u_dut/quot_root_m1_l}
-add wave -position insertpoint -expand -group POST {sim:/tb_top/u_dut/quot_root_m1_g}
-add wave -position insertpoint -expand -group POST {sim:/tb_top/u_dut/quot_root_m1_s}
-add wave -position insertpoint -expand -group POST {sim:/tb_top/u_dut/quot_root_m1_need_rup}
-add wave -position insertpoint -expand -group POST {sim:/tb_top/u_dut/frac_rounded_post_0}
-add wave -position insertpoint -expand -group POST {sim:/tb_top/u_dut/carry_after_round}
+add wave -position insertpoint -expand -group POST {sim:/tb_top/u_dut/quot_l}
+add wave -position insertpoint -expand -group POST {sim:/tb_top/u_dut/quot_g}
+add wave -position insertpoint -expand -group POST {sim:/tb_top/u_dut/quot_s}
+add wave -position insertpoint -expand -group POST {sim:/tb_top/u_dut/quot_need_rup}
+add wave -position insertpoint -expand -group POST {sim:/tb_top/u_dut/quot_m1_l}
+add wave -position insertpoint -expand -group POST {sim:/tb_top/u_dut/quot_m1_g}
+add wave -position insertpoint -expand -group POST {sim:/tb_top/u_dut/quot_m1_s}
+add wave -position insertpoint -expand -group POST {sim:/tb_top/u_dut/quot_m1_need_rup}
+add wave -position insertpoint -expand -group POST {sim:/tb_top/u_dut/frac_rounded_post_0_fdiv}
+add wave -position insertpoint -expand -group POST {sim:/tb_top/u_dut/carry_after_round_fdiv}
 add wave -position insertpoint -expand -group POST {sim:/tb_top/u_dut/of}
 add wave -position insertpoint -expand -group POST {sim:/tb_top/u_dut/of_to_inf}
 

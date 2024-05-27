@@ -101,8 +101,7 @@ void cmodel_check_result (
 	f64_opa.v = ((uint64_t)(*opa_hi) << 32) | *opa_lo;
 	f64_opb.v = ((uint64_t)(*opb_hi) << 32) | *opb_lo;
 
-	// The same as RTL....
-	// TODO: Add support for "softfloat_tininess_beforeRounding"
+	// Follow RV-SPEC, Use "softfloat_tininess_afterRounding" here
 	softfloat_detectTininess = softfloat_tininess_afterRounding;
 	// clean fflags before every computation
 	softfloat_exceptionFlags = 0;
@@ -113,7 +112,7 @@ void cmodel_check_result (
 	uint32_t dut_fflags_underflow 			= *dut_fflags & 0x2;
 	uint32_t dut_fflags_inexact 			= *dut_fflags & 0x1;
 
-	if(*fp_format == 0) {
+	if(*fp_format == 1) {
 		f16_res = *is_fdiv ? f16_div(f16_opa, f16_opb) : f16_sqrt(f16_opa);
 		// In rv-spec, we only produce defaultNaN
 		if(fp16_is_nan(f16_res.v))
@@ -121,7 +120,7 @@ void cmodel_check_result (
 		else
 			data_ok = (*dut_res_lo & 0xFFFF) == f16_res.v;
 
-	} else if(*fp_format == 1) {
+	} else if(*fp_format == 2) {
 		f32_res = *is_fdiv ? f32_div(f32_opa, f32_opb) : f32_sqrt(f32_opa);
 
 		if(fp32_is_nan(f32_res.v))
@@ -139,12 +138,11 @@ void cmodel_check_result (
 
 	}
 
-	// TODO: Add support for "softfloat_tininess_beforeRounding"
-	// Underflow flag seems have some problems...
-	if(*fp_format == 0) {
+
+	if(*fp_format == 1) {
 		if((f16_res.v == fp16_min_pos_normal) | (f16_res.v == fp16_min_neg_normal))
 			check_underflow = 0;
-	} else if(*fp_format == 1) {
+	} else if(*fp_format == 2) {
 		if((f32_res.v == fp32_min_pos_normal) | (f32_res.v == fp32_min_neg_normal))
 			check_underflow = 0;
 	} else {
@@ -170,14 +168,14 @@ void cmodel_check_result (
 	*compare_ok = data_ok & fflags_ok;
 	if(*compare_ok == 0) {
 		recorded_stim_idx[*err_count] = *acq_count;
-		recorded_opa[*err_count] = (*fp_format == 0) ? f16_opa.v : (*fp_format == 1) ? f32_opa.v : f64_opa.v;
-		recorded_opb[*err_count] = (*fp_format == 0) ? f16_opb.v : (*fp_format == 1) ? f32_opb.v : f64_opb.v;
+		recorded_opa[*err_count] = (*fp_format == 1) ? f16_opa.v : (*fp_format == 2) ? f32_opa.v : f64_opa.v;
+		recorded_opb[*err_count] = (*fp_format == 1) ? f16_opb.v : (*fp_format == 2) ? f32_opb.v : f64_opb.v;
 		recorded_fp_format[*err_count] = *fp_format;
 		recorded_rm[*err_count] = *rm;
 		recorded_is_fdiv[*err_count] = *is_fdiv;
-		recorded_dut_res[*err_count] = (*fp_format == 0) ? (*dut_res_lo & 0xFFFF) : (*fp_format == 1) ? *dut_res_lo : (((uint64_t)(*dut_res_hi) << 32) | *dut_res_lo);
+		recorded_dut_res[*err_count] = (*fp_format == 1) ? (*dut_res_lo & 0xFFFF) : (*fp_format == 2) ? *dut_res_lo : (((uint64_t)(*dut_res_hi) << 32) | *dut_res_lo);
 		recorded_dut_fflags[*err_count] = *dut_fflags;
-		recorded_ref_res[*err_count] = (*fp_format == 0) ? f16_res.v : (*fp_format == 1) ? f32_res.v : f64_res.v;
+		recorded_ref_res[*err_count] = (*fp_format == 1) ? f16_res.v : (*fp_format == 2) ? f32_res.v : f64_res.v;
 		recorded_ref_fflags[*err_count] = softfloat_exceptionFlags;
 	}
 }

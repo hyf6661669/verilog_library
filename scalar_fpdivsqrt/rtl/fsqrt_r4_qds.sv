@@ -1,12 +1,12 @@
 // ========================================================================================================
-// File Name			: tb_stim.svh
+// File Name			: fsqrt_r4_qds.sv
 // Author				: HYF
 // How to Contact		: hyf_sysu@qq.com
-// Created Time    		: May 11th 2024, 09:35:44
-// Last Modified Time   : 2024-05-24 @ 09:17:23
+// Created Time    		: May 20th 2024, 19:36:50
+// Last Modified Time   : 2024-05-20 @ 19:36:44
 // ========================================================================================================
 // Description	:
-// 
+// A standatd Radix-4 SRT Square-Root Quotient Digit Selection module.
 // ========================================================================================================
 // ========================================================================================================
 // Copyright (C) 2024, HYF. All Rights Reserved.
@@ -37,103 +37,49 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, 
 // EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // ========================================================================================================
-`ifndef RAND_SEED
-	`define RAND_SEED 999
-`endif
-`ifndef TEST_LEVEL
-	`define TEST_LEVEL 1
-`endif
+
+// include some definitions here
+
+module fsqrt_r4_qds #(
+	// Put some parameters here, which can be changed by other modules.
+)(
+	input  logic [7 - 1:0]  rem_i,
+	input  logic [7 - 1:0]  m_n1_i,
+	input  logic [7 - 1:0]  m_z0_i,
+	input  logic [7 - 1:0]  m_p1_i,
+	input  logic [7 - 1:0]  m_p2_i,
+	output logic            root_dig_n2_o,
+	output logic            root_dig_n1_o,
+	output logic            root_dig_z0_o,
+	output logic            root_dig_p1_o,
+	output logic            root_dig_p2_o
+);
+
+// ================================================================================================================================================
+// (local) parameters begin
 
 
-// fp_format = 3'b001;
+// (local) parameters end
+// ================================================================================================================================================
 
-// dut_opa = 64'h0000000000000005;
-// dut_opb = 64'h000000000000137D;
-// dut_rm = 2;
-// `SINGLE_STIM
+// ================================================================================================================================================
+// signals begin
 
-// dut_opa = 64'h00000000000081CC;
-// dut_opb = 64'h000000000000891D;
-// dut_rm = 0;
-// `SINGLE_STIM
+logic [4-1:0] qds_sign;
+logic [6-1:0] unused_bit [4-1:0];
 
-// dut_opa = 64'h00000000000082B6;
-// dut_opb = 64'h000000000000CB02;
-// dut_rm = 1;
-// `SINGLE_STIM
+// signals end
+// ================================================================================================================================================
 
+assign {qds_sign[3], unused_bit[3]} = rem_i + m_p2_i;
+assign {qds_sign[2], unused_bit[2]} = rem_i + m_p1_i;
+assign {qds_sign[1], unused_bit[1]} = rem_i + m_z0_i;
+assign {qds_sign[0], unused_bit[0]} = rem_i + m_n1_i;
 
+assign root_dig_n2_o = (qds_sign[1:0] == 2'b11);
+assign root_dig_n1_o = (qds_sign[1:0] == 2'b10);
+assign root_dig_z0_o = (qds_sign[2:1] == 2'b10);
+assign root_dig_p1_o = (qds_sign[3:2] == 2'b10);
+assign root_dig_p2_o = (qds_sign[3:2] == 2'b00);
 
-gencases_init(`RAND_SEED, `TEST_LEVEL);
-// ==================================================================================================================================================
-// Just random test...
-// ==================================================================================================================================================
-fp_format = 3'b001;
-for(i = 0; i < FP16_RANDOM_NUM; i++) begin
-	gencases_for_f16(dut_opa[15:0], dut_opb[15:0]);
-	dut_is_fdiv = dut_opa[0];
-	
-`ifdef RANDOM_RM
-	dut_rm = $urandom % 5;
-	`SINGLE_STIM
-`else
-	dut_rm = RM_RNE;
-	`SINGLE_STIM
-	dut_rm = RM_RTZ;
-	`SINGLE_STIM
-	dut_rm = RM_RDN;
-	`SINGLE_STIM
-	dut_rm = RM_RUP;
-	`SINGLE_STIM
-	dut_rm = RM_RMM;
-	`SINGLE_STIM
-`endif
-
-end
-
-fp_format = 3'b010;
-for(i = 0; i < FP32_RANDOM_NUM; i++) begin
-	gencases_for_f32(dut_opa[31:0], dut_opb[31:0]);
-	dut_is_fdiv = dut_opa[0];
-
-`ifdef RANDOM_RM
-	dut_rm = $urandom % 5;
-	`SINGLE_STIM
-`else
-	dut_rm = RM_RNE;
-	`SINGLE_STIM
-	dut_rm = RM_RTZ;
-	`SINGLE_STIM
-	dut_rm = RM_RDN;
-	`SINGLE_STIM
-	dut_rm = RM_RUP;
-	`SINGLE_STIM
-	dut_rm = RM_RMM;
-	`SINGLE_STIM
-`endif
-
-end
-
-fp_format = 3'b100;
-for(i = 0; i < FP64_RANDOM_NUM; i++) begin
-	gencases_for_f64(dut_opa[63:32], dut_opa[31:0], dut_opb[63:32], dut_opb[31:0]);
-	dut_is_fdiv = dut_opa[0];
-
-`ifdef RANDOM_RM
-	dut_rm = $urandom % 5;
-	`SINGLE_STIM
-`else
-	dut_rm = RM_RNE;
-	`SINGLE_STIM
-	dut_rm = RM_RTZ;
-	`SINGLE_STIM
-	dut_rm = RM_RDN;
-	`SINGLE_STIM
-	dut_rm = RM_RUP;
-	`SINGLE_STIM
-	dut_rm = RM_RMM;
-	`SINGLE_STIM
-`endif
-
-end
-
+endmodule

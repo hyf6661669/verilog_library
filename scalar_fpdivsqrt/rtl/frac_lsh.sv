@@ -1,12 +1,12 @@
 // ========================================================================================================
-// File Name			: tb_stim.svh
+// File Name			: frac_lsh.sv
 // Author				: HYF
 // How to Contact		: hyf_sysu@qq.com
-// Created Time    		: May 11th 2024, 09:35:44
-// Last Modified Time   : 2024-05-24 @ 09:17:23
+// Created Time    		: May 24th 2024, 10:21:38
+// Last Modified Time   : 2024-05-24 @ 11:29:34
 // ========================================================================================================
 // Description	:
-// 
+// Left shifter for frac.
 // ========================================================================================================
 // ========================================================================================================
 // Copyright (C) 2024, HYF. All Rights Reserved.
@@ -37,103 +37,65 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, 
 // EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // ========================================================================================================
-`ifndef RAND_SEED
-	`define RAND_SEED 999
-`endif
-`ifndef TEST_LEVEL
-	`define TEST_LEVEL 1
-`endif
+
+// include some definitions here
+
+module frac_lsh #(
+	// Put some parameters here, which can be changed by other modules.
+)(
+	input  logic [ 6 - 1:0]  lsh_i,
+	input  logic [52 - 1:0]  frac_unshifted,
+	output logic [52 - 1:0]  frac_shifted
+);
+
+// ================================================================================================================================================
+// (local) parameters begin
 
 
-// fp_format = 3'b001;
+// (local) parameters end
+// ================================================================================================================================================
 
-// dut_opa = 64'h0000000000000005;
-// dut_opb = 64'h000000000000137D;
-// dut_rm = 2;
-// `SINGLE_STIM
+// ================================================================================================================================================
+// signals begin
 
-// dut_opa = 64'h00000000000081CC;
-// dut_opb = 64'h000000000000891D;
-// dut_rm = 0;
-// `SINGLE_STIM
-
-// dut_opa = 64'h00000000000082B6;
-// dut_opb = 64'h000000000000CB02;
-// dut_rm = 1;
-// `SINGLE_STIM
+logic [52 - 1:0] lsh_l1;
+logic [52 - 1:0] lsh_l2;
+logic [52 - 1:0] lsh_l3;
+logic [52 - 1:0] lsh_l4;
+logic [52 - 1:0] lsh_l5;
+logic [52 - 1:0] lsh_l6;
 
 
+// signals end
+// ================================================================================================================================================
 
-gencases_init(`RAND_SEED, `TEST_LEVEL);
-// ==================================================================================================================================================
-// Just random test...
-// ==================================================================================================================================================
-fp_format = 3'b001;
-for(i = 0; i < FP16_RANDOM_NUM; i++) begin
-	gencases_for_f16(dut_opa[15:0], dut_opb[15:0]);
-	dut_is_fdiv = dut_opa[0];
-	
-`ifdef RANDOM_RM
-	dut_rm = $urandom % 5;
-	`SINGLE_STIM
-`else
-	dut_rm = RM_RNE;
-	`SINGLE_STIM
-	dut_rm = RM_RTZ;
-	`SINGLE_STIM
-	dut_rm = RM_RDN;
-	`SINGLE_STIM
-	dut_rm = RM_RUP;
-	`SINGLE_STIM
-	dut_rm = RM_RMM;
-	`SINGLE_STIM
-`endif
+// Since the MSB of "lsh_i" is generated earliest in CLZ Logic, we should start lsh from the MSB of "lsh_i"
 
-end
+assign lsh_l1 = 
+  ({(52){ lsh_i[5]}} & {frac_unshifted[19:0], 32'b0})
+| ({(52){~lsh_i[5]}} & {frac_unshifted[51:0]});
 
-fp_format = 3'b010;
-for(i = 0; i < FP32_RANDOM_NUM; i++) begin
-	gencases_for_f32(dut_opa[31:0], dut_opb[31:0]);
-	dut_is_fdiv = dut_opa[0];
+assign lsh_l2 = 
+  ({(52){ lsh_i[4]}} & {lsh_l1[35:0], 16'b0})
+| ({(52){~lsh_i[4]}} & {lsh_l1[51:0]});
 
-`ifdef RANDOM_RM
-	dut_rm = $urandom % 5;
-	`SINGLE_STIM
-`else
-	dut_rm = RM_RNE;
-	`SINGLE_STIM
-	dut_rm = RM_RTZ;
-	`SINGLE_STIM
-	dut_rm = RM_RDN;
-	`SINGLE_STIM
-	dut_rm = RM_RUP;
-	`SINGLE_STIM
-	dut_rm = RM_RMM;
-	`SINGLE_STIM
-`endif
+assign lsh_l3 = 
+  ({(52){ lsh_i[3]}} & {lsh_l2[43:0], 8'b0})
+| ({(52){~lsh_i[3]}} & {lsh_l2[51:0]});
 
-end
+assign lsh_l4 = 
+  ({(52){ lsh_i[2]}} & {lsh_l3[47:0], 4'b0})
+| ({(52){~lsh_i[2]}} & {lsh_l3[51:0]});
 
-fp_format = 3'b100;
-for(i = 0; i < FP64_RANDOM_NUM; i++) begin
-	gencases_for_f64(dut_opa[63:32], dut_opa[31:0], dut_opb[63:32], dut_opb[31:0]);
-	dut_is_fdiv = dut_opa[0];
+assign lsh_l5 = 
+  ({(52){ lsh_i[1]}} & {lsh_l4[49:0], 2'b0})
+| ({(52){~lsh_i[1]}} & {lsh_l4[51:0]});
 
-`ifdef RANDOM_RM
-	dut_rm = $urandom % 5;
-	`SINGLE_STIM
-`else
-	dut_rm = RM_RNE;
-	`SINGLE_STIM
-	dut_rm = RM_RTZ;
-	`SINGLE_STIM
-	dut_rm = RM_RDN;
-	`SINGLE_STIM
-	dut_rm = RM_RUP;
-	`SINGLE_STIM
-	dut_rm = RM_RMM;
-	`SINGLE_STIM
-`endif
+assign lsh_l6 = 
+  ({(52){ lsh_i[0]}} & {lsh_l5[50:0], 1'b0})
+| ({(52){~lsh_i[0]}} & {lsh_l5[51:0]});
 
-end
+assign frac_shifted = lsh_l6;
 
+
+endmodule

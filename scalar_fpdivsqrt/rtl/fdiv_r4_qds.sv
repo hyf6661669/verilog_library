@@ -1,9 +1,9 @@
 // ========================================================================================================
-// File Name			: r4_qds.sv
+// File Name			: fdiv_r4_qds.sv
 // Author				: HYF
 // How to Contact		: hyf_sysu@qq.com
-// Created Time    		: 24-04-21 17:27:11
-// Last Modified Time   : 24-05-11 14:16:08
+// Created Time    		: May 11th 2024, 09:35:44
+// Last Modified Time   : 2024-05-14 @ 10:09:56
 // ========================================================================================================
 // Description	:
 // Modified based on the Table 2 (a) in "Low Latency Floating-Point Division and Square Root Unit"
@@ -42,7 +42,7 @@
 
 // include some definitions here
 
-module r4_qds #(
+module fdiv_r4_qds #(
 	// Put some parameters here, which can be changed by other modules.
 
 	// You should try which config could lead to best PPA.

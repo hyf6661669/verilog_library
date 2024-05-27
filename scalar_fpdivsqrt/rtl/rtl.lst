@@ -1,8 +1,12 @@
 +incdir+../rtl
 
 ../rtl/scalar_fpdivsqrt.sv
+../rtl/frac_lsh.sv
 ../rtl/lzc.sv
-../rtl/r4_qds.sv
+../rtl/fdiv_r4_qds.sv
 ../rtl/fpdiv_r64_block.sv
+../rtl/fpsqrt_r16_block.sv
+../rtl/fsqrt_r4_qds.sv
+../rtl/fpsqrt_r4_qds_constants_generator.sv
 
 
