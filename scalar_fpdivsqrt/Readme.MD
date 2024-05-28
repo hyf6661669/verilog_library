@@ -4,15 +4,26 @@ This is a high performance ***SCALAR*** floating point divider/square rooter.
 
 
 
-# Latency Details (Measured in cycles)
+**Latency Details For Division**
 
-|Operands Combination|Normalization|Scaling|SRT_ITER|Denormalization|Rounding|Total|
-|------|------|------|------|------|------|------|
-|normal inputs, normal result|0|1.8|F64: 9; F32: 4; F16: 2|0|1|F64: 12; F32: 7; F16: 5|
-|denormal inputs, normal result|1.2|1.8|F64: 9; F32: 4; F16: 2|0|1|F64: 13; F32: 8; F16: 6|
-|normal inputs, denormal result|0|1.8|F64: 9; F32: 4; F16: 2|1|1|F64: 13; F32: 8; F16: 6|
-|denormal inputs, denormal result|1.2|1.8|F64: 9; F32: 4; F16: 2|1|1|F64: 14; F32: 9; F16: 7|
+|Situation|F64|F32|F16|
+|------|------|------|------|
+|Normal inputs, normal result|11|6|4|
+|Normal inputs, denormal result|12|7|5|
+|1 or 2 deormal inputs, normal result|12|7|5|
+|1 or 2 deormal inputs, denormal result|13|8|6|
+|Result is Overflow/Inf/NaN|2|2|2|
+|Normal inputs, normal result, divisor is power of 2|2|2|2|
+|1 or 2 deormal inputs, normal result, divisor is power of 2|3|3|3|
+|1 or 2 deormal inputs, denormal result, divisor is power of 2|4|4|4|
 
 
+**Latency Details For Square Root**
 
-
+|Situation|F64|F32|F16|
+|------|------|------|------|
+|Normal input|15|8|5|
+|Denormal input|16|9|6|
+|Result is Inf/NaN|2|2|2|
+|Normal input, op is power of 2|2|2|2|
+|Denormal input, op is power of 2|3|3|3|

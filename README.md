@@ -7,4 +7,4 @@ Some comments are written in Chinese for my convenience. If you have any trouble
 
 ## Current Status
 
-I'm working on vector version of "fpsqrt_r16".
+I'm working on "scalar_fpdivsqrt".
