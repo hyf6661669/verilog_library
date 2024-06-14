@@ -36,7 +36,7 @@ configure wave -timelineunits ns
 
 # Display waves ??
 # Use this when S1_QDS_SPECULATIVE = 0
-# do wave.do
+ do wave.do
 # Use this when S1_QDS_SPECULATIVE = 1
 # do wave_2.do
 

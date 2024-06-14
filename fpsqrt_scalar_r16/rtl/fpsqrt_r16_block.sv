@@ -588,7 +588,7 @@ if(S1_CSA_SPECULATIVE == 1) begin
 
 end else begin
 
-	// If timing is good enough, let the CSA operation starts after "nxt_rt_dig[1]"" is available, so the area of the CSA is reduced.
+	// If timing is good enough, let the CSA operation starts after "nxt_rt_dig[1]" is available, so the area of the CSA is reduced.
 
 	assign sqrt_csa_val[1] = 
 	  ({(REM_W){nxt_rt_dig[1][4]}} & sqrt_csa_val_neg_2[1])

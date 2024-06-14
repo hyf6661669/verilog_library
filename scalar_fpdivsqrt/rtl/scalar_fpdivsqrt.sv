@@ -3,7 +3,7 @@
 // Author				: HYF
 // How to Contact		: hyf_sysu@qq.com
 // Created Time    		: May 11th 2024, 09:35:44
-// Last Modified Time   : 2024-05-27 @ 09:36:06
+// Last Modified Time   : 2024-06-13 @ 17:13:13
 // ========================================================================================================
 // Description	:
 // A Scalar Floating Point Divider/Sqrt based on Minimally Redundant Radix-4 SRT Algorithm.
@@ -45,8 +45,7 @@
 module scalar_fpdivsqrt #(
 	// Put some parameters here, which can be changed by other modules
 	parameter FDIV_QDS_ARCH = 2,
-	// TODO: Now we only support "UF_BEFORE_ROUNDING"
-	parameter UF_AFTER_ROUNDING = 0
+	parameter UF_AFTER_ROUNDING = 1
 )(
 	input  logic 			start_valid_i,
 	output logic 			start_ready_o,
@@ -66,7 +65,6 @@ module scalar_fpdivsqrt #(
 
 	output logic 			finish_valid_o,
 	input  logic 			finish_ready_i,
-	input  logic 			busy_o,
 	output logic [64-1:0] 	fpdivsqrt_res_o,
 	output logic [ 5-1:0] 	fflags_o,
 
@@ -579,6 +577,11 @@ logic quot_need_rup;
 logic quot_m1_need_rup;
 logic quot_inexact;
 logic quot_m1_inexact;
+
+logic quot_uf_check_l;
+logic quot_uf_check_g;
+logic quot_uf_check_s;
+logic quot_uf_check_need_rup;
 
 logic [53 - 1:0] quot_rounded;
 logic [52 - 1:0] quot_m1_rounded;
@@ -1607,6 +1610,16 @@ assign quot_need_rup =
 | ({rm_q == RM_RMM} & quot_g);
 assign quot_inexact = quot_g | quot_s;
 
+// UF could only happen in POST_1
+assign quot_uf_check_l = quot_root_m1_iter_q[0];
+assign quot_uf_check_g = frac_D_q[53];
+assign quot_uf_check_s = quot_root_m1_iter_q[53] | (frac_D_q[52:0] != '0);
+assign quot_uf_check_need_rup = 
+  ({rm_q == RM_RNE} & ((quot_uf_check_g & quot_uf_check_s) | (quot_uf_check_l & quot_uf_check_g)))
+| ({rm_q == RM_RDN} & ((quot_uf_check_g | quot_uf_check_s) &  res_sign_q))
+| ({rm_q == RM_RUP} & ((quot_uf_check_g | quot_uf_check_s) & ~res_sign_q))
+| ({rm_q == RM_RMM} & quot_uf_check_g);
+
 assign quot_m1_l = quot_m1_unshifted[1];
 assign quot_m1_g = quot_m1_unshifted[0];
 // When we need to use "QUOT_M1", the sticky_bit must be 1
@@ -1740,7 +1753,12 @@ assign fflags_div_by_zero = divided_by_zero_q;
 // of could only happen in post_0
 assign fflags_of = fsm_q[FSM_POST_0_BIT] & of;
 // uf could only happen in post_1
-assign fflags_uf = fsm_q[FSM_POST_1_BIT] & ~carry_after_round_fdiv & inexact & ~res_is_exact_zero_q & ~res_is_inf_q & ~res_is_nan_q;
+assign fflags_uf =
+  fsm_q[FSM_POST_1_BIT]
+& (~carry_after_round_fdiv | ((UF_AFTER_ROUNDING == '0) ? 1'b0 : ~(quot_uf_check_l & quot_uf_check_need_rup)))
+& inexact
+& ~res_is_exact_zero_q & ~res_is_inf_q & ~res_is_nan_q;
+
 assign fflags_inexact = ((fsm_q[FSM_POST_0_BIT] & of) | inexact) & ~res_is_inf_q & ~res_is_nan_q & ~res_is_exact_zero_q;
 
 assign fflags_o = {
@@ -1750,10 +1768,6 @@ assign fflags_o = {
 	fflags_uf,
 	fflags_inexact
 };
-
-
-
-
 
 
 endmodule

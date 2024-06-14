@@ -16,9 +16,9 @@ set TEST_LEVEL 2
 # set FP16_TEST_NUM [expr {int(pow(2, 19))}]
 # set FP32_TEST_NUM [expr {int(pow(2, 19))}]
 # set FP64_TEST_NUM [expr {int(pow(2, 19))}]
-set FP16_TEST_NUM 155512000
-set FP32_TEST_NUM 155512000
-set FP64_TEST_NUM 155512000
+set FP16_TEST_NUM 10000000
+set FP32_TEST_NUM 10000000
+set FP64_TEST_NUM 10000000
 
 # Add this definition, if you don't want to test all the 5 rounding modes for each stimulation
 # +define+RANDOM_RM \

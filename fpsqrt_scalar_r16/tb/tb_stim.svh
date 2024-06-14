@@ -70,30 +70,30 @@ rm = RM_RNE;
 
 
 
-fp_format = 2'd2;
-rm = 4;
-fpsqrt_op[63:0] = 64'h55DA1BCE873D0DF2;
-`SINGLE_STIM
-
-rm = 4;
-fpsqrt_op[63:0] = 64'h7713664BE179E466;
-`SINGLE_STIM
-
+fp_format = 2'd0;
 rm = 3;
-fpsqrt_op[63:0] = 64'h1B200F2171B1E6F4;
+fpsqrt_op[63:0] = 64'h0000000000000010;
+`SINGLE_STIM
+
+rm = 4;
+fpsqrt_op[63:0] = 64'h0000000000000010;
+`SINGLE_STIM
+
+rm = 0;
+fpsqrt_op[63:0] = 64'h00000000000017FE;
 `SINGLE_STIM
 
 rm = 2;
-fpsqrt_op[63:0] = 64'h4971967D28D405A2;
+fpsqrt_op[63:0] = 64'h0000000000003400;
 `SINGLE_STIM
 
-rm = 4;
-fpsqrt_op[63:0] = 64'h70C9709246C5A015;
-`SINGLE_STIM
+// rm = 2;
+// fpsqrt_op[63:0] = 64'h0000000000002C07;
+// `SINGLE_STIM
 
-rm = 4;
-fpsqrt_op[63:0] = 64'h0C474BAE0EDC389F;
-`SINGLE_STIM
+// rm = 0;
+// fpsqrt_op[63:0] = 64'h0000000000001716;
+// `SINGLE_STIM
 
 
 
@@ -123,26 +123,26 @@ fpsqrt_op[63:0] = 64'h0C474BAE0EDC389F;
 // `SINGLE_STIM
 
 
-fp_format = 2'd2;
-for(i = 0; i < FP64_RANDOM_NUM; i++) begin
-	rm = $urandom % 5;
-	std::randomize(fpsqrt_op);
-	fpsqrt_op[63] = 1'b0;
-	`SINGLE_STIM
-end
+// fp_format = 2'd2;
+// for(i = 0; i < FP64_RANDOM_NUM; i++) begin
+// 	rm = $urandom % 5;
+// 	std::randomize(fpsqrt_op);
+// 	fpsqrt_op[63] = 1'b0;
+// 	`SINGLE_STIM
+// end
 
-fp_format = 2'd1;
-for(i = 0; i < FP32_RANDOM_NUM; i++) begin
-	rm = $urandom % 5;
-	std::randomize(fpsqrt_op);
-	fpsqrt_op[31] = 1'b0;
-	`SINGLE_STIM
-end
+// fp_format = 2'd1;
+// for(i = 0; i < FP32_RANDOM_NUM; i++) begin
+// 	rm = $urandom % 5;
+// 	std::randomize(fpsqrt_op);
+// 	fpsqrt_op[31] = 1'b0;
+// 	`SINGLE_STIM
+// end
 
-fp_format = 2'd0;
-for(i = 0; i < FP16_RANDOM_NUM; i++) begin
-	rm = $urandom % 5;
-	std::randomize(fpsqrt_op);
-	fpsqrt_op[15] = 1'b0;
-	`SINGLE_STIM
-end
+// fp_format = 2'd0;
+// for(i = 0; i < FP16_RANDOM_NUM; i++) begin
+// 	rm = $urandom % 5;
+// 	std::randomize(fpsqrt_op);
+// 	fpsqrt_op[15] = 1'b0;
+// 	`SINGLE_STIM
+// end

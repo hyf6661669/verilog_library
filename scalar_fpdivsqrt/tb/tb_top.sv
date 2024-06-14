@@ -3,7 +3,7 @@
 // Author				: HYF
 // How to Contact		: hyf_sysu@qq.com
 // Created Time    		: May 11th 2024, 09:35:44
-// Last Modified Time   : 2024-05-27 @ 09:36:12
+// Last Modified Time   : 2024-06-13 @ 19:33:49
 // ========================================================================================================
 // Description	:
 // 
@@ -161,7 +161,6 @@ bit [64-1:0] dut_opa;
 bit [64-1:0] dut_opb;
 bit [ 3-1:0] dut_rm;
 bit [ 1-1:0] dut_is_fdiv;
-bit dut_busy;
 
 bit [64-1:0] dut_res;
 bit [ 5-1:0] dut_fflags;
@@ -190,6 +189,7 @@ initial begin
 	`APPL_WAIT_CYC(clk, 2)
 	acq_trig = 0;
 
+	dut_is_fdiv = 1'b1;
 	`include "tb_stim.svh"
 	
 	// `WAIT_CYC(clk, 5)
@@ -292,7 +292,7 @@ end
 
 scalar_fpdivsqrt #(
 	.FDIV_QDS_ARCH				(2),
-	.UF_AFTER_ROUNDING			(0)
+	.UF_AFTER_ROUNDING			(1)
 ) u_dut (
 	.start_valid_i		(dut_start_valid),
 	.start_ready_o		(dut_start_ready),
@@ -304,7 +304,6 @@ scalar_fpdivsqrt #(
 	.rm_i				(dut_rm),
 	.finish_valid_o		(dut_finish_valid),
 	.finish_ready_i		(dut_finish_ready),
-	.busy_o				(dut_busy),
 	.fpdivsqrt_res_o	(dut_res),
 	.fflags_o			(dut_fflags),
 

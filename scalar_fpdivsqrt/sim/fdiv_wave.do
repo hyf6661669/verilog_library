@@ -187,6 +187,10 @@ add wave -position insertpoint -expand -group POST {sim:/tb_top/u_dut/quot_m1_s}
 add wave -position insertpoint -expand -group POST {sim:/tb_top/u_dut/quot_m1_need_rup}
 add wave -position insertpoint -expand -group POST {sim:/tb_top/u_dut/frac_rounded_post_0_fdiv}
 add wave -position insertpoint -expand -group POST {sim:/tb_top/u_dut/carry_after_round_fdiv}
+add wave -position insertpoint -expand -group POST {sim:/tb_top/u_dut/quot_uf_check_l}
+add wave -position insertpoint -expand -group POST {sim:/tb_top/u_dut/quot_uf_check_g}
+add wave -position insertpoint -expand -group POST {sim:/tb_top/u_dut/quot_uf_check_s}
+add wave -position insertpoint -expand -group POST {sim:/tb_top/u_dut/quot_uf_check_need_rup}
 add wave -position insertpoint -expand -group POST {sim:/tb_top/u_dut/of}
 add wave -position insertpoint -expand -group POST {sim:/tb_top/u_dut/of_to_inf}
 

@@ -47,19 +47,19 @@
 
 // fp_format = 3'b001;
 
-// dut_opa = 64'h0000000000000005;
-// dut_opb = 64'h000000000000137D;
-// dut_rm = 2;
+// dut_opa = 64'h00000000000003FD;
+// dut_opb = 64'h0000000000003BFB;
+// dut_rm = 3;
 // `SINGLE_STIM
 
-// dut_opa = 64'h00000000000081CC;
-// dut_opb = 64'h000000000000891D;
-// dut_rm = 0;
+// dut_opa = 64'h00000000000003FB;
+// dut_opb = 64'h0000000000003BF7;
+// dut_rm = 3;
 // `SINGLE_STIM
 
-// dut_opa = 64'h00000000000082B6;
-// dut_opb = 64'h000000000000CB02;
-// dut_rm = 1;
+// dut_opa = 64'h00000000000003F7;
+// dut_opb = 64'h0000000000003BEF;
+// dut_rm = 3;
 // `SINGLE_STIM
 
 
@@ -72,6 +72,7 @@ fp_format = 3'b001;
 for(i = 0; i < FP16_RANDOM_NUM; i++) begin
 	gencases_for_f16(dut_opa[15:0], dut_opb[15:0]);
 	dut_is_fdiv = dut_opa[0];
+	// dut_is_fdiv = 1'b1;
 	
 `ifdef RANDOM_RM
 	dut_rm = $urandom % 5;
@@ -95,6 +96,7 @@ fp_format = 3'b010;
 for(i = 0; i < FP32_RANDOM_NUM; i++) begin
 	gencases_for_f32(dut_opa[31:0], dut_opb[31:0]);
 	dut_is_fdiv = dut_opa[0];
+	// dut_is_fdiv = 1'b1;
 
 `ifdef RANDOM_RM
 	dut_rm = $urandom % 5;
@@ -118,6 +120,7 @@ fp_format = 3'b100;
 for(i = 0; i < FP64_RANDOM_NUM; i++) begin
 	gencases_for_f64(dut_opa[63:32], dut_opa[31:0], dut_opb[63:32], dut_opb[31:0]);
 	dut_is_fdiv = dut_opa[0];
+	// dut_is_fdiv = 1'b1;
 
 `ifdef RANDOM_RM
 	dut_rm = $urandom % 5;

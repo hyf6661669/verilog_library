@@ -139,16 +139,16 @@ void cmodel_check_result (
 	}
 
 
-	if(*fp_format == 1) {
-		if((f16_res.v == fp16_min_pos_normal) | (f16_res.v == fp16_min_neg_normal))
-			check_underflow = 0;
-	} else if(*fp_format == 2) {
-		if((f32_res.v == fp32_min_pos_normal) | (f32_res.v == fp32_min_neg_normal))
-			check_underflow = 0;
-	} else {
-		if((f64_res.v == fp64_min_pos_normal) | (f64_res.v == fp64_min_neg_normal))
-			check_underflow = 0;
-	}
+	// if(*fp_format == 1) {
+	// 	if((f16_res.v == fp16_min_pos_normal) | (f16_res.v == fp16_min_neg_normal))
+	// 		check_underflow = 0;
+	// } else if(*fp_format == 2) {
+	// 	if((f32_res.v == fp32_min_pos_normal) | (f32_res.v == fp32_min_neg_normal))
+	// 		check_underflow = 0;
+	// } else {
+	// 	if((f64_res.v == fp64_min_pos_normal) | (f64_res.v == fp64_min_neg_normal))
+	// 		check_underflow = 0;
+	// }
 
 	if(check_underflow) {
 		fflags_ok = 

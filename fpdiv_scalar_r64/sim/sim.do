@@ -41,7 +41,7 @@ configure wave -signalnamewidth 1
 configure wave -timelineunits ns
 
 # Display waves ??
-# do wave.do
+ do wave.do
 
 run -all
 

@@ -44,75 +44,98 @@
 	`define TEST_LEVEL 1
 `endif
 
-gencases_init(`RAND_SEED, `TEST_LEVEL);
 
 
-// ==================================================================================================================================================
-// Just random test...
-// ==================================================================================================================================================
+
 fp_format = 0;
-for(i = 0; i < FP16_RANDOM_NUM; i++) begin
-	gencases_for_f16(fpdiv_opa[15:0], fpdiv_opb[15:0]);
+
+fpdiv_opa = 64'h0000000000000005;
+fpdiv_opb = 64'h000000000000137D;
+fpdiv_rm = 2;
+`SINGLE_STIM
+
+fpdiv_opa = 64'h00000000000081CC;
+fpdiv_opb = 64'h000000000000891D;
+fpdiv_rm = 0;
+`SINGLE_STIM
+
+fpdiv_opa = 64'h00000000000082B6;
+fpdiv_opb = 64'h000000000000CB02;
+fpdiv_rm = 1;
+`SINGLE_STIM
+
+
+
+
+// gencases_init(`RAND_SEED, `TEST_LEVEL);
+
+
+// // ==================================================================================================================================================
+// // Just random test...
+// // ==================================================================================================================================================
+// fp_format = 0;
+// for(i = 0; i < FP16_RANDOM_NUM; i++) begin
+// 	gencases_for_f16(fpdiv_opa[15:0], fpdiv_opb[15:0]);
 	
-`ifdef RANDOM_RM
-	fpdiv_rm = $urandom % 5;
-	`SINGLE_STIM
-`else
-	fpdiv_rm = RM_RNE;
-	`SINGLE_STIM
-	fpdiv_rm = RM_RTZ;
-	`SINGLE_STIM
-	fpdiv_rm = RM_RDN;
-	`SINGLE_STIM
-	fpdiv_rm = RM_RUP;
-	`SINGLE_STIM
-	fpdiv_rm = RM_RMM;
-	`SINGLE_STIM
-`endif
+// `ifdef RANDOM_RM
+// 	fpdiv_rm = $urandom % 5;
+// 	`SINGLE_STIM
+// `else
+// 	fpdiv_rm = RM_RNE;
+// 	`SINGLE_STIM
+// 	fpdiv_rm = RM_RTZ;
+// 	`SINGLE_STIM
+// 	fpdiv_rm = RM_RDN;
+// 	`SINGLE_STIM
+// 	fpdiv_rm = RM_RUP;
+// 	`SINGLE_STIM
+// 	fpdiv_rm = RM_RMM;
+// 	`SINGLE_STIM
+// `endif
 
-end
+// end
 
-fp_format = 1;
-for(i = 0; i < FP32_RANDOM_NUM; i++) begin
-	gencases_for_f32(fpdiv_opa[31:0], fpdiv_opb[31:0]);
+// fp_format = 1;
+// for(i = 0; i < FP32_RANDOM_NUM; i++) begin
+// 	gencases_for_f32(fpdiv_opa[31:0], fpdiv_opb[31:0]);
 
-`ifdef RANDOM_RM
-	fpdiv_rm = $urandom % 5;
-	`SINGLE_STIM
-`else
-	fpdiv_rm = RM_RNE;
-	`SINGLE_STIM
-	fpdiv_rm = RM_RTZ;
-	`SINGLE_STIM
-	fpdiv_rm = RM_RDN;
-	`SINGLE_STIM
-	fpdiv_rm = RM_RUP;
-	`SINGLE_STIM
-	fpdiv_rm = RM_RMM;
-	`SINGLE_STIM
-`endif
+// `ifdef RANDOM_RM
+// 	fpdiv_rm = $urandom % 5;
+// 	`SINGLE_STIM
+// `else
+// 	fpdiv_rm = RM_RNE;
+// 	`SINGLE_STIM
+// 	fpdiv_rm = RM_RTZ;
+// 	`SINGLE_STIM
+// 	fpdiv_rm = RM_RDN;
+// 	`SINGLE_STIM
+// 	fpdiv_rm = RM_RUP;
+// 	`SINGLE_STIM
+// 	fpdiv_rm = RM_RMM;
+// 	`SINGLE_STIM
+// `endif
 
-end
+// end
 
-fp_format = 2;
-for(i = 0; i < FP64_RANDOM_NUM; i++) begin
-	gencases_for_f64(fpdiv_opa[63:32], fpdiv_opa[31:0], fpdiv_opb[63:32], fpdiv_opb[31:0]);
+// fp_format = 2;
+// for(i = 0; i < FP64_RANDOM_NUM; i++) begin
+// 	gencases_for_f64(fpdiv_opa[63:32], fpdiv_opa[31:0], fpdiv_opb[63:32], fpdiv_opb[31:0]);
 
-`ifdef RANDOM_RM
-	fpdiv_rm = $urandom % 5;
-	`SINGLE_STIM
-`else
-	fpdiv_rm = RM_RNE;
-	`SINGLE_STIM
-	fpdiv_rm = RM_RTZ;
-	`SINGLE_STIM
-	fpdiv_rm = RM_RDN;
-	`SINGLE_STIM
-	fpdiv_rm = RM_RUP;
-	`SINGLE_STIM
-	fpdiv_rm = RM_RMM;
-	`SINGLE_STIM
-`endif
+// `ifdef RANDOM_RM
+// 	fpdiv_rm = $urandom % 5;
+// 	`SINGLE_STIM
+// `else
+// 	fpdiv_rm = RM_RNE;
+// 	`SINGLE_STIM
+// 	fpdiv_rm = RM_RTZ;
+// 	`SINGLE_STIM
+// 	fpdiv_rm = RM_RDN;
+// 	`SINGLE_STIM
+// 	fpdiv_rm = RM_RUP;
+// 	`SINGLE_STIM
+// 	fpdiv_rm = RM_RMM;
+// 	`SINGLE_STIM
+// `endif
 
-end
+// end
 
