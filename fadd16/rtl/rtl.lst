@@ -1,0 +1,16 @@
++incdir+../rtl
+
+../rtl/fadd16.sv
+../rtl/fadd16_lza.sv
+../rtl/fadd16_rsh_lost_bits_mask.sv
+
+
+../rtl/fmul_for_fma.sv
+../rtl/fma16_rsh_lost_bits_mask.sv
+../rtl/fma32_rsh_lost_bits_mask.sv
+../rtl/fma64_rsh_lost_bits_mask.sv
+
+
+../rtl/lzc.sv
+
+
