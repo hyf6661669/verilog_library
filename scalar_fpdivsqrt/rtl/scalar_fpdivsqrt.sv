@@ -1755,7 +1755,7 @@ assign fflags_of = fsm_q[FSM_POST_0_BIT] & of;
 // uf could only happen in post_1
 assign fflags_uf =
   fsm_q[FSM_POST_1_BIT]
-& (~carry_after_round_fdiv | ((UF_AFTER_ROUNDING == '0) ? 1'b0 : ~(quot_uf_check_l & quot_uf_check_need_rup)))
+& ((UF_AFTER_ROUNDING == '0) ? 1'b1 : (~carry_after_round_fdiv | ~(quot_uf_check_l & quot_uf_check_need_rup)))
 & inexact
 & ~res_is_exact_zero_q & ~res_is_inf_q & ~res_is_nan_q;
 
