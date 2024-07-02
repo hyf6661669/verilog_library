@@ -1,5 +1,6 @@
 +incdir+../rtl
 
+../rtl/scalar_fpdivsqrt_wrapper.sv
 ../rtl/scalar_fpdivsqrt.sv
 ../rtl/frac_lsh.sv
 ../rtl/lzc.sv
