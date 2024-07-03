@@ -1,5 +1,6 @@
 +incdir+../rtl
 
+../rtl/fpdiv_scalar_r64_wrapper.sv
 ../rtl/fpdiv_scalar_r64.sv
 ../rtl/lzc.sv
 ../rtl/r4_qds_v0.sv
