@@ -6,9 +6,16 @@
 
 
 ../rtl/fmul_for_fma.sv
+../rtl/fmul_simulation.sv
 ../rtl/fma16_rsh_lost_bits_mask.sv
 ../rtl/fma32_rsh_lost_bits_mask.sv
 ../rtl/fma64_rsh_lost_bits_mask.sv
+../rtl/fmul16_rsh_lgs_mask.sv
+../rtl/fmul32_rsh_lgs_mask.sv
+../rtl/fmul64_rsh_lgs_mask.sv
+../rtl/fmul16_lsh_overflow_lgs_mask.sv
+../rtl/fmul32_lsh_overflow_lgs_mask.sv
+../rtl/fmul64_lsh_overflow_lgs_mask.sv
 
 
 ../rtl/lzc.sv

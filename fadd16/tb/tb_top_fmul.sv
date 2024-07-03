@@ -1,9 +1,9 @@
 // ========================================================================================================
-// File Name			: tb_top.sv
+// File Name			: tb_top_fmul.sv
 // Author				: HYF
 // How to Contact		: hyf_sysu@qq.com
-// Created Time    		: June 2nd 2024, 11:24:14
-// Last Modified Time   : 
+// Created Time    		: June 20th 2024, 16:32:20
+// Last Modified Time   : 2024-06-27 @ 14:43:41
 // ========================================================================================================
 // Description	:
 // 
@@ -66,7 +66,7 @@ dut_start_valid_after_finish_handshake_delay = $urandom() % `VALID_READY_DELAY; 
 `APPL_WAIT_CYC(clk, dut_start_valid_after_finish_handshake_delay)
 
 
-module tb_top #(
+module tb_top_fmul #(
 	// Put some parameters here, which can be changed by other modules
 )(
 );
@@ -75,19 +75,19 @@ module tb_top #(
 // (local) params
 // ==================================================================================================================================================
 
-`ifndef FP64_TEST_NUM
-	`define FP64_TEST_NUM 2 ** 9
+`ifndef FP16_TEST_NUM
+	`define FP16_TEST_NUM 2 ** 9
 `endif
 `ifndef FP32_TEST_NUM
 	`define FP32_TEST_NUM 2 ** 9
 `endif
-`ifndef FP16_TEST_NUM
-	`define FP16_TEST_NUM 2 ** 9
+`ifndef FP64_TEST_NUM
+	`define FP64_TEST_NUM 2 ** 9
 `endif
 
-localparam FP64_RANDOM_NUM = `FP64_TEST_NUM;
-localparam FP32_RANDOM_NUM = `FP32_TEST_NUM;
 localparam FP16_RANDOM_NUM = `FP16_TEST_NUM;
+localparam FP32_RANDOM_NUM = `FP32_TEST_NUM;
+localparam FP64_RANDOM_NUM = `FP64_TEST_NUM;
 
 typedef bit [31:0][2] bit_to_array;
 
@@ -102,16 +102,19 @@ localparam RM_RMM = 3'b100;
 // functions
 // ==================================================================================================================================================
 
-import "DPI-C" function void cmodel_check_result(
+import "DPI-C" function void cmodel_check_result (
 	input  bit [31:0] acq_count,
 	input  bit [31:0] err_count,
 	input  bit [31:0] opa_hi,
 	input  bit [31:0] opa_lo,
 	input  bit [31:0] opb_hi,
 	input  bit [31:0] opb_lo,
+	input  bit [31:0] opc_hi,
+	input  bit [31:0] opc_lo,
+	input  bit [31:0] is_fma,
+	input  bit [31:0] is_fmul,
 	input  bit [31:0] fp_format,
 	input  bit [31:0] rm,
-	input  bit [31:0] is_fdiv,
 	input  bit [31:0] dut_res_hi,
 	input  bit [31:0] dut_res_lo,
 	input  bit [31:0] dut_fflags,
@@ -128,6 +131,17 @@ import "DPI-C" function void gencases_for_f64(
 	output bit [31:0] fp64_opb_lo
 );
 
+import "DPI-C" function void gencases_for_f16_fma(output bit [15:0] fp16_opa, output bit [15:0] fp16_opb, output bit [15:0] fp16_opc);
+import "DPI-C" function void gencases_for_f32_fma(output bit [31:0] fp32_opa, output bit [31:0] fp32_opb, output bit [31:0] fp32_opc);
+import "DPI-C" function void gencases_for_f64_fma(
+	output bit [31:0] fp64_opa_hi,
+	output bit [31:0] fp64_opa_lo, 
+	output bit [31:0] fp64_opb_hi, 
+	output bit [31:0] fp64_opb_lo,
+	output bit [31:0] fp64_opc_hi, 
+	output bit [31:0] fp64_opc_lo
+);
+
 
 // ==================================================================================================================================================
 // signals
@@ -137,6 +151,7 @@ import "DPI-C" function void gencases_for_f64(
 bit clk;
 bit rst_n;
 int i;
+genvar j;
 bit simulation_start;
 bit stim_end;
 bit acq_trig;
@@ -149,6 +164,7 @@ bit dut_start_valid;
 bit dut_start_ready;
 bit dut_finish_valid;
 bit dut_finish_ready;
+
 // tb向dut发送的后一个start_valid和前一个finish_handshake之间的延迟
 bit [31:0] dut_start_valid_after_finish_handshake_delay;
 // tb向dut发送了start_valid之后，dut向tb发送start_ready之间的延迟
@@ -160,18 +176,15 @@ bit [31:0] dut_finish_valid_after_start_handshake_delay;
 
 
 // signals related with DUT.
-bit [ 3-1:0] fp_format;
+bit [ 3-1:0] dut_fp_format;
 bit [64-1:0] dut_opa;
 bit [64-1:0] dut_opb;
+bit [64-1:0] dut_opc;
 bit [ 3-1:0] dut_rm;
 
 bit [64-1:0] dut_res;
 bit [ 5-1:0] dut_fflags;
 
-logic fma_mul_exp_gt_inf;
-logic fma_mul_sticky;
-logic fma_inputs_nan_inf;
-logic [117 - 1:0] fma_intermediate_res;
 
 // ==================================================================================================================================================
 // main codes
@@ -197,7 +210,7 @@ initial begin
 	`APPL_WAIT_CYC(clk, 2)
 	acq_trig = 0;
 
-	`include "tb_stim.svh"
+    `include "tb_stim.svh"
 	
 	// `WAIT_CYC(clk, 5)
 	stim_end = 1;
@@ -209,9 +222,7 @@ end
 // acquisition process
 
 
-
 initial begin
-	dut_finish_ready = 0;
 	$display("TB: response acquisition starts!");
 
 	// wait for acquisition trigger
@@ -228,25 +239,39 @@ initial begin
 	err_count = 0;
 
 	do begin
-		`WAIT_COMB_SIG(clk, dut_start_valid, stim_end)
+        `WAIT_COMB_SIG(clk, dut_start_valid, stim_end)
 		`WAIT_COMB_SIG(clk, dut_finish_valid, stim_end)
-		dut_finish_ready_after_finish_valid_delay = $urandom() % `VALID_READY_DELAY;
+        dut_finish_ready_after_finish_valid_delay = $urandom() % `VALID_READY_DELAY;
 		`RESP_WAIT_CYC(clk, dut_finish_ready_after_finish_valid_delay)
 		dut_finish_ready = 1;
-
+	
 		if(stim_end)
 			break;
 
-		compare_ok = '1;
+        if(1) begin
+            cmodel_check_result (
+                .acq_count          (acq_count),
+                .err_count          (err_count),
+                .opa_hi             (dut_opa[63:32]),
+                .opa_lo             (dut_opa[31:00]),
+                .opb_hi             (dut_opb[63:32]),
+                .opb_lo             (dut_opb[31:00]),
+                .opc_hi             (dut_opc[63:32]),
+                .opc_lo             (dut_opc[31:00]),
+                .is_fma             ('0),
+                .is_fmul            (1),
+                .fp_format          (dut_fp_format),
+                .rm                 (dut_rm),
+                .dut_res_hi         (dut_res[63:32]),
+                .dut_res_lo         (dut_res[31:00]),
+                .dut_fflags         (dut_fflags),
+                .compare_ok         (compare_ok)
+            );
+        end
 
-		acq_count++;
-		
-		if((compare_ok == 0) | (compare_ok == 1'bX)) begin
-			// $display("ERROR FOUND:");
-
+		acq_count++;		
+		if((compare_ok == 0) | (compare_ok == 1'bX))
 			err_count++;
-		end
-
 
 		if(err_count == `MAX_ERR_COUNT) begin
 			$display("finished_test_num = %d, error_test_num = %d", acq_count, err_count);
@@ -256,10 +281,8 @@ initial begin
 			$stop();
 		end
 
-
-		`RESP_WAIT_SIG(clk, dut_finish_ready, stim_end)
+        `RESP_WAIT_SIG(clk, dut_finish_ready, stim_end)
 		dut_finish_ready = 0;
-
 
 	end while(stim_end == 0);
 
@@ -281,35 +304,21 @@ end
 // ================================================================================================================================================
 // Instantiate DUT here.
 
-// fmul_for_fma u_dut (
-// 	.opa_i						(dut_opa),
-// 	.opb_i						(dut_opb),
-// 	.format_i					(3'b001),
-// 	.fma_mul_exp_gt_inf_o		(fma_mul_exp_gt_inf),
-// 	.fma_mul_sticky_o			(fma_mul_sticky),
-// 	.fma_inputs_nan_inf_o		(fma_inputs_nan_inf),
-// 	.fma_intermediate_res_o		(fma_intermediate_res)
-// );
-
-fadd16 #(
-	.UF_AFTER_ROUNDING(0)
-) u_dut (	
-	.opa_i						(dut_opa[15:0]),
-	.opb_i						(dut_opb[15:0]),
+fmul_simulation #(
+	.UF_AFTER_ROUNDING(1)
+) u_dut (
+	.opa_i						(dut_opa),
+	.opb_i						(dut_opb),
+	.format_i					(dut_fp_format),
 	.rm_i						(dut_rm),
-	.s0_vld_i					(1'b1),
-	// TODO: Now we only test normal fadd
-	.fma_vld_i					('0),
-	.fma_mul_exp_gt_inf_i		('0),
-	.fma_mul_sticky_i			('0),
-	.fma_inputs_nan_inf_i		('0),
-
-	.fadd_res_o					(dut_res[15:0]),
-	.fadd_fflags_o				(dut_fflags),
-
-	.clk						(clk),
-	.rst_n						(rst_n)
+	.fma_mul_exp_gt_inf_o		(),
+	.fma_mul_sticky_o			(),
+	.fma_inputs_nan_inf_o		(),
+	.fma_intermediate_res_o		(),
+	.fmul_res_o					(dut_res),
+	.fmul_fflags_o				(dut_fflags)
 );
+
 
 // ================================================================================================================================================
 // Simulate valid-ready signals of dut

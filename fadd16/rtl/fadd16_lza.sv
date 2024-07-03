@@ -3,7 +3,7 @@
 // Author				: HYF
 // How to Contact		: hyf_sysu@qq.com
 // Created Time    		: June 4th 2024, 16:18:14
-// Last Modified Time   : 2024-06-20 @ 14:49:43
+// Last Modified Time   : 2024-06-25 @ 14:52:14
 // ========================================================================================================
 // Description	:
 // 1. Get lshift num
@@ -54,10 +54,16 @@ module fadd16_lza #(
     output logic [ 5 - 1:0]     lza_o,
     output logic [14 - 1:0]     overflow_l_mask_o,
     output logic [13 - 1:0]     overflow_g_mask_o,
-    output logic [13 - 1:0]     normal_l_mask_o,
-    output logic [12 - 1:0]     normal_g_mask_o,
     output logic [12 - 1:0]     overflow_s_mask_o,
-    output logic [11 - 1:0]     normal_s_mask_o
+    output logic [13 - 1:0]     normal_l_mask_o,
+    output logic [12 - 1:0]     normal_g_mask_o,    
+    output logic [11 - 1:0]     normal_s_mask_o,
+    output logic [13 - 1:0]     overflow_l_mask_uf_check_o,
+    output logic [12 - 1:0]     overflow_g_mask_uf_check_o,
+    output logic [11 - 1:0]     overflow_s_mask_uf_check_o,
+    output logic [12 - 1:0]     normal_l_mask_uf_check_o,
+    output logic [11 - 1:0]     normal_g_mask_uf_check_o,
+    output logic [10 - 1:0]     normal_s_mask_uf_check_o
 );
 
 // ================================================================================================================================================
@@ -89,15 +95,23 @@ logic [32 - 1:0] exp_limit_mask;
 
 logic [32 - 1:0] lzc_in_lg_mask;
 logic [32 - 1:0] lg_mask;
-logic [32 - 1:0] overflow_l_mask;
-logic [32 - 1:0] overflow_g_mask;
-logic [32 - 1:0] normal_l_mask;
-logic [32 - 1:0] normal_g_mask;
 
 logic [32 - 1:0] lzc_in_s_mask;
 logic [32 - 1:0] s_mask;
+
+logic [32 - 1:0] overflow_l_mask;
+logic [32 - 1:0] overflow_g_mask;
 logic [32 - 1:0] overflow_s_mask;
+logic [32 - 1:0] normal_l_mask;
+logic [32 - 1:0] normal_g_mask;
 logic [32 - 1:0] normal_s_mask;
+logic [32 - 1:0] overflow_l_mask_uf_check;
+logic [32 - 1:0] overflow_g_mask_uf_check;
+logic [32 - 1:0] overflow_s_mask_uf_check;
+logic [32 - 1:0] normal_l_mask_uf_check;
+logic [32 - 1:0] normal_g_mask_uf_check;
+logic [32 - 1:0] normal_s_mask_uf_check;
+
 
 // signals end
 // ================================================================================================================================================
@@ -163,24 +177,24 @@ lzc #(
 assign lza_limited_by_exp_o = ({1'b0, exp_limit_mask[31:1]} == (lzc_in_temp | {1'b0, exp_limit_mask[31:1]}));
 
 // Overflow
-// lzc_in = {1, 31'bx}, lza_o = 0, for unrounded frac in close_sum, {L, G, S} = {[13], [12], [11:0]} -> This is impossible in Overflow case
-// lzc_in = {1'b0, 1, 30'bx}, lza_o = 1, for unrounded frac in close_sum, {L, G, S} = {[12], [11], [10:0]}
-// lzc_in = {2'b0, 1, 29'bx}, lza_o = 2, for unrounded frac in close_sum, {L, G, S} = {[11], [10], [09:0]}
+// lzc_in = {1, 31'bx}, lza_o = 0, for unrounded frac in close_sum, {L, G, S} = {[13], [12], [11:0]}, {L_uf_check, G_uf_check, S_uf_check} = {[12], [11], [10:0]} -> This is impossible in Overflow case
+// lzc_in = {1'b0, 1, 30'bx}, lza_o = 1, for unrounded frac in close_sum, {L, G, S} = {[12], [11], [10:0]}, {L_uf_check, G_uf_check, S_uf_check} = {[11], [10], [9:0]}
+// lzc_in = {2'b0, 1, 29'bx}, lza_o = 2, for unrounded frac in close_sum, {L, G, S} = {[11], [10], [09:0]}, {L_uf_check, G_uf_check, S_uf_check} = {[10], [9], [8:0]}
 // ...
-// lzc_in = {11'b0, 1, 20'bx}, lza_o = 11, for unrounded frac in close_sum, {L, G, S} = {[2], [1], [0:0]}
-// lzc_in = {12'b0, 1, 19'bx}, lza_o = 12, for unrounded frac in close_sum, {L, G, S} = {[1], [0], 0}
-// lzc_in = {13'b0, 1, 18'bx}, lza_o = 13, for unrounded frac in close_sum, {L, G, S} = {[0], 0, 0}
-// lza_o >= 14, for unrounded frac in close_sum, {L, G, S} = {0, 0, 0}
+// lzc_in = {11'b0, 1, 20'bx}, lza_o = 11, for unrounded frac in close_sum, {L, G, S} = {[2], [1], [0:0]}, {L_uf_check, G_uf_check, S_uf_check} = {[1], [0], 0}
+// lzc_in = {12'b0, 1, 19'bx}, lza_o = 12, for unrounded frac in close_sum, {L, G, S} = {[1], [0], 0}, {L_uf_check, G_uf_check, S_uf_check} = {[0], 0, 0}
+// lzc_in = {13'b0, 1, 18'bx}, lza_o = 13, for unrounded frac in close_sum, {L, G, S} = {[0], 0, 0}, {L_uf_check, G_uf_check, S_uf_check} = {0, 0, 0}
+// lza_o >= 14, for unrounded frac in close_sum, {L, G, S} = {0, 0, 0}, {L_uf_check, G_uf_check, S_uf_check} = {0, 0, 0}
 
 // Normal
-// lzc_in = {1, 31'bx}, lza_o = 0, for unrounded frac in close_sum, {L, G, S} = {[12], [11], [10:0]}
-// lzc_in = {1'b0, 1, 30'bx}, lza_o = 1, for unrounded frac in close_sum, {L, G, S} = {[11], [10], [9:0]}
-// lzc_in = {2'b0, 1, 29'bx}, lza_o = 2, for unrounded frac in close_sum, {L, G, S} = {[10], [09], [8:0]}
+// lzc_in = {1, 31'bx}, lza_o = 0, for unrounded frac in close_sum, {L, G, S} = {[12], [11], [10:0]}, {L_uf_check, G_uf_check, S_uf_check} = {[11], [10], [9:0]}
+// lzc_in = {1'b0, 1, 30'bx}, lza_o = 1, for unrounded frac in close_sum, {L, G, S} = {[11], [10], [9:0]}, {L_uf_check, G_uf_check, S_uf_check} = {[10], [9], [8:0]}
+// lzc_in = {2'b0, 1, 29'bx}, lza_o = 2, for unrounded frac in close_sum, {L, G, S} = {[10], [09], [8:0]}, {L_uf_check, G_uf_check, S_uf_check} = {[9], [8], [7:0]}
 // ...
-// lzc_in = {10'b0, 1, 21'bx}, lza_o = 10, for unrounded frac in close_sum, {L, G, S} = {[2], [1], [0:0]}
-// lzc_in = {11'b0, 1, 20'bx}, lza_o = 11, for unrounded frac in close_sum, {L, G, S} = {[1], [0], 0}
-// lzc_in = {12'b0, 1, 19'bx}, lza_o = 12, for unrounded frac in close_sum, {L, G, S} = {[0], 0, 0}
-// lza_o >= 13, for unrounded frac in close_sum, {L, G, S} = {0, 0, 0}
+// lzc_in = {10'b0, 1, 21'bx}, lza_o = 10, for unrounded frac in close_sum, {L, G, S} = {[2], [1], [0:0]}, {L_uf_check, G_uf_check, S_uf_check} = {[1], [0], 0}
+// lzc_in = {11'b0, 1, 20'bx}, lza_o = 11, for unrounded frac in close_sum, {L, G, S} = {[1], [0], 0}, {L_uf_check, G_uf_check, S_uf_check} = {[0], 0, 0}
+// lzc_in = {12'b0, 1, 19'bx}, lza_o = 12, for unrounded frac in close_sum, {L, G, S} = {[0], 0, 0}, {L_uf_check, G_uf_check, S_uf_check} = {0, 0, 0}
+// lza_o >= 13, for unrounded frac in close_sum, {L, G, S} = {0, 0, 0}, {L_uf_check, G_uf_check, S_uf_check} = {0, 0, 0}
 
 
 // From MSB -> LSB, set all bits 0 after the fitst 1
@@ -198,11 +212,10 @@ assign overflow_l_mask = lg_mask[31 - 10 -: 14];
 assign overflow_g_mask = overflow_l_mask >> 1;
 assign normal_l_mask = overflow_g_mask;
 assign normal_g_mask = normal_l_mask >> 1;
-
-assign overflow_l_mask_o[13:0] = overflow_l_mask[13:0];
-assign overflow_g_mask_o[12:0] = overflow_g_mask[12:0];
-assign normal_l_mask_o[12:0] = normal_l_mask[12:0];
-assign normal_g_mask_o[11:0] = normal_g_mask[11:0];
+assign overflow_l_mask_uf_check = overflow_g_mask;
+assign overflow_g_mask_uf_check = overflow_l_mask_uf_check >> 1;
+assign normal_l_mask_uf_check = normal_g_mask;
+assign normal_g_mask_uf_check = normal_l_mask_uf_check >> 1;
 
 // From MSB -> LSB, set all bits 1 after the fitst 1
 generate
@@ -215,10 +228,22 @@ assign s_mask = lzc_in_s_mask >> 12;
 
 assign overflow_s_mask = s_mask[31 - 12 -: 12];
 assign normal_s_mask = overflow_s_mask >> 1;
+assign overflow_s_mask_uf_check = normal_s_mask;
+assign normal_s_mask_uf_check = normal_s_mask >> 1;
 
+assign overflow_l_mask_o[13:0] = overflow_l_mask[13:0];
+assign overflow_g_mask_o[12:0] = overflow_g_mask[12:0];
 assign overflow_s_mask_o[11:0] = overflow_s_mask[11:0];
+assign normal_l_mask_o[12:0] = normal_l_mask[12:0];
+assign normal_g_mask_o[11:0] = normal_g_mask[11:0];
 assign normal_s_mask_o[10:0] = normal_s_mask[10:0];
 
+assign overflow_l_mask_uf_check_o = overflow_l_mask_uf_check[12:0];
+assign overflow_g_mask_uf_check_o = overflow_g_mask_uf_check[11:0];
+assign overflow_s_mask_uf_check_o = overflow_s_mask_uf_check[10:0];
+assign normal_l_mask_uf_check_o = normal_l_mask_uf_check[11:0];
+assign normal_g_mask_uf_check_o = normal_g_mask_uf_check[10:0];
+assign normal_s_mask_uf_check_o = normal_s_mask_uf_check[09:0];
 
 endmodule
 

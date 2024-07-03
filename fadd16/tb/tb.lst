@@ -6,4 +6,5 @@
 
 # TB file
 ../tb/tb_top.sv
+#../tb/tb_top_fmul.sv
 

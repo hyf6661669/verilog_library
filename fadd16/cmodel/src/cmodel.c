@@ -11,6 +11,9 @@
 uint32_t recorded_stim_idx[MAX_ERR_COUNT];
 uint64_t recorded_opa[MAX_ERR_COUNT];
 uint64_t recorded_opb[MAX_ERR_COUNT];
+uint64_t recorded_opc[MAX_ERR_COUNT];
+uint64_t recorded_is_fma[MAX_ERR_COUNT];
+uint64_t recorded_is_fmul[MAX_ERR_COUNT];
 uint32_t recorded_fp_format[MAX_ERR_COUNT];
 uint32_t recorded_rm[MAX_ERR_COUNT];
 uint64_t recorded_dut_res[MAX_ERR_COUNT];
@@ -43,6 +46,10 @@ void cmodel_check_result (
 	const svBitVecVal *opa_lo,
 	const svBitVecVal *opb_hi,
 	const svBitVecVal *opb_lo,
+	const svBitVecVal *opc_hi,
+	const svBitVecVal *opc_lo,
+	const svBitVecVal *is_fma,
+	const svBitVecVal *is_fmul,
 	const svBitVecVal *fp_format,
 	const svBitVecVal *rm,
 	const svBitVecVal *dut_res_hi,
@@ -50,11 +57,19 @@ void cmodel_check_result (
 	const svBitVecVal *dut_fflags,
 	svBitVecVal *compare_ok
 );
+
 void gencases_init(const svBitVecVal *seed, const svBitVecVal *level);
+
 void gencases_for_f16(svBitVecVal *opa, svBitVecVal *opb);
 void gencases_for_f32(svBitVecVal *opa, svBitVecVal *opb);
 void gencases_for_f64(svBitVecVal *opa_hi, svBitVecVal *opa_lo, svBitVecVal *opb_hi, svBitVecVal *opb_lo);
+
+void gencases_for_f16_fma(svBitVecVal *opa, svBitVecVal *opb, svBitVecVal *opc);
+void gencases_for_f32_fma(svBitVecVal *opa, svBitVecVal *opb, svBitVecVal *opc);
+void gencases_for_f64_fma(svBitVecVal *opa_hi, svBitVecVal *opa_lo, svBitVecVal *opb_hi, svBitVecVal *opb_lo, svBitVecVal *opc_hi, svBitVecVal *opc_lo);
+
 void print_error(const svBitVecVal *err_count, const svBitVecVal *seed);
+
 uint32_t fp16_is_nan(const uint16_t x);
 uint32_t fp32_is_nan(const uint32_t x);
 uint32_t fp64_is_nan(const uint64_t x);
@@ -70,6 +85,10 @@ void cmodel_check_result (
 	const svBitVecVal *opa_lo,
 	const svBitVecVal *opb_hi,
 	const svBitVecVal *opb_lo,
+	const svBitVecVal *opc_hi,
+	const svBitVecVal *opc_lo,
+	const svBitVecVal *is_fma,
+	const svBitVecVal *is_fmul,
 	const svBitVecVal *fp_format,
 	const svBitVecVal *rm,
 	const svBitVecVal *dut_res_hi,
@@ -79,12 +98,15 @@ void cmodel_check_result (
 ) {
 	float16_t f16_opa;
 	float16_t f16_opb;
+	float16_t f16_opc;
 	float16_t f16_res;
 	float32_t f32_opa;
 	float32_t f32_opb;
+	float32_t f32_opc;
 	float32_t f32_res;
 	float64_t f64_opa;
 	float64_t f64_opb;
+	float64_t f64_opc;
 	float64_t f64_res;
 
 	uint32_t check_underflow = 1;
@@ -93,13 +115,16 @@ void cmodel_check_result (
 
 	f16_opa.v = (uint16_t)(*opa_lo);
 	f16_opb.v = (uint16_t)(*opb_lo);
+	f16_opc.v = (uint16_t)(*opc_lo);
 	f32_opa.v = *opa_lo;
 	f32_opb.v = *opb_lo;
+	f32_opc.v = *opc_lo;
 	f64_opa.v = ((uint64_t)(*opa_hi) << 32) | *opa_lo;
 	f64_opb.v = ((uint64_t)(*opb_hi) << 32) | *opb_lo;
+	f64_opc.v = ((uint64_t)(*opc_hi) << 32) | *opc_lo;
 
-	softfloat_detectTininess = softfloat_tininess_beforeRounding;
-	// softfloat_detectTininess = softfloat_tininess_afterRounding;
+	// softfloat_detectTininess = softfloat_tininess_beforeRounding;
+	softfloat_detectTininess = softfloat_tininess_afterRounding;
 	
 	// clean fflags before every computation
 	softfloat_exceptionFlags = 0;
@@ -111,7 +136,7 @@ void cmodel_check_result (
 	uint32_t dut_fflags_inexact 			= *dut_fflags & 0x1;
 
 	if(*fp_format == 1) {
-		f16_res = f16_add(f16_opa, f16_opb);
+		f16_res = *is_fma ? f16_mulAdd(f16_opa, f16_opb, f16_opc) : *is_fmul ? f16_mul(f16_opa, f16_opb) : f16_add(f16_opa, f16_opb);
 		// In rv-spec, we only produce defaultNaN
 		if(fp16_is_nan(f16_res.v))
 			data_ok = (*dut_res_lo & 0xFFFF) == fp16_defaultNaN;
@@ -119,7 +144,7 @@ void cmodel_check_result (
 			data_ok = (*dut_res_lo & 0xFFFF) == f16_res.v;
 
 	} else if(*fp_format == 2) {
-		f32_res = f32_add(f32_opa, f32_opb);
+		f32_res = *is_fma ? f32_mulAdd(f32_opa, f32_opb, f32_opc) : *is_fmul ? f32_mul(f32_opa, f32_opb) : f32_add(f32_opa, f32_opb);
 
 		if(fp32_is_nan(f32_res.v))
 			data_ok = *dut_res_lo == fp32_defaultNaN;
@@ -127,7 +152,7 @@ void cmodel_check_result (
 			data_ok = *dut_res_lo == f32_res.v;
 
 	} else {
-		f64_res = f64_add(f64_opa, f64_opb);
+		f64_res = *is_fma ? f64_mulAdd(f64_opa, f64_opb, f64_opc) : *is_fmul ? f64_mul(f64_opa, f64_opb) : f64_add(f64_opa, f64_opb);
 
 		if(fp64_is_nan(f64_res.v))
 			data_ok = (((uint64_t)(*dut_res_hi) << 32) | *dut_res_lo) == fp64_defaultNaN;
@@ -135,18 +160,6 @@ void cmodel_check_result (
 			data_ok = (((uint64_t)(*dut_res_hi) << 32) | *dut_res_lo) == f64_res.v;
 
 	}
-
-
-	// if(*fp_format == 1) {
-	// 	if((f16_res.v == fp16_min_pos_normal) | (f16_res.v == fp16_min_neg_normal))
-	// 		check_underflow = 0;
-	// } else if(*fp_format == 2) {
-	// 	if((f32_res.v == fp32_min_pos_normal) | (f32_res.v == fp32_min_neg_normal))
-	// 		check_underflow = 0;
-	// } else {
-	// 	if((f64_res.v == fp64_min_pos_normal) | (f64_res.v == fp64_min_neg_normal))
-	// 		check_underflow = 0;
-	// }
 
 	if(check_underflow) {
 		fflags_ok = 
@@ -168,6 +181,9 @@ void cmodel_check_result (
 		recorded_stim_idx[*err_count] = *acq_count;
 		recorded_opa[*err_count] = (*fp_format == 1) ? f16_opa.v : (*fp_format == 2) ? f32_opa.v : f64_opa.v;
 		recorded_opb[*err_count] = (*fp_format == 1) ? f16_opb.v : (*fp_format == 2) ? f32_opb.v : f64_opb.v;
+		recorded_opc[*err_count] = (*fp_format == 1) ? f16_opc.v : (*fp_format == 2) ? f32_opc.v : f64_opc.v;
+		recorded_is_fma[*err_count] = *is_fma;
+		recorded_is_fmul[*err_count] = *is_fmul;
 		recorded_fp_format[*err_count] = *fp_format;
 		recorded_rm[*err_count] = *rm;
 		recorded_dut_res[*err_count] = (*fp_format == 1) ? (*dut_res_lo & 0xFFFF) : (*fp_format == 2) ? *dut_res_lo : (((uint64_t)(*dut_res_hi) << 32) | *dut_res_lo);
@@ -183,21 +199,20 @@ void gencases_init(const svBitVecVal *seed, const svBitVecVal *level) {
 	genCases_f16_ab_init();
 	genCases_f32_ab_init();
 	genCases_f64_ab_init();
+	genCases_f16_abc_init();
+	genCases_f32_abc_init();
+	genCases_f64_abc_init();
 }
 
 void gencases_for_f16(svBitVecVal *opa, svBitVecVal *opb) {
 	genCases_f16_ab_next();
 	*opa = genCases_f16_a.v;
 	*opb = genCases_f16_b.v;
-	// printf("generated_opa = %04X\n", genCases_f16_a.v);
-	// printf("generated_opb = %04X\n", genCases_f16_b.v);
 }
 void gencases_for_f32(svBitVecVal *opa, svBitVecVal *opb) {
 	genCases_f32_ab_next();
 	*opa = genCases_f32_a.v;
 	*opb = genCases_f32_b.v;
-	// printf("generated_opa = %08X\n", genCases_f32_a.v);
-	// printf("generated_opb = %08X\n", genCases_f32_b.v);
 }
 void gencases_for_f64(svBitVecVal *opa_hi, svBitVecVal *opa_lo, svBitVecVal *opb_hi, svBitVecVal *opb_lo) {
 	genCases_f64_ab_next();
@@ -205,8 +220,28 @@ void gencases_for_f64(svBitVecVal *opa_hi, svBitVecVal *opa_lo, svBitVecVal *opb
 	*opa_lo = genCases_f64_a.v & 0xFFFFFFFF;
 	*opb_hi = genCases_f64_b.v >> 32;
 	*opb_lo = genCases_f64_b.v & 0xFFFFFFFF;
-	// printf("generated_opa = %16lX\n", genCases_f64_a.v);
-	// printf("generated_opb = %16lX\n", genCases_f64_b.v);
+}
+
+void gencases_for_f16_fma(svBitVecVal *opa, svBitVecVal *opb, svBitVecVal *opc) {
+	genCases_f16_abc_next();
+	*opa = genCases_f16_a.v;
+	*opb = genCases_f16_b.v;
+	*opc = genCases_f16_c.v;
+}
+void gencases_for_f32_fma(svBitVecVal *opa, svBitVecVal *opb, svBitVecVal *opc) {
+	genCases_f32_abc_next();
+	*opa = genCases_f32_a.v;
+	*opb = genCases_f32_b.v;
+	*opc = genCases_f32_c.v;
+}
+void gencases_for_f64_fma(svBitVecVal *opa_hi, svBitVecVal *opa_lo, svBitVecVal *opb_hi, svBitVecVal *opb_lo, svBitVecVal *opc_hi, svBitVecVal *opc_lo) {
+	genCases_f64_abc_next();
+	*opa_hi = genCases_f64_a.v >> 32;
+	*opa_lo = genCases_f64_a.v & 0xFFFFFFFF;
+	*opb_hi = genCases_f64_b.v >> 32;
+	*opb_lo = genCases_f64_b.v & 0xFFFFFFFF;
+	*opc_hi = genCases_f64_c.v >> 32;
+	*opc_lo = genCases_f64_c.v & 0xFFFFFFFF;
 }
 
 void print_error(const svBitVecVal *err_count, const svBitVecVal *seed) {
@@ -217,6 +252,9 @@ void print_error(const svBitVecVal *err_count, const svBitVecVal *seed) {
 		fprintf(fptr, "stim_idx   = %d\n", recorded_stim_idx[i]);
 		fprintf(fptr, "opa        = %016llX\n", recorded_opa[i]);
 		fprintf(fptr, "opb        = %016llX\n", recorded_opb[i]);
+		fprintf(fptr, "opc        = %016llX\n", recorded_opc[i]);
+		fprintf(fptr, "is_fma    = %16X\n", recorded_is_fma[i]);
+		fprintf(fptr, "is_fmul    = %16X\n", recorded_is_fmul[i]);
 		fprintf(fptr, "fp_format  = %16X\n", recorded_fp_format[i]);
 		fprintf(fptr, "rm         = %16X\n", recorded_rm[i]);
 		fprintf(fptr, "dut_res    = %016llX\n", recorded_dut_res[i]);

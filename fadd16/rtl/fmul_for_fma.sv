@@ -145,7 +145,8 @@ logic [106 - 1:0] sig_mul_lsh;
 
 logic rsh_overflow;
 logic lsh_overflow;
-logic sig_mul_shifted_overflow;
+logic lsh_denormal_to_normal;
+logic sel_overflow_exp;
 logic [11 - 1:0] exp_fma;
 
 logic [ 21 - 1:0] frac_fma_f16;
@@ -246,11 +247,11 @@ fma16_rsh_lost_bits_mask u_fma16_rsh_lost_bits_mask (
 	.rsh_num_i  (rsh_num_f16),
 	.s_mask_o   (s_mask_f16)
 );
-fma16_rsh_lost_bits_mask u_fma32_rsh_lost_bits_mask (
+fma32_rsh_lost_bits_mask u_fma32_rsh_lost_bits_mask (
 	.rsh_num_i  (rsh_num_f32),
 	.s_mask_o   (s_mask_f32)
 );
-fma16_rsh_lost_bits_mask u_fma64_rsh_lost_bits_mask (
+fma64_rsh_lost_bits_mask u_fma64_rsh_lost_bits_mask (
 	.rsh_num_i  (rsh_num_f64),
 	.s_mask_o   (s_mask_f64)
 );
@@ -303,17 +304,16 @@ assign sig_mul_f16[21:0] = sig_mul[105 -: 22];
 assign sig_mul_f32[47:0] = sig_mul[105 -: 48];
 
 // When "do_rsh", we should do 1-bit rsh at least
-// assign sig_mul_rsh_in[106:0] = {is_f16 ? {{(106 - 22){1'b0}}, sig_mul[21:0]} : is_f32 ? {{(106 - 48){1'b0}}, sig_mul[47:0]} : {{(106 - 106){1'b0}}, sig_mul[105:0]}, 1'b0};
-// assign sig_mul_rsh_in[106:0] = {sig_mul[105:0], 1'b0};
 assign sig_mul_rsh[106:0] = {sig_mul[105:0], 1'b0} >> rsh_num;
 assign sig_mul_lsh[105:0] = sig_mul << lsh_num;
 
 // TODO: Do we need a "mask" to extract the "overflow signal" to improve timimg ?
 // Since "rsh_num_temp = 1 - exp_no_lsh", if (rsh_num >= 2), even "sign_mul >= 10.0", we still get a denormal res
 assign rsh_overflow = sig_mul[105] & (rsh_num == 6'd1);
-assign lsh_overflow = sig_mul_lsh[105] | (sig_mul_lsh[104] & exp_lsh_zero);
-assign sig_mul_shifted_overflow = do_rsh ? rsh_overflow : lsh_overflow;
-assign exp_fma[10:0] = sig_mul_shifted_overflow ? exp_mul_p1[10:0] : exp_mul[10:0];
+assign lsh_overflow = sig_mul_lsh[105];
+assign lsh_denormal_to_normal = sig_mul_lsh[104] & exp_lsh_zero;
+assign sel_overflow_exp = do_rsh ? rsh_overflow : (lsh_overflow | lsh_denormal_to_normal);
+assign exp_fma[10:0] = sel_overflow_exp ? exp_mul_p1[10:0] : exp_mul[10:0];
 
 // 1. do_rsh: the decimal point is between "sig_mul_rsh[105] and sig_mul_rsh[104]"
 // 2. do_lsh &  lsh_overflow: the decimal point is between "sig_mul_lsh[105] and sig_mul_lsh[104]"
@@ -345,11 +345,11 @@ assign sel_special =
 
 assign sign_special = (res_snan | res_qnan) ? 1'b0 : sign_mul;
 assign exp_special_f16 = (res_snan | res_qnan | res_inf) ? {(5){1'b1}} : '0;
-assign frac_special_f16 = res_snan ? {{(21 - 1){1'b0}}, 1'b1} : res_qnan ? {1'b1, {(21 - 1){1'b0}}} : '0;
+assign frac_special_f16 = res_snan ? {{(10 - 1){1'b0}}, 1'b1, {(21 - 10){1'b0}}} : res_qnan ? {1'b1, {(10 - 1){1'b0}}, {(21 - 10){1'b0}}} : '0;
 assign exp_special_f32 = (res_snan | res_qnan | res_inf) ? {(8){1'b1}} : '0;
-assign frac_special_f32 = res_snan ? {{(47 - 1){1'b0}}, 1'b1} : res_qnan ? {1'b1, {(47 - 1){1'b0}}} : '0;
+assign frac_special_f32 = res_snan ? {{(23 - 1){1'b0}}, 1'b1, {(47 - 23){1'b0}}} : res_qnan ? {1'b1, {(23 - 1){1'b0}}, {(47 - 23){1'b0}}} : '0;
 assign exp_special_f64 = (res_snan | res_qnan | res_inf) ? {(11){1'b1}} : '0;
-assign frac_special_f64 = res_snan ? {{(105 - 1){1'b0}}, 1'b1} : res_qnan ? {1'b1, {(105 - 1){1'b0}}} : '0;
+assign frac_special_f64 = res_snan ? {{(52 - 1){1'b0}}, 1'b1, {(105 - 52){1'b0}}} : res_qnan ? {1'b1, {(52 - 1){1'b0}}, {(105 - 52){1'b0}}} : '0;
 
 assign fma_intermediate_res_f16 = sel_special ? {sign_special, exp_special_f16, frac_special_f16} : {sign_mul, exp_fma[ 4:0], frac_fma_f16};
 assign fma_intermediate_res_f32 = sel_special ? {sign_special, exp_special_f32, frac_special_f32} : {sign_mul, exp_fma[ 7:0], frac_fma_f32};

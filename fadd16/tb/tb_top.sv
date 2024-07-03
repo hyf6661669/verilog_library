@@ -1,5 +1,5 @@
 // ========================================================================================================
-// File Name			: tb_top.sv
+// File Name			: tb_top_fadd.sv
 // Author				: HYF
 // How to Contact		: hyf_sysu@qq.com
 // Created Time    		: June 2nd 2024, 11:24:14
@@ -75,18 +75,10 @@ module tb_top #(
 // (local) params
 // ==================================================================================================================================================
 
-`ifndef FP64_TEST_NUM
-	`define FP64_TEST_NUM 2 ** 9
-`endif
-`ifndef FP32_TEST_NUM
-	`define FP32_TEST_NUM 2 ** 9
-`endif
 `ifndef FP16_TEST_NUM
 	`define FP16_TEST_NUM 2 ** 9
 `endif
 
-localparam FP64_RANDOM_NUM = `FP64_TEST_NUM;
-localparam FP32_RANDOM_NUM = `FP32_TEST_NUM;
 localparam FP16_RANDOM_NUM = `FP16_TEST_NUM;
 
 typedef bit [31:0][2] bit_to_array;
@@ -109,6 +101,10 @@ import "DPI-C" function void cmodel_check_result (
 	input  bit [31:0] opa_lo,
 	input  bit [31:0] opb_hi,
 	input  bit [31:0] opb_lo,
+	input  bit [31:0] opc_hi,
+	input  bit [31:0] opc_lo,
+	input  bit [31:0] is_fma,
+	input  bit [31:0] is_fmul,
 	input  bit [31:0] fp_format,
 	input  bit [31:0] rm,
 	input  bit [31:0] dut_res_hi,
@@ -127,6 +123,16 @@ import "DPI-C" function void gencases_for_f64(
 	output bit [31:0] fp64_opb_lo
 );
 
+import "DPI-C" function void gencases_for_f16_fma(output bit [15:0] fp16_opa, output bit [15:0] fp16_opb, output bit [15:0] fp16_opc);
+import "DPI-C" function void gencases_for_f32_fma(output bit [31:0] fp32_opa, output bit [31:0] fp32_opb, output bit [31:0] fp32_opc);
+import "DPI-C" function void gencases_for_f64_fma(
+	output bit [31:0] fp64_opa_hi,
+	output bit [31:0] fp64_opa_lo, 
+	output bit [31:0] fp64_opb_hi, 
+	output bit [31:0] fp64_opb_lo,
+	output bit [31:0] fp64_opc_hi, 
+	output bit [31:0] fp64_opc_lo
+);
 
 // ==================================================================================================================================================
 // signals
@@ -146,7 +152,6 @@ bit [31:0] seed_used;
 
 bit compare_ok;
 bit dut_start_valid;
-bit dut_finish_valid_q [`DUT_LATENCY - 1:0];
 bit dut_start_ready;
 bit dut_finish_valid;
 bit dut_finish_ready;
@@ -162,14 +167,18 @@ bit [31:0] dut_finish_valid_after_start_handshake_delay;
 
 
 // signals related with DUT.
+bit [ 1-1:0] dut_is_fma;
 bit [ 3-1:0] dut_fp_format;
 bit [64-1:0] dut_opa;
 bit [64-1:0] dut_opb;
+bit [64-1:0] dut_opc;
 bit [ 3-1:0] dut_rm;
 
+bit [ 1-1:0] dut_is_fma_q [`DUT_LATENCY - 1:0];
 bit [ 3-1:0] dut_fp_format_q [`DUT_LATENCY - 1:0];
 bit [64-1:0] dut_opa_q [`DUT_LATENCY - 1:0];
 bit [64-1:0] dut_opb_q [`DUT_LATENCY - 1:0];
+bit [64-1:0] dut_opc_q [`DUT_LATENCY - 1:0];
 bit [ 3-1:0] dut_rm_q [`DUT_LATENCY - 1:0];
 
 bit [64-1:0] dut_res;
@@ -204,9 +213,13 @@ initial begin
 	`APPL_WAIT_CYC(clk, 2)
 	acq_trig = 0;
 
+	dut_opa = '0;
+	dut_opb = '0;
+	dut_opc = '0;
+
     `include "tb_stim.svh"
 	
-	// `WAIT_CYC(clk, 5)
+	`WAIT_CYC(clk, 5)
 	stim_end = 1;
 end
 
@@ -221,33 +234,36 @@ for(j = 0; j < `DUT_LATENCY; j++) begin
 if(j == 0) begin
     always_ff @(posedge clk) begin
         if(~rst_n) begin
-            dut_finish_valid_q[j] <= '0;
+            dut_is_fma_q[j] <= '0;
             dut_fp_format_q[j] <= '0;
             dut_opa_q[j] <= '0;
             dut_opb_q[j] <= '0;
+            dut_opc_q[j] <= '0;
             dut_rm_q[j] <= '0;
         end else begin
-            // dut_finish_valid_q[j] <= dut_finish_valid & dut_finish_ready;
-            dut_finish_valid_q[j] <= dut_start_valid & dut_start_ready;
+            dut_is_fma_q[j] <= dut_is_fma;
             dut_fp_format_q[j] <= dut_fp_format;
             dut_opa_q[j] <= dut_opa;
             dut_opb_q[j] <= dut_opb;
+            dut_opc_q[j] <= dut_opc;
             dut_rm_q[j] <= dut_rm;
         end
     end
 end else begin
     always_ff @(posedge clk) begin
         if(~rst_n) begin
-            dut_finish_valid_q[j] <= '0;
+            dut_is_fma_q[j] <= '0;
             dut_fp_format_q[j] <= '0;
             dut_opa_q[j] <= '0;
             dut_opb_q[j] <= '0;
+            dut_opc_q[j] <= '0;
             dut_rm_q[j] <= '0;
         end else begin
-            dut_finish_valid_q[j] <= dut_finish_valid_q[j - 1];
+            dut_is_fma_q[j] <= dut_is_fma_q[j - 1];
             dut_fp_format_q[j] <= dut_fp_format_q[j - 1];
             dut_opa_q[j] <= dut_opa_q[j - 1];
             dut_opb_q[j] <= dut_opb_q[j - 1];
+            dut_opc_q[j] <= dut_opc_q[j - 1];
             dut_rm_q[j] <= dut_rm_q[j - 1];
         end
     end
@@ -286,7 +302,6 @@ initial begin
 			break;
 
         `RESP_WAIT_SIG(clk, dut_finish_ready, stim_end)
-        // if(dut_finish_valid_q[`DUT_LATENCY - 1]) begin
         if(1) begin
             cmodel_check_result (
                 .acq_count          (acq_count),
@@ -295,6 +310,10 @@ initial begin
                 .opa_lo             (dut_opa_q[`DUT_LATENCY - 1][31:00]),
                 .opb_hi             (dut_opb_q[`DUT_LATENCY - 1][63:32]),
                 .opb_lo             (dut_opb_q[`DUT_LATENCY - 1][31:00]),
+                .opc_hi             (dut_opc_q[`DUT_LATENCY - 1][63:32]),
+                .opc_lo             (dut_opc_q[`DUT_LATENCY - 1][31:00]),
+                .is_fma             (dut_is_fma_q[`DUT_LATENCY - 1]),
+                .is_fmul            ('0),
                 .fp_format          (dut_fp_format_q[`DUT_LATENCY - 1]),
                 .rm                 (dut_rm_q[`DUT_LATENCY - 1]),
                 .dut_res_hi         (dut_res[63:32]),
@@ -304,8 +323,6 @@ initial begin
             );
         end
         
-        // compare_ok = '1;
-
 		acq_count++;		
 		if((compare_ok == 0) | (compare_ok == 1'bX))
 			err_count++;
@@ -341,32 +358,33 @@ end
 // ================================================================================================================================================
 // Instantiate DUT here.
 
-// fmul_for_fma u_dut (
-// 	.opa_i						(dut_opa),
-// 	.opb_i						(dut_opb),
-// 	.format_i					(3'b001),
-// 	.fma_mul_exp_gt_inf_o		(fma_mul_exp_gt_inf),
-// 	.fma_mul_sticky_o			(fma_mul_sticky),
-// 	.fma_inputs_nan_inf_o		(fma_inputs_nan_inf),
-// 	.fma_intermediate_res_o		(fma_intermediate_res)
-// );
+fmul_simulation u_fmul_simulation (
+	.opa_i						(dut_opa),
+	.opb_i						(dut_opb),
+	.format_i					(3'b001),
+	.rm_i						(dut_rm),
+	.fma_mul_exp_gt_inf_o		(fma_mul_exp_gt_inf),
+	.fma_mul_sticky_o			(fma_mul_sticky),
+	.fma_inputs_nan_inf_o		(fma_inputs_nan_inf),
+	.fma_intermediate_res_o		(fma_intermediate_res),
+	.fmul_res_o					(),
+	.fmul_fflags_o				()
+);
 
 assign dut_start_ready = '1;
 assign dut_finish_valid = '1;
 
 fadd16 #(
-	.UF_AFTER_ROUNDING(0)
-) u_dut (	
-	.opa_i						(dut_opa[15:0]),
-    // TODO: Now we only test normal fadd
-	.opb_i						({dut_opb[15:0], {(27 - 16){1'b0}}}),
+	.UF_AFTER_ROUNDING(1)
+) u_dut (
+	.opa_i						(dut_is_fma ? dut_opc[15:0] : dut_opa[15:0]),
+	.opb_i						(dut_is_fma ? fma_intermediate_res[0 +: 27] : {dut_opb[15:0], {(27 - 16){1'b0}}}),
 	.rm_i						(dut_rm),
 	.s0_vld_i					(1'b1),
-	// TODO: Now we only test normal fadd
-	.fma_vld_i					('0),
-	.fma_mul_exp_gt_inf_i		('0),
-	.fma_mul_sticky_i			('0),
-	.fma_inputs_nan_inf_i		('0),
+	.fma_vld_i					(dut_is_fma),
+	.fma_mul_exp_gt_inf_i		(fma_mul_exp_gt_inf),
+	.fma_mul_sticky_i			(fma_mul_sticky),
+	.fma_inputs_nan_inf_i		(fma_inputs_nan_inf),
 
 	.fadd_res_o					(dut_res[15:0]),
 	.fadd_fflags_o				(dut_fflags),
