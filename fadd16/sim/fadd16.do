@@ -196,9 +196,8 @@ add wave -position insertpoint -expand -group S0_ADDER_RES {sim:/tb_top/u_dut/rt
 
 
 add wave -position insertpoint -expand -group S1 {sim:/tb_top/u_dut/sig_sum_rounded_s1}
-add wave -position insertpoint -expand -group S1 {sim:/tb_top/u_dut/sum_overflow_after_rounding}
+add wave -position insertpoint -expand -group S1 {sim:/tb_top/u_dut/sum_overflow_after_rounding_s1}
 add wave -position insertpoint -expand -group S1 {sim:/tb_top/u_dut/denormal_before_rounding_s1}
-add wave -position insertpoint -expand -group S1 {sim:/tb_top/u_dut/denormal_to_normal_s1}
 add wave -position insertpoint -expand -group S1 {sim:/tb_top/u_dut/exp_adjusted_s1}
 add wave -position insertpoint -expand -group S1 {sim:/tb_top/u_dut/exp_plus_2_s1}
 add wave -position insertpoint -expand -group S1 {sim:/tb_top/u_dut/exp_plus_1_s1}

@@ -58,11 +58,11 @@ module fadd16 #(
 	// fma_mul_exp_gt_inf_i = 0
 	// fma_mul_sticky_i = X
 	// fma_inputs_nan_inf_i = 1
-	// 2. "exp of a * b" is greater than {(11){1'b1}}
+	// 2. "exp of a * b" is greater than {(5){1'b1}}
 	// fma_mul_exp_gt_inf_i = 1
 	// fma_mul_sticky_i = X
 	// fma_inputs_nan_inf_i = 0
-	// 3. a and b are normal numbers, "exp of a * b" is equal to {(11){1'b1}}
+	// 3. a and b are normal numbers, "exp of a * b" is equal to {(5){1'b1}}
 	// fma_mul_exp_gt_inf_i = 0
 	// fma_mul_sticky_i = 0
 	// fma_inputs_nan_inf_i = 0
