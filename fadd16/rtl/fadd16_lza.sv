@@ -3,7 +3,7 @@
 // Author				: HYF
 // How to Contact		: hyf_sysu@qq.com
 // Created Time    		: June 4th 2024, 16:18:14
-// Last Modified Time   : 2024-06-25 @ 14:52:14
+// Last Modified Time   : July 4th 2024, 10:12:28
 // ========================================================================================================
 // Description	:
 // 1. Get lshift num
@@ -224,6 +224,7 @@ for(i = 31; i >= 1; i--) begin
 end
 endgenerate
 assign lzc_in_s_mask[0] = |lzc_in[31:0];
+// 12 = F16_FRAC_W + 2
 assign s_mask = lzc_in_s_mask >> 12;
 
 assign overflow_s_mask = s_mask[31 - 12 -: 12];

@@ -5,7 +5,6 @@
 ../rtl/fadd16_rsh_lost_bits_mask.sv
 
 
-../rtl/fmul_for_fma.sv
 ../rtl/fmul_simulation.sv
 ../rtl/fma16_rsh_lost_bits_mask.sv
 ../rtl/fma32_rsh_lost_bits_mask.sv

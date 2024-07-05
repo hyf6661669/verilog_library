@@ -359,7 +359,7 @@ logic fma_vld_s1_q;
 logic rtz_s1_d;
 logic rtz_s1_q;
 
-logic [11 - 1:0] sig_sum_rounded_s1;
+logic [10 - 1:0] sig_sum_rounded_s1;
 logic frac_unrounded_all_1_s1;
 logic sum_overflow_after_rounding_s1;
 logic denormal_before_rounding_s1;
@@ -423,7 +423,6 @@ assign opa_nan = opa_qnan | opa_snan;
 // For fma, when "a * b" is a nan result, we would set "fracb[10:0] = 0" in fmul, so we only need to check fracb[20:11]
 assign opb_qnan = (fma_vld_i & ~fma_inputs_nan_inf_i) ? 1'b0 : (expb_all_1 &  fracb[20]);
 assign opb_snan = (fma_vld_i & ~fma_inputs_nan_inf_i) ? 1'b0 : (expb_all_1 & ~fracb[20] & (fracb[19:11] != '0));
-// assign opb_snan = (fma_vld_i & ~fma_inputs_nan_inf_i) ? 1'b0 : (expb_all_1 & ~fracb[20] & (fma_vld_i ? (fracb[19:0] != '0) : (fracb[19:11] != '0)));
 assign opb_nan = opb_qnan | opb_snan;
 
 assign {expa_ge_expb, expa_sub_expb[4:0]} = {1'b0, expa[4:0]} + {1'b0, ~expb[4:0]} + {5'b0, 1'b1};
@@ -730,9 +729,10 @@ assign a_rsh_lost_bits_non_zero = |(lost_bits_mask_opb_larger & siga);
 assign b_rsh_lost_bits_non_zero = |(lost_bits_mask_opa_larger & sigb) | (fma_vld_i & fma_mul_sticky_i);
 assign rsh_lost_bits_non_zero = expa_ge_expb ? b_rsh_lost_bits_non_zero : a_rsh_lost_bits_non_zero;
 
-// far_sum_0 = far_sig_large + far_sig_small
-// far_sum_1 = far_sig_large + far_sig_small + 1
-// Then use "far_cin" to do 2-1 MUX
+// Use "far_cin" to do 2-1 MUX
+// far_sum_cin_0 = far_sig_large + far_sig_small
+// far_sum_cin_1 = far_sig_large + far_sig_small + 1
+// assign far_sum = far_cin ? far_sum_cin_1 : far_sum_cin_0;
 assign far_cin = do_sub & ~rsh_lost_bits_non_zero;
 assign far_sum[22:0] = far_sig_large + far_sig_small + {22'b0, far_cin};
 
@@ -842,7 +842,7 @@ end
 
 // ================================================================================================================================================
 
-assign sig_sum_rounded_s1[10:0] = {1'b0, sig_sum_unrounded_s1_q[9:0]} + {10'b0, round_up_s1_q};
+assign sig_sum_rounded_s1[9:0] = sig_sum_unrounded_s1_q[9:0] + {9'b0, round_up_s1_q};
 assign frac_unrounded_all_1_s1 = (&sig_sum_unrounded_s1_q[9:0]);
 assign sum_overflow_after_rounding_s1 = frac_unrounded_all_1_s1 & round_up_s1_q;
 // The digit in "2 ^ 0" is 0
