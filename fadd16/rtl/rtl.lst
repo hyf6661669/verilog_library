@@ -3,6 +3,9 @@
 ../rtl/fadd16.sv
 ../rtl/fadd16_lza.sv
 ../rtl/fadd16_rsh_lost_bits_mask.sv
+../rtl/fadd32.sv
+../rtl/fadd32_lza.sv
+../rtl/fadd32_rsh_lost_bits_mask.sv
 
 
 ../rtl/fmul_simulation.sv

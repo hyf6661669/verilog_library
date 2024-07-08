@@ -77,14 +77,41 @@ gencases_init(`RAND_SEED, `TEST_LEVEL);
 // TEST for fadd/fma
 // ==================================================================================================================================================
 
-dut_fp_format = 3'b001;
-for(i = 0; i < FP16_RANDOM_NUM; i++) begin
+// dut_fp_format = 3'b001;
+// for(i = 0; i < FP16_RANDOM_NUM; i++) begin
+// 	dut_is_fma = dut_opa[0];
+// 	// dut_is_fma = 1'b1;
+// 	if(dut_is_fma)
+// 		gencases_for_f16_fma(dut_opa[15:0], dut_opb[15:0], dut_opc[15:0]);
+// 	else
+// 		gencases_for_f16(dut_opa[15:0], dut_opb[15:0]);
+	
+// `ifdef RANDOM_RM
+// 	dut_rm = $urandom % 5;
+// 	`SINGLE_STIM
+// `else
+// 	dut_rm = RM_RNE;
+// 	`SINGLE_STIM
+// 	dut_rm = RM_RTZ;
+// 	`SINGLE_STIM
+// 	dut_rm = RM_RDN;
+// 	`SINGLE_STIM
+// 	dut_rm = RM_RUP;
+// 	`SINGLE_STIM
+// 	dut_rm = RM_RMM;
+// 	`SINGLE_STIM
+// `endif
+
+// end
+
+dut_fp_format = 3'b010;
+for(i = 0; i < FP32_RANDOM_NUM; i++) begin
 	dut_is_fma = dut_opa[0];
 	// dut_is_fma = 1'b1;
 	if(dut_is_fma)
-		gencases_for_f16_fma(dut_opa[15:0], dut_opb[15:0], dut_opc[15:0]);
+		gencases_for_f32_fma(dut_opa[31:0], dut_opb[31:0], dut_opc[31:0]);
 	else
-		gencases_for_f16(dut_opa[15:0], dut_opb[15:0]);
+		gencases_for_f32(dut_opa[31:0], dut_opb[31:0]);
 	
 `ifdef RANDOM_RM
 	dut_rm = $urandom % 5;
@@ -103,6 +130,33 @@ for(i = 0; i < FP16_RANDOM_NUM; i++) begin
 `endif
 
 end
+
+// dut_fp_format = 3'b100;
+// for(i = 0; i < FP64_RANDOM_NUM; i++) begin
+// 	// dut_is_fma = dut_opa[0];
+// 	dut_is_fma = 1'b0;
+// 	if(dut_is_fma)
+// 		gencases_for_f64_fma(dut_opa[63:32], dut_opa[31:0], dut_opb[63:32], dut_opb[31:0], dut_opc[63:32], dut_opc[31:0]);
+// 	else
+// 		gencases_for_f64(dut_opa[63:32], dut_opa[31:0], dut_opb[63:32], dut_opb[31:0]);
+	
+// `ifdef RANDOM_RM
+// 	dut_rm = $urandom % 5;
+// 	`SINGLE_STIM
+// `else
+// 	dut_rm = RM_RNE;
+// 	`SINGLE_STIM
+// 	dut_rm = RM_RTZ;
+// 	`SINGLE_STIM
+// 	dut_rm = RM_RDN;
+// 	`SINGLE_STIM
+// 	dut_rm = RM_RUP;
+// 	`SINGLE_STIM
+// 	dut_rm = RM_RMM;
+// 	`SINGLE_STIM
+// `endif
+
+// end
 
 
 // ==================================================================================================================================================

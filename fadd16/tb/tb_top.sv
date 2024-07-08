@@ -78,8 +78,16 @@ module tb_top #(
 `ifndef FP16_TEST_NUM
 	`define FP16_TEST_NUM 2 ** 9
 `endif
+`ifndef FP32_TEST_NUM
+	`define FP32_TEST_NUM 2 ** 9
+`endif
+`ifndef FP64_TEST_NUM
+	`define FP64_TEST_NUM 2 ** 9
+`endif
 
 localparam FP16_RANDOM_NUM = `FP16_TEST_NUM;
+localparam FP32_RANDOM_NUM = `FP32_TEST_NUM;
+localparam FP64_RANDOM_NUM = `FP64_TEST_NUM;
 
 typedef bit [31:0][2] bit_to_array;
 
@@ -361,7 +369,7 @@ end
 fmul_simulation u_fmul_simulation (
 	.opa_i						(dut_opa),
 	.opb_i						(dut_opb),
-	.format_i					(3'b001),
+	.format_i					(dut_fp_format),
 	.rm_i						(dut_rm),
 	.fma_mul_exp_gt_inf_o		(fma_mul_exp_gt_inf),
 	.fma_mul_sticky_o			(fma_mul_sticky),
@@ -374,11 +382,30 @@ fmul_simulation u_fmul_simulation (
 assign dut_start_ready = '1;
 assign dut_finish_valid = '1;
 
-fadd16 #(
+// fadd16 #(
+// 	.UF_AFTER_ROUNDING(1)
+// ) u_dut (
+// 	.opa_i						(dut_is_fma ? dut_opc[15:0] : dut_opa[15:0]),
+// 	.opb_i						(dut_is_fma ? fma_intermediate_res[0 +: 27] : {dut_opb[15:0], {(27 - 16){1'b0}}}),
+// 	.rm_i						(dut_rm),
+// 	.s0_vld_i					(1'b1),
+// 	.fma_vld_i					(dut_is_fma),
+// 	.fma_mul_exp_gt_inf_i		(fma_mul_exp_gt_inf),
+// 	.fma_mul_sticky_i			(fma_mul_sticky),
+// 	.fma_inputs_nan_inf_i		(fma_inputs_nan_inf),
+
+// 	.fadd_res_o					(dut_res[15:0]),
+// 	.fadd_fflags_o				(dut_fflags),
+
+// 	.clk						(clk),
+// 	.rst_n						(rst_n)
+// );
+
+fadd32 #(
 	.UF_AFTER_ROUNDING(1)
 ) u_dut (
-	.opa_i						(dut_is_fma ? dut_opc[15:0] : dut_opa[15:0]),
-	.opb_i						(dut_is_fma ? fma_intermediate_res[0 +: 27] : {dut_opb[15:0], {(27 - 16){1'b0}}}),
+	.opa_i						(dut_is_fma ? dut_opc[31:0] : dut_opa[31:0]),
+	.opb_i						(dut_is_fma ? fma_intermediate_res[0 +: 56] : {dut_opb[31:0], {(56 - 32){1'b0}}}),
 	.rm_i						(dut_rm),
 	.s0_vld_i					(1'b1),
 	.fma_vld_i					(dut_is_fma),
@@ -386,7 +413,7 @@ fadd16 #(
 	.fma_mul_sticky_i			(fma_mul_sticky),
 	.fma_inputs_nan_inf_i		(fma_inputs_nan_inf),
 
-	.fadd_res_o					(dut_res[15:0]),
+	.fadd_res_o					(dut_res[31:0]),
 	.fadd_fflags_o				(dut_fflags),
 
 	.clk						(clk),
