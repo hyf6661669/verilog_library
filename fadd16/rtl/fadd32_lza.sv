@@ -3,7 +3,7 @@
 // Author				: HYF
 // How to Contact		: hyf_sysu@qq.com
 // Created Time    		: July 4th 2024, 09:43:30
-// Last Modified Time   : July 4th 2024, 15:07:56
+// Last Modified Time   : July 17th 2024, 10:27:11
 // ========================================================================================================
 // Description	:
 // 1. Get lshift num
@@ -177,24 +177,24 @@ lzc #(
 assign lza_limited_by_exp_o = ({1'b0, exp_limit_mask[63:1]} == (lzc_in_temp | {1'b0, exp_limit_mask[63:1]}));
 
 // Overflow
-// lzc_in = {1, 63'bx}, lza_o = 0, for unrounded frac in close_sum, {L, G, S} = {[26], [25], [24:0]}, {L_uf_check, G_uf_check, S_uf_check} = {[25], [24], [23:0]} -> This is impossible in Overflow case
-// lzc_in = {1'b0, 1, 62'bx}, lza_o = 1, for unrounded frac in close_sum, {L, G, S} = {[25], [24], [23:0]}, {L_uf_check, G_uf_check, S_uf_check} = {[24], [23], [22:0]}
-// lzc_in = {2'b0, 1, 61'bx}, lza_o = 2, for unrounded frac in close_sum, {L, G, S} = {[24], [23], [22:0]}, {L_uf_check, G_uf_check, S_uf_check} = {[23], [22], [21:0]}
+// lzc_in = {1, 63'bx}, lza_o = 0, for unrounded frac in close_sum[49:0], {L, G, S} = {[26], [25], [24:0]}, {L_uf_check, G_uf_check, S_uf_check} = {[25], [24], [23:0]} -> This is impossible in Overflow case
+// lzc_in = {1'b0, 1, 62'bx}, lza_o = 1, for unrounded frac in close_sum[49:0], {L, G, S} = {[25], [24], [23:0]}, {L_uf_check, G_uf_check, S_uf_check} = {[24], [23], [22:0]}
+// lzc_in = {2'b0, 1, 61'bx}, lza_o = 2, for unrounded frac in close_sum[49:0], {L, G, S} = {[24], [23], [22:0]}, {L_uf_check, G_uf_check, S_uf_check} = {[23], [22], [21:0]}
 // ...
-// lzc_in = {24'b0, 1, 39'bx}, lza_o = 24, for unrounded frac in close_sum, {L, G, S} = {[2], [1], [0:0]}, {L_uf_check, G_uf_check, S_uf_check} = {[1], [0], 0}
-// lzc_in = {25'b0, 1, 38'bx}, lza_o = 25, for unrounded frac in close_sum, {L, G, S} = {[1], [0], 0}, {L_uf_check, G_uf_check, S_uf_check} = {[0], 0, 0}
-// lzc_in = {26'b0, 1, 37'bx}, lza_o = 26, for unrounded frac in close_sum, {L, G, S} = {[0], 0, 0}, {L_uf_check, G_uf_check, S_uf_check} = {0, 0, 0}
-// lza_o >= 27, for unrounded frac in close_sum, {L, G, S} = {0, 0, 0}, {L_uf_check, G_uf_check, S_uf_check} = {0, 0, 0}
+// lzc_in = {24'b0, 1, 39'bx}, lza_o = 24, for unrounded frac in close_sum[49:0], {L, G, S} = {[2], [1], [0:0]}, {L_uf_check, G_uf_check, S_uf_check} = {[1], [0], 0}
+// lzc_in = {25'b0, 1, 38'bx}, lza_o = 25, for unrounded frac in close_sum[49:0], {L, G, S} = {[1], [0], 0}, {L_uf_check, G_uf_check, S_uf_check} = {[0], 0, 0}
+// lzc_in = {26'b0, 1, 37'bx}, lza_o = 26, for unrounded frac in close_sum[49:0], {L, G, S} = {[0], 0, 0}, {L_uf_check, G_uf_check, S_uf_check} = {0, 0, 0}
+// lza_o >= 27, for unrounded frac in close_sum[49:0], {L, G, S} = {0, 0, 0}, {L_uf_check, G_uf_check, S_uf_check} = {0, 0, 0}
 
 // Normal
-// lzc_in = {1, 63'bx}, lza_o = 0, for unrounded frac in close_sum, {L, G, S} = {[25], [24], [23:0]}, {L_uf_check, G_uf_check, S_uf_check} = {[24], [23], [22:0]}
-// lzc_in = {1'b0, 1, 62'bx}, lza_o = 1, for unrounded frac in close_sum, {L, G, S} = {[24], [23], [22:0]}, {L_uf_check, G_uf_check, S_uf_check} = {[23], [22], [21:0]}
-// lzc_in = {2'b0, 1, 61'bx}, lza_o = 2, for unrounded frac in close_sum, {L, G, S} = {[23], [22], [21:0]}, {L_uf_check, G_uf_check, S_uf_check} = {[22], [21], [20:0]}
+// lzc_in = {1, 63'bx}, lza_o = 0, for unrounded frac in close_sum[49:0], {L, G, S} = {[25], [24], [23:0]}, {L_uf_check, G_uf_check, S_uf_check} = {[24], [23], [22:0]}
+// lzc_in = {1'b0, 1, 62'bx}, lza_o = 1, for unrounded frac in close_sum[49:0], {L, G, S} = {[24], [23], [22:0]}, {L_uf_check, G_uf_check, S_uf_check} = {[23], [22], [21:0]}
+// lzc_in = {2'b0, 1, 61'bx}, lza_o = 2, for unrounded frac in close_sum[49:0], {L, G, S} = {[23], [22], [21:0]}, {L_uf_check, G_uf_check, S_uf_check} = {[22], [21], [20:0]}
 // ...
-// lzc_in = {23'b0, 1, 40'bx}, lza_o = 24, for unrounded frac in close_sum, {L, G, S} = {[2], [1], [0:0]}, {L_uf_check, G_uf_check, S_uf_check} = {[1], [0], 0}
-// lzc_in = {24'b0, 1, 39'bx}, lza_o = 25, for unrounded frac in close_sum, {L, G, S} = {[1], [0], 0}, {L_uf_check, G_uf_check, S_uf_check} = {[0], 0, 0}
-// lzc_in = {25'b0, 1, 38'bx}, lza_o = 26, for unrounded frac in close_sum, {L, G, S} = {[0], 0, 0}, {L_uf_check, G_uf_check, S_uf_check} = {0, 0, 0}
-// lza_o >= 26, for unrounded frac in close_sum, {L, G, S} = {0, 0, 0}, {L_uf_check, G_uf_check, S_uf_check} = {0, 0, 0}
+// lzc_in = {23'b0, 1, 40'bx}, lza_o = 24, for unrounded frac in close_sum[49:0], {L, G, S} = {[2], [1], [0:0]}, {L_uf_check, G_uf_check, S_uf_check} = {[1], [0], 0}
+// lzc_in = {24'b0, 1, 39'bx}, lza_o = 25, for unrounded frac in close_sum[49:0], {L, G, S} = {[1], [0], 0}, {L_uf_check, G_uf_check, S_uf_check} = {[0], 0, 0}
+// lzc_in = {25'b0, 1, 38'bx}, lza_o = 26, for unrounded frac in close_sum[49:0], {L, G, S} = {[0], 0, 0}, {L_uf_check, G_uf_check, S_uf_check} = {0, 0, 0}
+// lza_o >= 26, for unrounded frac in close_sum[49:0], {L, G, S} = {0, 0, 0}, {L_uf_check, G_uf_check, S_uf_check} = {0, 0, 0}
 
 
 // From MSB -> LSB, set all bits 0 after the fitst 1
