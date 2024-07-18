@@ -1,0 +1,3 @@
+J. D. Bruguera, "Radix-64 Floating-Point Divider," 2018 IEEE 25th Symposium on Computer Arithmetic (ARITH), 2018, pp. 84-91, doi: 10.1109/ARITH.2018.8464815.
+
+J. D. Bruguera, "Low Latency Floating-Point Division and Square Root Unit," in IEEE Transactions on Computers, vol. 69, no. 2, pp. 274-287, 1 Feb. 2020, doi: 10.1109/TC.2019.2947899. keywords: {Timing;Iterative methods;Convergence;Computer architecture;Estimation;Organizations;Registers;Digit-recurrence algorithms;floating-point division, and square root},

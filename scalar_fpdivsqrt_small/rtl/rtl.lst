@@ -1,0 +1,13 @@
++incdir+../rtl
+
+../rtl/scalar_fpdivsqrt_small_wrapper.sv
+../rtl/scalar_fpdivsqrt_small.sv
+../rtl/frac_lsh.sv
+../rtl/lzc.sv
+../rtl/fdiv_r4_qds.sv
+../rtl/fdiv_r16_block.sv
+../rtl/fsqrt_r16_block.sv
+../rtl/fsqrt_r4_qds.sv
+../rtl/fsqrt_r4_qds_constants_generator.sv
+
+
