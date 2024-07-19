@@ -33,9 +33,9 @@ add wave -position insertpoint -expand -group SPECIAL_CASES {sim:/tb_top/u_dut/r
 add wave -position insertpoint -expand -group SPECIAL_CASES {sim:/tb_top/u_dut/opb_power_of_2_q}
 
 
-add wave -position insertpoint -expand -group EXP_LOGIC {sim:/tb_top/u_dut/exp_diff_nm_in}
-add wave -position insertpoint -expand -group EXP_LOGIC {sim:/tb_top/u_dut/exp_diff_nm_in_pre_0}
-add wave -position insertpoint -expand -group EXP_LOGIC {sim:/tb_top/u_dut/exp_diff_dn_in_pre_0}
+add wave -position insertpoint -expand -group EXP_LOGIC {sim:/tb_top/u_dut/exp_diff}
+add wave -position insertpoint -expand -group EXP_LOGIC {sim:/tb_top/u_dut/res_exp_fdiv_pre_0}
+add wave -position insertpoint -expand -group EXP_LOGIC {sim:/tb_top/u_dut/res_exp_fdiv_pre_1}
 add wave -position insertpoint -expand -group EXP_LOGIC -radix unsigned {sim:/tb_top/u_dut/iter_counter_nxt}
 add wave -position insertpoint -expand -group EXP_LOGIC {sim:/tb_top/u_dut/add_1_to_quot_msb}
 add wave -position insertpoint -expand -group EXP_LOGIC {sim:/tb_top/u_dut/res_exp_q}
@@ -51,12 +51,11 @@ add wave -position insertpoint -expand -group EXP_LOGIC {sim:/tb_top/u_dut/quot_
 add wave -position insertpoint -expand -group EXP_LOGIC -radix binary {sim:/tb_top/u_dut/quot_discard_num_one_hot}
 
 
-
 add wave -position insertpoint -expand -group PRESCALING {sim:/tb_top/u_dut/fraca_lt_fracb}
 add wave -position insertpoint -expand -group PRESCALING {sim:/tb_top/u_dut/fraca_unlsh}
 add wave -position insertpoint -expand -group PRESCALING {sim:/tb_top/u_dut/fracb_unlsh}
-add wave -position insertpoint -expand -group PRESCALING {sim:/tb_top/u_dut/fraca_lsh_num}
-add wave -position insertpoint -expand -group PRESCALING {sim:/tb_top/u_dut/fracb_lsh_num}
+add wave -position insertpoint -expand -group PRESCALING -radix unsigned {sim:/tb_top/u_dut/fraca_lsh_num_q}
+add wave -position insertpoint -expand -group PRESCALING -radix unsigned {sim:/tb_top/u_dut/fracb_lsh_num_q}
 add wave -position insertpoint -expand -group PRESCALING {sim:/tb_top/u_dut/fraca_lsh}
 add wave -position insertpoint -expand -group PRESCALING {sim:/tb_top/u_dut/fracb_lsh}
 add wave -position insertpoint -expand -group PRESCALING {sim:/tb_top/u_dut/scaling_factor_idx}
@@ -138,9 +137,9 @@ add wave -position insertpoint -expand -group POST {sim:/tb_top/u_dut/quot_m1_l}
 add wave -position insertpoint -expand -group POST {sim:/tb_top/u_dut/quot_m1_g}
 add wave -position insertpoint -expand -group POST {sim:/tb_top/u_dut/quot_m1_s}
 add wave -position insertpoint -expand -group POST {sim:/tb_top/u_dut/quot_m1_need_round_up}
-add wave -position insertpoint -expand -group POST {sim:/tb_top/u_dut/quot_uf_check_l}
-add wave -position insertpoint -expand -group POST {sim:/tb_top/u_dut/quot_uf_check_g}
-add wave -position insertpoint -expand -group POST {sim:/tb_top/u_dut/quot_uf_check_s}
+add wave -position insertpoint -expand -group POST {sim:/tb_top/u_dut/quot_l_uf_check}
+add wave -position insertpoint -expand -group POST {sim:/tb_top/u_dut/quot_g_uf_check}
+add wave -position insertpoint -expand -group POST {sim:/tb_top/u_dut/quot_s_uf_check}
 add wave -position insertpoint -expand -group POST {sim:/tb_top/u_dut/quot_uf_check_need_round_up}
 
 

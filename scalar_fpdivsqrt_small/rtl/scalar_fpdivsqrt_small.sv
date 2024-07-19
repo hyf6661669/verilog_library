@@ -211,12 +211,14 @@ logic [13 - 1:0] res_exp_d;
 logic [13 - 1:0] res_exp_q;
 logic [13 - 1:0] nxt_res_exp_pre_0;
 logic [13 - 1:0] nxt_res_exp_pre_1;
-logic [12 - 1:0] res_exp_mul_2_fsqrt;
-
-logic [13 - 1:0] exp_diff_nm_in;
-logic [13 - 1:0] exp_diff_nm_in_m1;
-logic [13 - 1:0] exp_diff_nm_in_pre_0;
-logic [13 - 1:0] exp_diff_dn_in_pre_0;
+logic [13 - 1:0] exp_diff;
+logic [13 - 1:0] exp_diff_m1;
+logic [13 - 1:0] res_exp_fdiv_pre_0;
+logic [13 - 1:0] res_exp_fdiv_pre_1;
+logic [13 - 1:0] res_exp_dn_in_fsqrt_pre_0;
+logic [12 - 1:0] res_exp_nm_in_fsqrt_pre_0;
+logic [13 - 1:0] res_exp_fsqrt_pre_0;
+logic [12 - 1:0] res_exp_fsqrt_pre_1;
 
 logic res_exp_zero;
 logic res_exp_dn;
@@ -270,10 +272,15 @@ logic opb_dn;
 logic fraca_lt_fracb;
 logic [F64_FRAC_W-1:0] fraca_unlsh;
 logic [F64_FRAC_W-1:0] fracb_unlsh;
-logic [$clog2(F64_FRAC_W)-1:0] fraca_lsh_num;
-logic [$clog2(F64_FRAC_W)-1:0] fracb_lsh_num;
 logic [$clog2(F64_FRAC_W)-1:0] fraca_lsh_num_temp;
 logic [$clog2(F64_FRAC_W)-1:0] fracb_lsh_num_temp;
+
+logic frac_lsh_num_en;
+logic [$clog2(F64_FRAC_W)-1:0] fraca_lsh_num_d;
+logic [$clog2(F64_FRAC_W)-1:0] fraca_lsh_num_q;
+logic [$clog2(F64_FRAC_W)-1:0] fracb_lsh_num_d;
+logic [$clog2(F64_FRAC_W)-1:0] fracb_lsh_num_q;
+
 logic [(F64_FRAC_W-1)-1:0] fraca_lsh;
 logic [(F64_FRAC_W-1)-1:0] fracb_lsh;
 logic [3 - 1:0] scaling_factor_idx;
@@ -773,25 +780,16 @@ end
 // ================================================================================================================================================
 // EXP logic for FDIV
 // ================================================================================================================================================
-assign exp_diff_nm_in = {1'b0, expa_plus_bias} - {2'b0, expb_adjusted};
-assign exp_diff_nm_in_m1 = exp_diff_nm_in - 13'd1;
+assign exp_diff = {1'b0, expa_plus_bias} - {2'b0, expb_adjusted};
+assign exp_diff_m1 = exp_diff - 13'd1;
 
-assign exp_diff_nm_in_pre_0 = fraca_lt_fracb ? exp_diff_nm_in_m1 : exp_diff_nm_in;
-assign exp_diff_dn_in_pre_0 = exp_diff_nm_in - {7'b0, fraca_lsh_num[5:0]} + {7'b0, fracb_lsh_num[5:0]};
+assign res_exp_fdiv_pre_0 = has_dn_in ? exp_diff : (fraca_lt_fracb ? exp_diff_m1 : exp_diff);
+assign res_exp_fdiv_pre_1 = res_exp_q[12:0] - {7'b0, fraca_lsh_num_q[5:0]} + {7'b0, fracb_lsh_num_q[5:0]} - {12'b0, fraca_lt_fracb};
 
-// What should we store in "res_exp_q" in PRE_0 ?
-// FDIV
-// dn in: exp_diff_dn_in_pre_0
-// nm in: processed exp info
-// FSQRT: res_exp_mul_2_fsqrt
-assign nxt_res_exp_pre_0 = is_fdiv_i ? (has_dn_in ? exp_diff_dn_in_pre_0 : exp_diff_nm_in_pre_0) : {2'b0, res_exp_mul_2_fsqrt[11:1]};
 
-// In PRE_1, res_exp_q[12:0] = exp_diff_nm_in_pre_0[12:0]
-// What should we store in "res_exp_q" in PRE_1 ?
-// FDIV: "res_exp_q - 'd1", if (fraca_lt_fracb == 1)
-assign nxt_res_exp_pre_1 = res_exp_q - 13'd1;
-
-// EXP calculation for FSQRT
+// ================================================================================================================================================
+// EXP logic for FSQRT
+// ================================================================================================================================================
 // It might be a little bit difficult to understand the logic here.
 // E: Real exponent of a number
 // exp: The encoded value of E in a particular fp_format
@@ -828,13 +826,35 @@ assign nxt_res_exp_pre_1 = res_exp_q - 13'd1;
 // sqrt.E = x.E / 2;
 // sqrt.exp = sqrt.E + (fp_format_i[0] ? 15 : fp_format_i[1] ? 127 : 1023);
 // I think the design used here should lead to better PPA.
-assign res_exp_mul_2_fsqrt[11:0] = {1'b0, expa_adjusted[10:0]} + {
+
+// Keep original "expa" when "dn_in"
+assign res_exp_dn_in_fsqrt_pre_0[12:0] = {2'b0, expa_adjusted[10:0]};
+assign res_exp_nm_in_fsqrt_pre_0[11:0] = {1'b0, expa_adjusted[10:0]} + {
 	2'b0,
-	f32_pre_0 ? {3'b0, 2'b11, ~fraca_lsh_num[4]} : {4'b1111, ~fraca_lsh_num[5:4]},
-	~fraca_lsh_num[3:0]
+	f32_pre_0 ? {3'b0, 2'b11, 1'b1} : {4'b1111, 2'b11},
+	4'b1111
+};
+assign res_exp_fsqrt_pre_0[12:0] = opa_dn ? res_exp_dn_in_fsqrt_pre_0[12:0] : {2'b0, res_exp_nm_in_fsqrt_pre_0[11:1]};
+
+assign res_exp_fsqrt_pre_1[11:0] = {1'b0, res_exp_q[10:0]} + {
+	2'b0,
+	f32_pre_0 ? {3'b0, 2'b11, ~fraca_lsh_num_q[4]} : {4'b1111, ~fraca_lsh_num_q[5:4]},
+	~fraca_lsh_num_q[3:0]
 };
 
-assign res_exp_en = start_handshaked | (fsm_q[FSM_PRE_1_BIT] & is_fdiv_q & fraca_lt_fracb);
+
+// What should we store in "res_exp_q" in PRE_0 ?
+// FDIV: res_exp_fdiv_pre_0
+// FSQRT: res_exp_fsqrt_pre_0
+// What should we store in "res_exp_q" in PRE_1 ?
+// FDIV: res_exp_fdiv_pre_1
+// FSQRT: res_exp_fsqrt_pre_1
+
+assign nxt_res_exp_pre_0 = is_fdiv_i ? res_exp_fdiv_pre_0 : res_exp_fsqrt_pre_0;
+
+assign nxt_res_exp_pre_1 = is_fdiv_q ? res_exp_fdiv_pre_1 : {2'b0, res_exp_fsqrt_pre_1[11:1]};
+
+assign res_exp_en = start_handshaked | fsm_q[FSM_PRE_1_BIT];
 assign res_exp_d  = 
   ({(13){fsm_q[FSM_PRE_0_BIT]}} & nxt_res_exp_pre_0)
 | ({(13){fsm_q[FSM_PRE_1_BIT]}} & nxt_res_exp_pre_1);
@@ -978,8 +998,7 @@ lzc #(
 	// The hidden bit of frac is not considered here
 	.empty_o	(fracb_zero_pre_0)
 );
-assign fraca_lsh_num = {(6){expa_zero}} & fraca_lsh_num_temp;
-assign fracb_lsh_num = {(6){expb_zero}} & fracb_lsh_num_temp;
+
 
 frac_lsh u_lsh_fraca (
 	.lsh_i				(fraca_lsh_num_temp),
@@ -995,6 +1014,17 @@ frac_lsh u_lsh_fracb (
 assign fraca_lt_fracb =
   (fsm_q[FSM_PRE_0_BIT] ? fraca_prescaled_pre_0[0 +: (F64_FRAC_W - 1)] : fraca_prescaled_pre_1[0 +: (F64_FRAC_W - 1)])
 < (fsm_q[FSM_PRE_0_BIT] ? fracb_prescaled_pre_0[0 +: (F64_FRAC_W - 1)] : fracb_prescaled_pre_1[0 +: (F64_FRAC_W - 1)]);
+
+assign frac_lsh_num_en = start_handshaked & has_dn_in;
+assign fraca_lsh_num_d = {(6){expa_zero}} & fraca_lsh_num_temp;
+assign fracb_lsh_num_d = {(6){expb_zero}} & fracb_lsh_num_temp;
+
+always_ff @(posedge clk) begin
+	if(frac_lsh_num_en) begin
+		fraca_lsh_num_q <= fraca_lsh_num_d;
+		fracb_lsh_num_q <= fracb_lsh_num_d;
+	end
+end
 
 // ================================================================================================================================================
 // PRESCALING
@@ -1274,9 +1304,10 @@ assign iter_counter_start_value_fsqrt_pre_1 = f32_after_pre_0_q ? 6'd5 : 6'd12;
 // F64: When "iter_counter_q >= 52", we need to add a "1" before MSB of final quot.
 assign add_1_to_quot_msb = (iter_counter_q == 6'd52);
 
-// For FSQRT, when opa is denormal, use iter_counter_q[0] to store "fraca_lsh_num[0]", so we can know whether expa is odd in PRE_1
+// For FSQRT, when opa is denormal, use iter_counter_q[0] to store "fraca_lsh_num_d[0]", so we can know whether expa is odd in PRE_1
+// TODO
 assign iter_counter_d = 
-  ({(6){fsm_q[FSM_PRE_0_BIT] &  has_dn_in	}} & {{(6 - 1){1'b0}}, fraca_lsh_num[0]})
+  ({(6){fsm_q[FSM_PRE_0_BIT] &  has_dn_in	}} & {{(6 - 1){1'b0}}, fraca_lsh_num_d[0]})
 | ({(6){fsm_q[FSM_PRE_0_BIT] & ~has_dn_in	}} & (is_fdiv_i ? '0 : iter_counter_start_value_fsqrt_pre_0))
 | ({(6){fsm_q[FSM_PRE_1_BIT]				}} & (is_fdiv_q ? '0 : iter_counter_start_value_fsqrt_pre_1))
 | ({(6){fsm_q[FSM_ITER_BIT]					}} & (final_iter ? {add_1_to_quot_msb, res_exp_of, quot_discard_num_one_hot[3:0]} : iter_counter_nxt));

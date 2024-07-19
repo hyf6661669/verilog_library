@@ -31,7 +31,10 @@ add wave -position insertpoint -expand -group SPECIAL_CASES {sim:/tb_top/u_dut/r
 add wave -position insertpoint -expand -group SPECIAL_CASES {sim:/tb_top/u_dut/res_sqrt2_pre_1}
 add wave -position insertpoint -expand -group SPECIAL_CASES {sim:/tb_top/u_dut/res_sqrt2_q}
 
-add wave -position insertpoint -expand -group SKIPPING_FIRST_ITER {sim:/tb_top/u_dut/res_exp_mul_2_fsqrt}
+add wave -position insertpoint -expand -group SKIPPING_FIRST_ITER {sim:/tb_top/u_dut/res_exp_dn_in_fsqrt_pre_0}
+add wave -position insertpoint -expand -group SKIPPING_FIRST_ITER {sim:/tb_top/u_dut/res_exp_nm_in_fsqrt_pre_0}
+add wave -position insertpoint -expand -group SKIPPING_FIRST_ITER {sim:/tb_top/u_dut/res_exp_fsqrt_pre_0}
+add wave -position insertpoint -expand -group SKIPPING_FIRST_ITER {sim:/tb_top/u_dut/res_exp_fsqrt_pre_1}
 add wave -position insertpoint -expand -group SKIPPING_FIRST_ITER {sim:/tb_top/u_dut/exp_odd_fsqrt}
 add wave -position insertpoint -expand -group SKIPPING_FIRST_ITER {sim:/tb_top/u_dut/frac_fsqrt}
 add wave -position insertpoint -expand -group SKIPPING_FIRST_ITER {sim:/tb_top/u_dut/root_dig_n2_1st}
