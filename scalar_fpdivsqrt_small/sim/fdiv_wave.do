@@ -114,8 +114,8 @@ add wave -position insertpoint -expand -group 2ND_SRT {sim:/tb_top/u_dut/quot_m1
 
 add wave -position insertpoint -expand -group POST {sim:/tb_top/u_dut/quot_root_iter_q}
 add wave -position insertpoint -expand -group POST {sim:/tb_top/u_dut/quot_root_m1_iter_q}
-add wave -position insertpoint -expand -group POST {sim:/tb_top/u_dut/f_r_s_q}
-add wave -position insertpoint -expand -group POST {sim:/tb_top/u_dut/f_r_c_q}
+add wave -position insertpoint -expand -group POST {sim:/tb_top/u_dut/f_r_s_fdiv_q}
+add wave -position insertpoint -expand -group POST {sim:/tb_top/u_dut/f_r_c_fdiv_q}
 add wave -position insertpoint -expand -group POST {sim:/tb_top/u_dut/nr_f_r}
 add wave -position insertpoint -expand -group POST {sim:/tb_top/u_dut/quot_discard_not_zero}
 add wave -position insertpoint -expand -group POST {sim:/tb_top/u_dut/rem_not_zero}

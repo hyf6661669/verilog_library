@@ -113,8 +113,8 @@ add wave -position insertpoint -expand -group 2ND_SRT -radix binary {sim:/tb_top
 
 add wave -position insertpoint -expand -group POST {sim:/tb_top/u_dut/quot_root_iter_q}
 add wave -position insertpoint -expand -group POST {sim:/tb_top/u_dut/quot_root_m1_iter_q}
-add wave -position insertpoint -expand -group POST {sim:/tb_top/u_dut/f_r_s_q}
-add wave -position insertpoint -expand -group POST {sim:/tb_top/u_dut/f_r_c_q}
+add wave -position insertpoint -expand -group POST {sim:/tb_top/u_dut/f_r_s_fsqrt_q}
+add wave -position insertpoint -expand -group POST {sim:/tb_top/u_dut/f_r_c_fsqrt_q}
 add wave -position insertpoint -expand -group POST {sim:/tb_top/u_dut/nr_f_r}
 add wave -position insertpoint -expand -group POST {sim:/tb_top/u_dut/select_root_m1}
 add wave -position insertpoint -expand -group POST {sim:/tb_top/u_dut/root_before_inc}

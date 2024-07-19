@@ -449,12 +449,17 @@ logic divided_by_zero_q;
 
 // ================================================================================================================================================
 
-logic f_r_s_en;
-logic [GLOBAL_REM_W-1:0] f_r_s_d;
-logic [GLOBAL_REM_W-1:0] f_r_s_q;
-logic f_r_c_en;
-logic [GLOBAL_REM_W-1:0] f_r_c_d;
-logic [GLOBAL_REM_W-1:0] f_r_c_q;
+logic f_r_fdiv_en;
+logic [GLOBAL_REM_W-1:0] f_r_s_fdiv_d;
+logic [GLOBAL_REM_W-1:0] f_r_s_fdiv_q;
+logic [GLOBAL_REM_W-1:0] f_r_c_fdiv_d;
+logic [GLOBAL_REM_W-1:0] f_r_c_fdiv_q;
+
+logic f_r_fsqrt_en;
+logic [FSQRT_F64_REM_W-1:0] f_r_s_fsqrt_d;
+logic [FSQRT_F64_REM_W-1:0] f_r_s_fsqrt_q;
+logic [FSQRT_F64_REM_W-1:0] f_r_c_fsqrt_d;
+logic [FSQRT_F64_REM_W-1:0] f_r_c_fsqrt_q;
 
 // 57 = F64_FRAC_W + 4
 logic frac_D_en;
@@ -488,6 +493,8 @@ logic [6 - 1:0] iter_counter_start_value_fsqrt_pre_1;
 logic [6 - 1:0] iter_counter_nxt;
 logic final_iter;
 
+logic [GLOBAL_REM_W - 1:0] f_r_s_post;
+logic [GLOBAL_REM_W - 1:0] f_r_c_post;
 logic [GLOBAL_REM_W - 1:0] nr_f_r;
 logic [(GLOBAL_REM_W - 2) - 1:0] f_r_xor;
 logic [(GLOBAL_REM_W - 2) - 1:0] f_r_or;
@@ -1127,19 +1134,28 @@ assign fracb_scaled[56:0] = {1'b0, fracb_scaled_sum[55:0]} + {1'b0, fracb_scaled
 assign f_r_s_before_iter_fdiv = {1'b0, 2'b0, fraca_lt_fracb ? {fraca_scaled[56:0], 1'b0} : {1'b0, fraca_scaled[56:0]}};
 assign f_r_c_before_iter_fdiv = '0;
 
-assign f_r_s_en = (start_handshaked & ~has_dn_in) | fsm_q[FSM_PRE_1_BIT] | fsm_q[FSM_ITER_BIT];
-assign f_r_c_en = (start_handshaked & ~has_dn_in) | fsm_q[FSM_PRE_1_BIT] | fsm_q[FSM_ITER_BIT];
+assign f_r_fdiv_en = (start_handshaked & ~has_dn_in & is_fdiv_i) | (is_fdiv_q & (fsm_q[FSM_PRE_1_BIT] | fsm_q[FSM_ITER_BIT]));
+assign f_r_fsqrt_en = (start_handshaked & ~opa_dn & ~is_fdiv_i) | (~is_fdiv_q & (fsm_q[FSM_PRE_1_BIT] | fsm_q[FSM_ITER_BIT]));
 
-// TODO: To improve timing we may need to use seperate regs to store REM for fdiv/fsqrt
-assign f_r_s_d = 
-  ({(GLOBAL_REM_W){fsm_q[FSM_PRE_0_BIT]}} & (is_fdiv_i ? f_r_s_before_iter_fdiv : {{(GLOBAL_REM_W - FSQRT_F64_REM_W){1'b0}}, f_r_s_before_iter_fsqrt[0 +: FSQRT_F64_REM_W]}))
-| ({(GLOBAL_REM_W){fsm_q[FSM_PRE_1_BIT]}} & (is_fdiv_q ? f_r_s_before_iter_fdiv : {{(GLOBAL_REM_W - FSQRT_F64_REM_W){1'b0}}, f_r_s_before_iter_fsqrt[0 +: FSQRT_F64_REM_W]}))
-| ({(GLOBAL_REM_W){fsm_q[FSM_ITER_BIT ]}} & (is_fdiv_q ? f_r_s_2nd_fdiv : {{(GLOBAL_REM_W - FSQRT_F64_REM_W){1'b0}}, f_r_s_2nd_fsqrt[0 +: FSQRT_F64_REM_W]}));
+assign f_r_s_fdiv_d = 
+  ({(GLOBAL_REM_W){fsm_q[FSM_PRE_0_BIT]}} & f_r_s_before_iter_fdiv)
+| ({(GLOBAL_REM_W){fsm_q[FSM_PRE_1_BIT]}} & f_r_s_before_iter_fdiv)
+| ({(GLOBAL_REM_W){fsm_q[FSM_ITER_BIT ]}} & f_r_s_2nd_fdiv);
 
-assign f_r_c_d = 
-  ({(GLOBAL_REM_W){fsm_q[FSM_PRE_0_BIT]}} & (is_fdiv_i ? f_r_c_before_iter_fdiv : {{(GLOBAL_REM_W - FSQRT_F64_REM_W){1'b0}}, f_r_c_before_iter_fsqrt[0 +: FSQRT_F64_REM_W]}))
-| ({(GLOBAL_REM_W){fsm_q[FSM_PRE_1_BIT]}} & (is_fdiv_q ? f_r_c_before_iter_fdiv : {{(GLOBAL_REM_W - FSQRT_F64_REM_W){1'b0}}, f_r_c_before_iter_fsqrt[0 +: FSQRT_F64_REM_W]}))
-| ({(GLOBAL_REM_W){fsm_q[FSM_ITER_BIT ]}} & (is_fdiv_q ? f_r_c_2nd_fdiv : {{(GLOBAL_REM_W - FSQRT_F64_REM_W){1'b0}}, f_r_c_2nd_fsqrt[0 +: FSQRT_F64_REM_W]}));
+assign f_r_c_fdiv_d = 
+  ({(GLOBAL_REM_W){fsm_q[FSM_PRE_0_BIT]}} & f_r_c_before_iter_fdiv)
+| ({(GLOBAL_REM_W){fsm_q[FSM_PRE_1_BIT]}} & f_r_c_before_iter_fdiv)
+| ({(GLOBAL_REM_W){fsm_q[FSM_ITER_BIT ]}} & f_r_c_2nd_fdiv);
+
+assign f_r_s_fsqrt_d = 
+  ({(FSQRT_F64_REM_W){fsm_q[FSM_PRE_0_BIT]}} & f_r_s_before_iter_fsqrt)
+| ({(FSQRT_F64_REM_W){fsm_q[FSM_PRE_1_BIT]}} & f_r_s_before_iter_fsqrt)
+| ({(FSQRT_F64_REM_W){fsm_q[FSM_ITER_BIT ]}} & f_r_s_2nd_fsqrt);
+
+assign f_r_c_fsqrt_d = 
+  ({(FSQRT_F64_REM_W){fsm_q[FSM_PRE_0_BIT]}} & f_r_c_before_iter_fsqrt)
+| ({(FSQRT_F64_REM_W){fsm_q[FSM_PRE_1_BIT]}} & f_r_c_before_iter_fsqrt)
+| ({(FSQRT_F64_REM_W){fsm_q[FSM_ITER_BIT ]}} & f_r_c_2nd_fsqrt);
 
 // FDIV: When "fracb_zero_pre_0/fracb_zero_pre_1 = 1" , we need to remember "fraca_prescaled".
 assign quot_m1_before_iter_fracb_zero_pre_0 = f32_pre_0 ? {{(54 - 23 - 1){1'b0}}, fraca_prescaled[51 -: 23], 1'b0} : {{(54 - 52 - 1){1'b0}}, fraca_prescaled[51 -: 52], 1'b0};
@@ -1156,8 +1172,8 @@ assign quot_root_iter_en = start_handshaked | fsm_q[FSM_PRE_1_BIT] | fsm_q[FSM_I
 assign quot_root_m1_iter_en = start_handshaked | fsm_q[FSM_PRE_1_BIT] | (fsm_q[FSM_ITER_BIT] & (is_fdiv_q ? ~(opb_power_of_2_q & ~res_exp_dn) : 1'b1));
 
 // f_r_s_q/f_r_c_q is in the critial path, to optimize timing, we should:
-// Use quot_root_iter_q to store fraca_lsh
-// Use quot_root_m1_iter_q to store fracb_lsh
+// Use quot_root_iter_q to store "fraca_lsh"
+// Use quot_root_m1_iter_q to store "fracb_lsh"
 // QUOT_ROOT_W = 54
 assign quot_root_iter_d = 
   ({(QUOT_ROOT_W){fsm_q[FSM_PRE_0_BIT] &  has_dn_in	&  opa_dn}} & {{(QUOT_ROOT_W - (F64_FRAC_W - 1)){1'b0}}, fraca_lsh[0 +: (F64_FRAC_W - 1)]})
@@ -1193,10 +1209,16 @@ assign frac_D_d =
 | ({(57){fsm_q[FSM_ITER_BIT] }} & nxt_frac_D_iter);
 
 always_ff @(posedge clk) begin
-	if(f_r_s_en)
-		f_r_s_q <= f_r_s_d;
-	if(f_r_c_en)
-		f_r_c_q <= f_r_c_d;
+	if(f_r_fdiv_en) begin
+		f_r_s_fdiv_q <= f_r_s_fdiv_d;
+		f_r_c_fdiv_q <= f_r_c_fdiv_d;
+	end
+
+	if(f_r_fsqrt_en) begin
+		f_r_s_fsqrt_q <= f_r_s_fsqrt_d;
+		f_r_c_fsqrt_q <= f_r_c_fsqrt_d;
+	end
+	
 	if(frac_D_en)
 		frac_D_q <= frac_D_d;
 	
@@ -1305,7 +1327,6 @@ assign iter_counter_start_value_fsqrt_pre_1 = f32_after_pre_0_q ? 6'd5 : 6'd12;
 assign add_1_to_quot_msb = (iter_counter_q == 6'd52);
 
 // For FSQRT, when opa is denormal, use iter_counter_q[0] to store "fraca_lsh_num_d[0]", so we can know whether expa is odd in PRE_1
-// TODO
 assign iter_counter_d = 
   ({(6){fsm_q[FSM_PRE_0_BIT] &  has_dn_in	}} & {{(6 - 1){1'b0}}, fraca_lsh_num_d[0]})
 | ({(6){fsm_q[FSM_PRE_0_BIT] & ~has_dn_in	}} & (is_fdiv_i ? '0 : iter_counter_start_value_fsqrt_pre_0))
@@ -1370,8 +1391,8 @@ fdiv_r16_block #(
 	.SRT_2ND_SPEC		(FDIV_SRT_2ND_SPEC),
 	.REM_W				(GLOBAL_REM_W)
 ) u_fdiv_r16_block (
-	.f_r_s_i			(f_r_s_q),
-	.f_r_c_i			(f_r_c_q),
+	.f_r_s_i			(f_r_s_fdiv_q),
+	.f_r_c_i			(f_r_c_fdiv_q),
 	.divisor_i			(frac_D_q),
 
 	.quot_dig_p2_1st_o	(quot_dig_p2_1st),
@@ -1395,8 +1416,8 @@ fsqrt_r16_block #(
 	.SRT_2ND_SPEC	(FSQRT_SRT_2ND_SPEC),
 	.REM_W			(FSQRT_F64_REM_W)
 ) u_fsqrt_r16_block (
-	.f_r_s_i						(f_r_s_q[0 +: FSQRT_F64_REM_W]),
-	.f_r_c_i						(f_r_c_q[0 +: FSQRT_F64_REM_W]),
+	.f_r_s_i						(f_r_s_fsqrt_q),
+	.f_r_c_i						(f_r_c_fsqrt_q),
 	.root_i							(quot_root_iter_q[0 +: 54]),
 	.root_m1_i						(quot_root_m1_iter_q[0 +: 53]),
 	.rem_msb_nxt_cycle_1st_srt_i	(rem_msb_nxt_cycle_1st_srt_q),
@@ -1460,10 +1481,13 @@ assign quot_m1_2nd =
 // Post Process: Denormalization (Only for FDIV) & Rounding
 // ================================================================================================================================================
 
-assign nr_f_r = f_r_s_q + f_r_c_q;
+assign f_r_s_post[GLOBAL_REM_W - 1:0] = is_fdiv_q ? f_r_s_fdiv_q : {{(GLOBAL_REM_W - FSQRT_F64_REM_W){1'b0}}, f_r_s_fsqrt_q};
+assign f_r_c_post[GLOBAL_REM_W - 1:0] = is_fdiv_q ? f_r_c_fdiv_q : {{(GLOBAL_REM_W - FSQRT_F64_REM_W){1'b0}}, f_r_c_fsqrt_q};
 
-assign f_r_xor = f_r_s_q[(GLOBAL_REM_W - 1) - 1:1] ^ f_r_c_q[(GLOBAL_REM_W - 1) - 1:1];
-assign f_r_or  = f_r_s_q[(GLOBAL_REM_W - 1) - 2:0] | f_r_c_q[(GLOBAL_REM_W - 1) - 2:0];
+assign nr_f_r = f_r_s_post + f_r_c_post;
+
+assign f_r_xor = f_r_s_post[(GLOBAL_REM_W - 1) - 1:1] ^ f_r_c_post[(GLOBAL_REM_W - 1) - 1:1];
+assign f_r_or  = f_r_s_post[(GLOBAL_REM_W - 1) - 2:0] | f_r_c_post[(GLOBAL_REM_W - 1) - 2:0];
 
 assign quot_discard_not_zero = 
   (quot_discard_num_post[1] & quot_root_iter_q[0])
