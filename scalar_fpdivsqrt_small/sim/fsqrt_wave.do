@@ -63,6 +63,7 @@ add wave -position insertpoint -expand -group 1ST_SRT -radix binary {sim:/tb_top
 add wave -position insertpoint -expand -group 1ST_SRT -radix binary {sim:/tb_top/u_dut/u_fsqrt_r16_block/m_z0_1st}
 add wave -position insertpoint -expand -group 1ST_SRT -radix binary {sim:/tb_top/u_dut/u_fsqrt_r16_block/m_p1_1st}
 add wave -position insertpoint -expand -group 1ST_SRT -radix binary {sim:/tb_top/u_dut/u_fsqrt_r16_block/m_p2_1st}
+add wave -position insertpoint -expand -group 1ST_SRT {sim:/tb_top/u_dut/u_fsqrt_r16_block/root_mask_ext_1st}
 add wave -position insertpoint -expand -group 1ST_SRT {sim:/tb_top/u_dut/u_fsqrt_r16_block/root_ext_last_cycle}
 add wave -position insertpoint -expand -group 1ST_SRT {sim:/tb_top/u_dut/u_fsqrt_r16_block/root_m1_ext_last_cycle}
 add wave -position insertpoint -expand -group 1ST_SRT {sim:/tb_top/u_dut/u_fsqrt_r16_block/root_dig_n2_1st}
@@ -87,6 +88,27 @@ add wave -position insertpoint -expand -group 2ND_SRT -radix binary {sim:/tb_top
 add wave -position insertpoint -expand -group 2ND_SRT -radix binary {sim:/tb_top/u_dut/u_fsqrt_r16_block/m_z0_2nd}
 add wave -position insertpoint -expand -group 2ND_SRT -radix binary {sim:/tb_top/u_dut/u_fsqrt_r16_block/m_p1_2nd}
 add wave -position insertpoint -expand -group 2ND_SRT -radix binary {sim:/tb_top/u_dut/u_fsqrt_r16_block/m_p2_2nd}
+add wave -position insertpoint -expand -group 2ND_SRT {sim:/tb_top/u_dut/u_fsqrt_r16_block/root_mask_ext_2nd}
+# add wave -position insertpoint -expand -group 2ND_SRT {sim:/tb_top/u_dut/u_fsqrt_r16_block/root_mask_2nd_root_dig_n2_2nd}
+# add wave -position insertpoint -expand -group 2ND_SRT {sim:/tb_top/u_dut/u_fsqrt_r16_block/root_mask_2nd_root_dig_n1_2nd}
+# add wave -position insertpoint -expand -group 2ND_SRT {sim:/tb_top/u_dut/u_fsqrt_r16_block/root_mask_2nd_root_dig_z0_2nd}
+# add wave -position insertpoint -expand -group 2ND_SRT {sim:/tb_top/u_dut/u_fsqrt_r16_block/root_mask_2nd_root_dig_p1_2nd}
+# add wave -position insertpoint -expand -group 2ND_SRT {sim:/tb_top/u_dut/u_fsqrt_r16_block/root_mask_2nd_root_dig_p2_2nd}
+# add wave -position insertpoint -expand -group 2ND_SRT {sim:/tb_top/u_dut/u_fsqrt_r16_block/root_m1_mask_2nd_root_dig_n2_2nd}
+# add wave -position insertpoint -expand -group 2ND_SRT {sim:/tb_top/u_dut/u_fsqrt_r16_block/root_m1_mask_2nd_root_dig_n1_2nd}
+# add wave -position insertpoint -expand -group 2ND_SRT {sim:/tb_top/u_dut/u_fsqrt_r16_block/root_m1_mask_2nd_root_dig_z0_2nd}
+# add wave -position insertpoint -expand -group 2ND_SRT {sim:/tb_top/u_dut/u_fsqrt_r16_block/root_m1_mask_2nd_root_dig_p1_2nd}
+# add wave -position insertpoint -expand -group 2ND_SRT {sim:/tb_top/u_dut/u_fsqrt_r16_block/root_m1_mask_2nd_root_dig_p2_2nd}
+# add wave -position insertpoint -expand -group 2ND_SRT {sim:/tb_top/u_dut/u_fsqrt_r16_block/root_ext_2nd_root_dig_n2_2nd}
+# add wave -position insertpoint -expand -group 2ND_SRT {sim:/tb_top/u_dut/u_fsqrt_r16_block/root_ext_2nd_root_dig_n1_2nd}
+# add wave -position insertpoint -expand -group 2ND_SRT {sim:/tb_top/u_dut/u_fsqrt_r16_block/root_ext_2nd_root_dig_z0_2nd}
+# add wave -position insertpoint -expand -group 2ND_SRT {sim:/tb_top/u_dut/u_fsqrt_r16_block/root_ext_2nd_root_dig_p1_2nd}
+# add wave -position insertpoint -expand -group 2ND_SRT {sim:/tb_top/u_dut/u_fsqrt_r16_block/root_ext_2nd_root_dig_p2_2nd}
+# add wave -position insertpoint -expand -group 2ND_SRT {sim:/tb_top/u_dut/u_fsqrt_r16_block/root_m1_ext_2nd_root_dig_n2_2nd}
+# add wave -position insertpoint -expand -group 2ND_SRT {sim:/tb_top/u_dut/u_fsqrt_r16_block/root_m1_ext_2nd_root_dig_n1_2nd}
+# add wave -position insertpoint -expand -group 2ND_SRT {sim:/tb_top/u_dut/u_fsqrt_r16_block/root_m1_ext_2nd_root_dig_z0_2nd}
+# add wave -position insertpoint -expand -group 2ND_SRT {sim:/tb_top/u_dut/u_fsqrt_r16_block/root_m1_ext_2nd_root_dig_p1_2nd}
+# add wave -position insertpoint -expand -group 2ND_SRT {sim:/tb_top/u_dut/u_fsqrt_r16_block/root_m1_ext_2nd_root_dig_p2_2nd}
 add wave -position insertpoint -expand -group 2ND_SRT {sim:/tb_top/u_dut/u_fsqrt_r16_block/root_dig_n2_2nd}
 add wave -position insertpoint -expand -group 2ND_SRT {sim:/tb_top/u_dut/u_fsqrt_r16_block/root_dig_n1_2nd}
 add wave -position insertpoint -expand -group 2ND_SRT {sim:/tb_top/u_dut/u_fsqrt_r16_block/root_dig_z0_2nd}

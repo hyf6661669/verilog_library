@@ -401,6 +401,12 @@ cmodel:
 	-I./include \
 	-L./lib -lsoftfloat -ltestfloat_gencases
 
+srt_fdivsqrt: 
+	gcc ./src/srt_fdivsqrt.c -o ./lib/srt_fdivsqrt.exe \
+	-fPIC -O2 -mfma -m64 \
+	-I./include \
+	-L./lib -lsoftfloat -ltestfloat_gencases
+
 all: softfloat_lib testfloat_gencases_lib cmodel
 
 clean_cmodel:

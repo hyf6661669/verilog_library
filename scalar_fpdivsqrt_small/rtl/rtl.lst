@@ -11,3 +11,8 @@
 ../rtl/fsqrt_r4_qds_constants_generator.sv
 
 
+../rtl/fdiv_srt_to_restoring.sv
+../rtl/fdiv_srt_to_restoring_v2.sv
+../rtl/fsqrt_srt_to_restoring.sv
+
+

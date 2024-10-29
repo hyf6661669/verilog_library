@@ -39,6 +39,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdint.h>
 #include "softfloat.h"
 
+#define FLOAT16 1
+#define FLOAT64 1
+
 extern int genCases_level;
 
 void genCases_setLevel( int );

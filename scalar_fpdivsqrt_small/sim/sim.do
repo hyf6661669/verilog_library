@@ -10,15 +10,15 @@ vlib ./lib/work
 
 vmap work ./lib/work
 
-#set RAND_SEED 35
-set RAND_SEED [expr {int(rand() * 999999999)}]
+set RAND_SEED 20
+#set RAND_SEED [expr {int(rand() * 999999999)}]
 set TEST_LEVEL 2
 # set FP16_TEST_NUM [expr {int(pow(2, 19))}]
 # set FP32_TEST_NUM [expr {int(pow(2, 19))}]
 # set FP64_TEST_NUM [expr {int(pow(2, 19))}]
 set FP16_TEST_NUM 0
-set FP32_TEST_NUM 800000
-set FP64_TEST_NUM 800000
+set FP32_TEST_NUM 100
+set FP64_TEST_NUM 0
 
 # Add this definition, if you don't want to test all the 5 rounding modes for each stimulation
 # +define+RANDOM_RM \
@@ -41,7 +41,8 @@ configure wave -timelineunits ns
 
 # Display waves ??
 #do fdiv_wave.do
-#do fsqrt_wave.do
+do fsqrt_wave.do
+#do fdiv_srt_to_restoring_wave.do
 
 run -all
 

@@ -3,7 +3,7 @@
 // Author				: HYF
 // How to Contact		: hyf_sysu@qq.com
 // Created Time    		: July 5th 2024, 16:39:25
-// Last Modified Time   : July 16th 2024, 16:27:38
+// Last Modified Time   : July 19th 2024, 16:13:43
 // ========================================================================================================
 // Description	:
 // A Scalar Floating Point Divider/Sqrt based on Minimally Redundant Radix-4 SRT Algorithm.
@@ -1444,6 +1444,52 @@ fsqrt_r16_block #(
 	.m_z0_nxt_cycle_1st_srt_o		(m_z0_nxt_cycle_1st_srt_after_iter),
 	.m_p1_nxt_cycle_1st_srt_o		(m_p1_nxt_cycle_1st_srt_after_iter),
 	.m_p2_nxt_cycle_1st_srt_o		(m_p2_nxt_cycle_1st_srt_after_iter)
+);
+
+// Only for formal prrof
+fdiv_srt_to_restoring #(
+	.REM_W(GLOBAL_REM_W)
+) u_fdiv_srt_to_restoring (
+	.original_fraca_i			(fraca_prescaled),
+	.original_fracb_i			(fracb_prescaled),
+    .fraca_lt_fracb_i			(fraca_lt_fracb),
+    .iter_start_i				((start_handshaked & ~has_dn_in) | fsm_q[FSM_PRE_1_BIT]),
+    .iter_vld_i					(fsm_q[FSM_ITER_BIT]),
+    .iter_end_i					(final_iter),
+    .iter_counter_i				(iter_counter_q),
+    .quot_bits_calculated_i		(quot_bits_calculated),
+    .srt_quot_2nd_i				(quot_2nd),
+    .srt_quot_m1_2nd_i			(quot_m1_2nd),
+    .srt_f_r_s_2nd_i			(f_r_s_2nd_fdiv),
+    .srt_f_r_c_2nd_i			(f_r_c_2nd_fdiv),
+    .quot_discard_num_one_hot_i	(quot_discard_num_one_hot),
+
+    .clk						(clk),
+	.rst_n						(rst_n)
+);
+fdiv_srt_to_restoring_v2 #(
+	.REM_W(GLOBAL_REM_W)
+) u_fdiv_srt_to_restoring_v2 (
+	.scaled_dividend_i			(fraca_scaled),
+	.scaled_divisor_i			(fracb_scaled),
+    .dividend_lt_divisor_i		(fraca_lt_fracb),
+    .iter_start_i				((start_handshaked & ~has_dn_in) | fsm_q[FSM_PRE_1_BIT]),
+    .iter_vld_i					(fsm_q[FSM_ITER_BIT]),
+    .iter_end_i					(final_iter),
+    .iter_counter_i				(iter_counter_q),
+    .quot_bits_calculated_i		(quot_bits_calculated),
+    .srt_quot_1st_i				(quot_1st),
+    .srt_quot_m1_1st_i			(quot_m1_1st),
+    .srt_quot_2nd_i				(quot_2nd),
+    .srt_quot_m1_2nd_i			(quot_m1_2nd),
+    .srt_f_r_s_1st_i			(f_r_s_1st_fdiv),
+    .srt_f_r_c_1st_i			(f_r_c_1st_fdiv),
+    .srt_f_r_s_2nd_i			(f_r_s_2nd_fdiv),
+    .srt_f_r_c_2nd_i			(f_r_c_2nd_fdiv),
+    .quot_discard_num_one_hot_i	(quot_discard_num_one_hot),
+
+    .clk						(clk),
+	.rst_n						(rst_n)
 );
 
 
