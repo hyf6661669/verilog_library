@@ -294,7 +294,7 @@ end
 
 scalar_fpdivsqrt_small #(
 	.FDIV_QDS_ARCH				(2),
-	.FDIV_SRT_2ND_SPEC			(1),
+	.FDIV_SRT_2ND_SPEC			(0),
 	.FSQRT_SRT_2ND_SPEC			(1),
 	.UF_AFTER_ROUNDING			(1),
 	.NAN_BOXING					(0)

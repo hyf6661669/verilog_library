@@ -1492,6 +1492,26 @@ fdiv_srt_to_restoring_v2 #(
 	.rst_n						(rst_n)
 );
 
+fsqrt_srt_to_restoring u_fsqrt_srt_to_restoring (
+	.frac_fsqrt_i				(frac_fsqrt),
+    .exp_odd_i					(exp_odd_fsqrt),
+    .root_dig_n2_1st_i			(root_dig_n2_1st),
+    .root_dig_n1_1st_i			(root_dig_n1_1st),
+    .root_dig_z0_1st_i			(root_dig_z0_1st),
+    .f_r_s_before_iter_i		(f_r_s_before_iter_fsqrt),
+    .f_r_c_before_iter_i		(f_r_c_before_iter_fsqrt),
+    .iter_start_i				((start_handshaked & ~has_dn_in) | fsm_q[FSM_PRE_1_BIT]),
+    .iter_vld_i					(fsm_q[FSM_ITER_BIT]),
+    .iter_counter_i				(iter_counter_q),
+    .srt_root_2nd_i				(root_2nd),
+    .srt_root_m1_2nd_i			(root_m1_2nd),
+    .srt_f_r_s_2nd_i			(f_r_s_2nd_fsqrt),
+    .srt_f_r_c_2nd_i			(f_r_c_2nd_fsqrt),
+
+    .clk						(clk),
+	.rst_n						(rst_n)
+);
+
 
 // ================================================================================================================================================
 // On the Fly Conversion (OFC/OTFC) for FDIV
